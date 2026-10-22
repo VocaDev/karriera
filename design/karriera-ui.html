@@ -1,0 +1,1499 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Karriera · Bordi UI/UX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Familjen+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+/* =========================================================
+   1. TOKENS: tri drejtime, secili light + dark
+   ========================================================= */
+body.dir-a {
+  --bg:#F2F2F7; --surface:#FFFFFF; --surface2:#E9E9EF; --text:#111418; --muted:#6A6F78; --line:#D9DAE0;
+  --accent:#0B63CE; --accent-ink:#FFFFFF; --accent-soft:#E3EEFB; --ok:#1F8A4C; --warn:#B26A00; --bad:#C62828;
+  --swe:#0B63CE; --pr:#9C4DCC; --streak:#E8590C;
+  --r:16px; --r-sm:10px; --btn-r:12px; --btn-shadow:none; --card-border:0; --card-shadow:none;
+  --font-head:-apple-system,"SF Pro Display","Segoe UI",Roboto,system-ui,sans-serif;
+  --font-body:-apple-system,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --head-w:700; --head-track:-0.02em;
+}
+body.dir-a.dark {
+  --bg:#000000; --surface:#1C1C1E; --surface2:#2C2C2E; --text:#F2F2F7; --muted:#9A9AA3; --line:#38383C;
+  --accent:#4C9BFF; --accent-ink:#06192F; --accent-soft:#0F2741; --ok:#4CC27A; --warn:#F0A43A; --bad:#FF6B6B;
+  --swe:#4C9BFF; --pr:#C08AE8;
+}
+body.dir-b {
+  --bg:#EEF0EC; --surface:#FFFFFF; --surface2:#E2E6E0; --text:#15201B; --muted:#5E6B64; --line:#CBD2CC;
+  --accent:#14532D; --accent-ink:#FFFFFF; --accent-soft:#DCE9E0; --ok:#1F7A45; --warn:#A35F00; --bad:#B3261E;
+  --stamp:#E4572E; --swe:#14532D; --pr:#6B4E16; --streak:#E4572E;
+  --r:8px; --r-sm:6px; --btn-r:8px; --btn-shadow:none; --card-border:1px solid var(--line); --card-shadow:0 1px 0 rgba(21,32,27,.04);
+  --font-head:"Familjen Grotesk",system-ui,sans-serif; --font-body:"Familjen Grotesk",system-ui,sans-serif;
+  --head-w:700; --head-track:-0.015em;
+}
+body.dir-b.dark {
+  --bg:#0F1512; --surface:#18211C; --surface2:#222D27; --text:#E7EEE9; --muted:#97A59D; --line:#2E3A33;
+  --accent:#7FD1A1; --accent-ink:#0B1F14; --accent-soft:#1D3327; --ok:#7FD1A1; --warn:#E9B062; --bad:#FF8A80;
+  --stamp:#F07A52; --swe:#7FD1A1; --pr:#E2C07A;
+}
+body.dir-c {
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#F1F1F4; --text:#0E0E10; --muted:#5C5C66; --line:#0E0E10;
+  --accent:#3D5AFE; --accent-ink:#FFFFFF; --accent-soft:#E8ECFF; --ok:#12A150; --warn:#C77800; --bad:#E5383B;
+  --swe:#3D5AFE; --pr:#FF5A36; --swe-soft:#E8ECFF; --pr-soft:#FFE9E3; --streak:#FF5A36; --sun:#FFD23F;
+  --r:18px; --r-sm:12px; --btn-r:14px; --btn-shadow:0 4px 0 var(--line); --card-border:2px solid var(--line); --card-shadow:0 4px 0 var(--line);
+  --font-head:"Bricolage Grotesque",system-ui,sans-serif; --font-body:"Figtree",system-ui,sans-serif;
+  --head-w:800; --head-track:-0.02em;
+}
+body.dir-c.dark {
+  --bg:#121214; --surface:#1E1E22; --surface2:#2A2A30; --text:#F5F5F7; --muted:#A3A3AE; --line:#000000;
+  --accent:#6B83FF; --accent-ink:#0A0F2E; --accent-soft:#1E2550; --ok:#3DDC84; --warn:#FFB547; --bad:#FF6B6E;
+  --swe:#6B83FF; --pr:#FF7A5C; --swe-soft:#1E2550; --pr-soft:#3A1E17;
+}
+
+/* =========================================================
+   2. KANAVACA (si Figma)
+   ========================================================= */
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; overflow:hidden; }
+body { font-family:system-ui,"Segoe UI",sans-serif; background:#E4E4E7; color:#18181B; }
+body.dark { background:#1B1B1E; color:#E4E4E7; }
+#viewport { position:fixed; inset:52px 0 0 0; overflow:hidden; cursor:grab;
+  background-image:radial-gradient(rgba(0,0,0,.13) 1px, transparent 1px); background-size:24px 24px; }
+body.dark #viewport { background-image:radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px); }
+#viewport.panning { cursor:grabbing; }
+#world { position:absolute; left:0; top:0; transform-origin:0 0; padding:80px; width:max-content; }
+#world.fly { transition:transform .55s cubic-bezier(.2,.7,.2,1); }
+
+.toolbar { position:fixed; top:0; left:0; right:0; height:52px; display:flex; align-items:center; gap:16px; padding:0 16px;
+  background:#FFFFFF; border-bottom:1px solid #D4D4D8; z-index:10; font-size:13px; }
+body.dark .toolbar { background:#26262A; border-color:#3A3A40; }
+.toolbar .brand { font-weight:700; }
+.toolbar .brand span { font-weight:400; opacity:.6; margin-left:6px; }
+.seg { display:inline-flex; background:#F0F0F2; border-radius:8px; padding:3px; }
+body.dark .seg { background:#333338; }
+.seg button { border:0; background:transparent; padding:6px 12px; border-radius:6px; font:inherit; color:inherit; cursor:pointer; }
+.seg button.on { background:#FFFFFF; box-shadow:0 1px 2px rgba(0,0,0,.15); font-weight:600; }
+body.dark .seg button.on { background:#4A4A52; }
+.tb-btn { border:1px solid #D4D4D8; background:transparent; color:inherit; padding:6px 10px; border-radius:8px; font:inherit; cursor:pointer; }
+body.dark .tb-btn { border-color:#4A4A52; }
+.spacer { flex:1; }
+.zoom-val { min-width:44px; text-align:center; font-variant-numeric:tabular-nums; }
+.hint { opacity:.55; font-size:12px; }
+
+.row { margin-bottom:120px; }
+.row-title { font-size:28px; font-weight:700; margin-bottom:8px; letter-spacing:-.01em; }
+.row-sub { font-size:15px; opacity:.65; margin-bottom:32px; max-width:900px; }
+.frames { display:flex; gap:80px; align-items:flex-start; }
+.frame { width:410px; flex:none; }
+.frame-label { font-size:15px; font-weight:600; margin-bottom:14px; display:flex; justify-content:space-between; cursor:pointer; }
+.frame-label em { font-style:normal; opacity:.5; font-weight:400; }
+.note { margin-top:18px; font-size:14px; line-height:1.5; opacity:.8; max-width:400px; }
+.frame.hit .phone { outline:4px solid #3D8BFF; outline-offset:6px; }
+
+/* info-kartat në rreshtin e parë */
+.info { width:520px; flex:none; background:#FFFFFF; border-radius:14px; padding:28px; font-size:15px; line-height:1.55; }
+body.dark .info { background:#26262A; }
+.info h3 { font-size:20px; margin-bottom:12px; }
+.info ol { padding-left:20px; display:grid; gap:8px; }
+.info .dir { border-top:1px solid rgba(0,0,0,.08); padding:16px 0; cursor:pointer; }
+body.dark .info .dir { border-color:rgba(255,255,255,.08); }
+.info .dir:first-of-type { border-top:0; padding-top:4px; }
+.info .dir b { font-size:16px; }
+.info .dir small { opacity:.6; margin-left:6px; }
+.info .dir.on b { color:#3D8BFF; }
+.sw { display:flex; gap:6px; margin:8px 0; }
+.sw i { width:28px; height:28px; border-radius:6px; border:1px solid rgba(0,0,0,.12); }
+
+/* =========================================================
+   3. TELEFONI
+   ========================================================= */
+.phone { width:410px; height:864px; border-radius:62px; background:#1A1A1C; padding:10px; position:relative;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.35); }
+.phone::before { content:""; position:absolute; top:21px; left:50%; width:122px; height:35px; margin-left:-61px; background:#000; border-radius:20px; z-index:5; }
+.phone::after { content:""; position:absolute; bottom:18px; left:50%; width:136px; height:5px; margin-left:-68px; background:var(--text); opacity:.85; border-radius:3px; z-index:5; }
+.screen { width:390px; height:844px; border-radius:52px; overflow:hidden; position:relative; display:flex; flex-direction:column;
+  background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:16px; line-height:1.4; }
+.sb { height:54px; flex:none; display:flex; justify-content:space-between; align-items:center; padding:6px 34px 0 44px; font-size:16px; font-weight:600; font-family:-apple-system,"Segoe UI",system-ui,sans-serif; }
+.sb svg { height:13px; }
+.content { flex:1; padding:6px 20px 0; overflow:hidden; display:flex; flex-direction:column; gap:16px; }
+.cta { padding:12px 20px 40px; display:grid; gap:10px; flex:none; }
+
+/* =========================================================
+   4. KOMPONENTËT (një markup, tri lëkura)
+   ========================================================= */
+.ico { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.ico.sm { width:18px; height:18px; }
+.ico.lg { width:28px; height:28px; }
+
+h1,h2,h3 { font-family:var(--font-head); font-weight:var(--head-w); letter-spacing:var(--head-track); line-height:1.15; text-wrap:balance; }
+.h-xl { font-size:34px; }
+.h-l { font-size:28px; }
+.h-m { font-size:21px; }
+.h-s { font-size:17px; }
+.muted { color:var(--muted); }
+.small { font-size:14px; }
+.xs { font-size:12.5px; }
+.row-x { display:flex; align-items:center; gap:10px; }
+.between { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.grow { flex:1; min-width:0; }
+
+.btn { display:flex; align-items:center; justify-content:center; gap:8px; height:54px; border-radius:var(--btn-r); border:0;
+  background:var(--accent); color:var(--accent-ink); font:600 17px var(--font-body); box-shadow:var(--btn-shadow); cursor:pointer; }
+.btn.ghost { background:transparent; color:var(--accent); box-shadow:none; }
+.btn.soft { background:var(--accent-soft); color:var(--accent); box-shadow:none; }
+.btn.sm { height:40px; font-size:15px; padding:0 16px; }
+.dir-c .btn { border:2px solid var(--line); font-weight:700; }
+.dir-c .btn.ghost { border:0; }
+.dir-c .btn.soft { border:2px solid var(--line); background:var(--surface); color:var(--text); box-shadow:var(--btn-shadow); }
+.dir-b .btn { letter-spacing:.01em; }
+
+.card { background:var(--surface); border-radius:var(--r); padding:16px; border:var(--card-border); box-shadow:var(--card-shadow); }
+.chip { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:999px; background:var(--surface);
+  font-size:14px; font-weight:500; border:1px solid var(--line); white-space:nowrap; }
+.chip.on { background:var(--text); color:var(--bg); border-color:var(--text); }
+.dir-c .chip { border-width:2px; font-weight:600; }
+.dir-b .chip { border-radius:6px; }
+.tag { font-size:12px; font-weight:600; padding:2px 8px; border-radius:6px; background:var(--accent-soft); color:var(--accent); }
+[data-role="pr"] .tag { color:var(--pr); background:color-mix(in oklab, var(--pr) 14%, transparent); }
+.dir-c [data-role="swe"] .tag { background:var(--swe); color:#fff; }
+.dir-c [data-role="pr"] .tag { background:var(--pr); color:#fff; }
+.code { font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; color:var(--muted); display:none; }
+.dir-b .code { display:inline; }
+
+.field { display:flex; align-items:center; gap:10px; height:48px; padding:0 14px; border-radius:var(--r-sm); background:var(--surface); color:var(--muted); border:var(--card-border); }
+.dir-a .field { background:var(--surface2); }
+
+.list { background:var(--surface); border-radius:var(--r); border:var(--card-border); box-shadow:var(--card-shadow); overflow:hidden; }
+.li { display:flex; align-items:center; gap:12px; padding:14px 16px; min-height:56px; }
+.li + .li { border-top:1px solid color-mix(in oklab, var(--text) 9%, transparent); }
+.dir-c .li + .li { border-top:2px solid var(--line); }
+.li .ico.ok { color:var(--ok); } .li .ico.warn { color:var(--warn); } .li .ico.bad { color:var(--bad); }
+
+/* --- Gatishmëria: elementi nënshkrim --- */
+.rd { --size:52px; flex:none; position:relative; }
+.rd-num { font-family:var(--font-head); font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+.rd-num small { font-size:.55em; font-weight:700; }
+.rd-lbl { font-size:12px; color:var(--muted); }
+.rd-bar { display:none; }
+/* A: unaza */
+.dir-a .rd { width:var(--size); height:var(--size); display:grid; place-content:center; text-align:center; }
+.dir-a .rd::before { content:""; position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(var(--accent) calc(var(--v) * 1%), var(--surface2) 0);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+          mask:radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+.dir-a .rd .rd-num { font-size:15px; }
+.dir-a .rd .rd-lbl { display:none; }
+.dir-a .rd.lg { --size:168px; }
+.dir-a .rd.lg::before { -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 13px), #000 calc(100% - 12px)); mask:radial-gradient(farthest-side, transparent calc(100% - 13px), #000 calc(100% - 12px)); }
+.dir-a .rd.lg .rd-num { font-size:48px; }
+.dir-a .rd.lg .rd-lbl { display:block; font-size:15px; margin-top:4px; }
+/* B: vula */
+.dir-b .rd { width:var(--size); height:var(--size); border-radius:50%; border:2px dashed var(--stamp); color:var(--stamp);
+  display:grid; place-content:center; text-align:center; transform:rotate(-9deg); }
+.dir-b .rd .rd-num { font-size:15px; }
+.dir-b .rd .rd-lbl { color:var(--stamp); text-transform:uppercase; font-size:8.5px; letter-spacing:.14em; font-weight:700; }
+.dir-b .rd.lg { --size:170px; border-width:3px; box-shadow:inset 0 0 0 7px var(--surface), inset 0 0 0 9px var(--stamp); }
+.dir-b .rd.lg .rd-num { font-size:50px; }
+.dir-b .rd.lg .rd-lbl { font-size:14px; margin-top:4px; }
+/* C: shiriti me segmente */
+.dir-c .rd { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.dir-c .rd .rd-num { font-size:18px; }
+.dir-c .rd .rd-lbl { display:none; }
+.dir-c .rd .rd-bar { display:block; position:relative; width:64px; height:12px; border-radius:7px; border:2px solid var(--line); background:var(--surface2); overflow:hidden; }
+.dir-c .rd .rd-bar i { position:absolute; inset:0 auto 0 0; width:calc(var(--v) * 1%); background:var(--ok); }
+.dir-c .rd .rd-bar::after { content:""; position:absolute; inset:0; background:repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), var(--line) calc(10% - 2px) 10%); }
+.dir-c.dark .rd .rd-bar::after { background:repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), var(--bg) calc(10% - 2px) 10%); }
+.dir-c .rd.lg { align-items:stretch; width:100%; }
+.dir-c .rd.lg .rd-num { font-size:56px; }
+.dir-c .rd.lg .rd-lbl { display:block; font-size:16px; color:var(--text); font-weight:600; }
+.dir-c .rd.lg .rd-bar { width:100%; height:26px; border-radius:13px; border-width:3px; }
+
+/* --- Karta e punës --- */
+.jc { display:flex; gap:12px; align-items:center; background:var(--surface); border-radius:var(--r); padding:14px 16px;
+  border:var(--card-border); box-shadow:var(--card-shadow); position:relative; cursor:pointer; color:inherit; text-decoration:none; }
+.jc-main { flex:1; min-width:0; display:grid; gap:3px; }
+.jc-top { display:flex; gap:8px; align-items:center; }
+.jc-title { font-weight:650; font-size:16.5px; line-height:1.25; font-family:var(--font-head); }
+.dir-c .jc-title { font-weight:700; }
+.jc-meta { font-size:14px; color:var(--muted); }
+.jc-foot { font-size:12.5px; color:var(--muted); display:flex; gap:10px; margin-top:2px; }
+.jc-stub { display:grid; place-items:center; }
+/* B: karta-biletë me prerje */
+.dir-b .jc { padding-right:0; }
+.dir-b .jc-stub { align-self:stretch; width:84px; border-left:2px dashed var(--line); margin:-14px 0; padding:14px 0; }
+.dir-b .jc::before, .dir-b .jc::after { content:""; position:absolute; right:76px; width:16px; height:16px; border-radius:50%; background:var(--bg); border:1px solid var(--line); }
+.dir-b .jc::before { top:-9px; clip-path:inset(50% 0 0 0); }
+.dir-b .jc::after { bottom:-9px; clip-path:inset(0 0 50% 0); }
+/* C: blloqe ngjyrash sipas rolit */
+.dir-c .jc[data-role="swe"] { background:var(--swe-soft); }
+.dir-c .jc[data-role="pr"] { background:var(--pr-soft); }
+
+/* --- Tab bar --- */
+.tabbar { flex:none; height:88px; display:flex; justify-content:space-around; padding:8px 8px 30px; background:var(--surface); border-top:1px solid color-mix(in oklab, var(--text) 10%, transparent); }
+.tab { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:500; color:var(--muted); width:76px; cursor:pointer; }
+.tab.on { color:var(--accent); }
+.dir-a .tabbar { position:absolute; left:16px; right:16px; bottom:26px; height:64px; padding:8px; border-radius:32px; border:0;
+  background:color-mix(in oklab, var(--surface) 72%, transparent); backdrop-filter:blur(20px) saturate(1.6); -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  box-shadow:0 8px 24px rgba(0,0,0,.12), inset 0 0 0 1px color-mix(in oklab, var(--text) 8%, transparent); }
+.dir-a .has-tabs .content { padding-bottom:100px; }
+.dir-c .tabbar { border-top:2px solid var(--line); }
+.dir-c .tab.on { color:var(--text); }
+.dir-c .tab.on .ico { background:var(--sun); border-radius:10px; padding:3px; width:34px; height:28px; border:2px solid var(--line); color:#0E0E10; }
+
+.streak { display:inline-flex; align-items:center; gap:4px; font-weight:700; font-size:15px; color:var(--streak); }
+.dir-c .streak { background:var(--sun); color:#0E0E10; border:2px solid var(--line); border-radius:999px; padding:3px 10px 3px 6px; }
+
+.back { display:flex; align-items:center; gap:2px; color:var(--accent); font-size:17px; height:44px; }
+.dir-c .back { color:var(--text); font-weight:600; }
+
+.progress { height:6px; border-radius:3px; background:var(--surface2); overflow:hidden; }
+.progress i { display:block; height:100%; background:var(--accent); border-radius:3px; }
+.dir-c .progress { height:12px; border:2px solid var(--line); border-radius:8px; }
+
+.option { display:flex; gap:14px; align-items:center; padding:16px; background:var(--surface); border-radius:var(--r); border:2px solid transparent; box-shadow:var(--card-shadow); }
+.dir-b .option, .dir-a.dark .option { border-color:var(--line); }
+.option.on { border-color:var(--accent); background:var(--accent-soft); }
+.dir-c .option { border:2px solid var(--line); }
+.dir-c .option.on { background:var(--swe-soft); border-color:var(--line); box-shadow:0 4px 0 var(--accent); }
+.option .ic { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--surface2); color:var(--text); flex:none; }
+.option.on .ic { background:var(--accent); color:var(--accent-ink); }
+.option.off { opacity:.45; }
+.radio { width:22px; height:22px; border-radius:50%; border:2px solid var(--line); flex:none; margin-left:auto; }
+.option.on .radio { border:7px solid var(--accent); }
+
+.segm { display:flex; background:var(--surface2); border-radius:var(--r-sm); padding:3px; }
+.segm span { flex:1; text-align:center; padding:9px 0; border-radius:calc(var(--r-sm) - 2px); font-size:15px; font-weight:500; }
+.segm span.on { background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.12); font-weight:600; }
+.dir-c .segm { border:2px solid var(--line); }
+.dir-c .segm span.on { background:var(--sun); color:#0E0E10; box-shadow:none; }
+
+.drop { border:2px dashed color-mix(in oklab, var(--accent) 55%, transparent); border-radius:var(--r); padding:28px 20px; text-align:center; display:grid; gap:8px; justify-items:center; background:color-mix(in oklab, var(--accent-soft) 60%, transparent); }
+.dir-c .drop { border:2px dashed var(--line); background:var(--swe-soft); }
+
+.ba { display:grid; gap:8px; }
+.ba p { font-size:14.5px; padding:10px 12px; border-radius:var(--r-sm); }
+.ba .before { background:color-mix(in oklab, var(--bad) 9%, transparent); text-decoration:line-through; text-decoration-color:color-mix(in oklab, var(--bad) 60%, transparent); color:var(--muted); }
+.ba .after { background:color-mix(in oklab, var(--ok) 11%, transparent); }
+
+.bar-row { display:grid; grid-template-columns:120px 1fr 36px; gap:10px; align-items:center; font-size:14.5px; }
+.bar-row .progress i { background:var(--accent); }
+.bar-row b { text-align:right; font-variant-numeric:tabular-nums; }
+
+.skill { display:inline-flex; align-items:center; gap:6px; font-size:14px; padding:6px 10px; border-radius:8px; background:var(--surface2); }
+.skill.have { background:color-mix(in oklab, var(--ok) 13%, transparent); color:var(--ok); font-weight:600; }
+.skill.miss { background:color-mix(in oklab, var(--bad) 11%, transparent); color:var(--bad); font-weight:600; }
+.wrap { display:flex; flex-wrap:wrap; gap:8px; }
+
+.step { display:flex; gap:12px; align-items:flex-start; }
+.step .n { width:26px; height:26px; border-radius:50%; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:13px; display:grid; place-items:center; flex:none; }
+.dir-c .step .n { background:var(--sun); color:#0E0E10; border:2px solid var(--line); }
+
+.week { display:flex; justify-content:space-between; }
+.day { display:grid; justify-items:center; gap:6px; font-size:12px; color:var(--muted); }
+.day i { width:34px; height:34px; border-radius:50%; background:var(--surface2); display:grid; place-items:center; }
+.day.done i { background:var(--streak); color:#fff; }
+.dir-c .day i { border:2px solid var(--line); }
+
+/* --- Intervista: gjithmonë e errët --- */
+.interview { --bg:#0B0D10; --surface:#171A1F; --surface2:#262A31; --text:#F3F4F6; --muted:#9AA0AA; background:radial-gradient(120% 70% at 50% 30%, #1B2230 0%, #0B0D10 70%); color:#F3F4F6; }
+.iv-top { display:flex; align-items:center; justify-content:space-between; padding:4px 20px 0; }
+.dots { display:flex; gap:6px; }
+.dots i { width:26px; height:5px; border-radius:3px; background:#3A3F48; }
+.dots i.done { background:#F3F4F6; }
+.dots i.now { background:var(--accent); }
+.iconbtn { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08); color:#F3F4F6; }
+.avatar { flex:1; display:grid; place-items:center; position:relative; }
+.pip { position:absolute; top:12px; right:20px; width:96px; height:128px; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#3A4150,#20242C); border:2px solid rgba(255,255,255,.25); }
+.subs { margin:0 20px; padding:14px 16px; border-radius:16px; background:rgba(0,0,0,.45); font-size:17px; line-height:1.45; backdrop-filter:blur(8px); }
+.state { display:flex; align-items:center; gap:10px; justify-content:center; font-size:15px; font-weight:600; color:#7CE3A3; margin:14px 0 4px; }
+.wave { display:flex; gap:3px; align-items:center; height:20px; }
+.wave i { width:3px; border-radius:2px; background:#7CE3A3; }
+.talk { margin:12px 20px 40px; height:64px; border-radius:32px; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:700; font-size:17px; background:#F3F4F6; color:#0B0D10; }
+.iv-sub { display:flex; justify-content:center; gap:22px; font-size:14px; color:#9AA0AA; margin-top:-26px; margin-bottom:30px; }
+
+.cam { height:220px; border-radius:var(--r); background:linear-gradient(160deg,#4A5262,#262B34); position:relative; overflow:hidden; display:grid; place-items:center; }
+.cam .guide { width:130px; height:160px; border-radius:50%; border:3px dashed rgba(255,255,255,.75); }
+.cam .ok { position:absolute; left:12px; bottom:12px; background:rgba(0,0,0,.55); color:#fff; font-size:13px; padding:5px 10px; border-radius:999px; display:flex; gap:6px; align-items:center; }
+
+/* ================= v0.2: ndërveprimi ================= */
+.toolbar { gap:12px; }
+.toolbar .lbl { opacity:.6; font-size:12px; margin-right:-6px; }
+.tb-btn.play { background:#3D8BFF; border-color:#3D8BFF; color:#fff; font-weight:600; }
+@media (max-width:1500px) { .hint { display:none; } }
+
+.badge-later { font-size:12px; font-weight:700; color:#B45309; background:#FEF3C7; padding:2px 8px; border-radius:6px; margin-left:8px; }
+.frame-tools { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+.frame-tools button { border:1px solid #C4C4CC; background:#fff; color:#18181B; padding:7px 12px; border-radius:8px; font:500 13px system-ui,sans-serif; cursor:pointer; }
+body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:#4A4A52; }
+
+.info.feat { width:560px; }
+.feat-list { display:grid; gap:2px; }
+.feat-list div { display:flex; justify-content:space-between; gap:12px; padding:7px 8px; border-radius:8px; cursor:pointer; }
+.feat-list div:hover { background:rgba(61,139,255,.1); }
+.feat-list span:last-child { opacity:.6; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.feat-list .later span:first-child::after { content:" · pas MVP-së"; color:#B45309; font-size:12px; }
+
+.screen [data-act], .screen [data-go] { cursor:pointer; }
+.screen input, .screen textarea { font:inherit; color:var(--text); background:transparent; border:0; outline:0; width:100%; }
+.field input::placeholder { color:var(--muted); }
+.field:focus-within { box-shadow:0 0 0 2px var(--accent); }
+
+/* bookmark */
+[data-act="save"].on .ico { fill:currentColor; color:var(--accent); }
+
+/* switch */
+.switch { width:51px; height:31px; border-radius:16px; background:var(--surface2); position:relative; flex:none; transition:background .2s; }
+.switch::after { content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.2); transition:transform .2s; }
+.on > .switch, .switch.on { background:var(--streak); }
+.on > .switch::after, .switch.on::after { transform:translateX(20px); }
+.dir-c .switch { border:2px solid var(--line); }
+
+/* roast */
+.roast-only { display:none !important; }
+.roast .roast-only { display:revert !important; }
+.roast .normal-only { display:none !important; }
+.roast .li.roast-only { display:flex !important; }
+
+/* hapat e AI-së */
+.steps { display:grid; gap:14px; }
+.stp { display:flex; gap:12px; align-items:center; color:var(--muted); transition:color .3s; }
+.stp .dot { width:26px; height:26px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center; flex:none; }
+.stp .dot .ico { width:15px; height:15px; opacity:0; color:#fff; stroke-width:3; }
+.stp.busy { color:var(--text); }
+.stp.busy .dot { border-color:var(--accent); border-right-color:transparent; animation:spin .8s linear infinite; }
+.stp.done { color:var(--text); }
+.stp.done .dot { background:var(--ok); border-color:var(--ok); animation:none; }
+.stp.done .dot .ico { opacity:1; }
+[data-after] { transition:opacity .4s, transform .4s; }
+[data-after].hidden { opacity:0; transform:translateY(8px); pointer-events:none; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* expand */
+.li.exp { flex-wrap:wrap; }
+.li .more { display:none; flex-basis:100%; font-size:14px; padding:8px 0 2px 34px; line-height:1.5; }
+.li.open .more { display:block; }
+.li.open .chev { transform:rotate(90deg); }
+.chev { transition:transform .2s; }
+
+/* panels (tabs) */
+[data-panel] { display:none; }
+[data-panel].on { display:grid; }
+
+/* checkbox për mëso */
+.cbx { width:24px; height:24px; border-radius:7px; border:2px solid var(--line); display:grid; place-items:center; flex:none; }
+.cbx .ico { width:15px; height:15px; opacity:0; color:#fff; stroke-width:3; }
+.done-item .cbx { background:var(--ok); border-color:var(--ok); }
+.done-item .cbx .ico { opacity:1; }
+.done-item b { text-decoration:line-through; color:var(--muted); }
+
+/* intervista live */
+.followup { align-self:center; font-size:13px; font-weight:600; color:#FFD66B; background:rgba(255,214,107,.12); padding:5px 12px; border-radius:999px; margin-bottom:10px; }
+.snippet { margin-top:10px; font:500 13px/1.55 "JetBrains Mono",ui-monospace,monospace; background:rgba(255,255,255,.07); padding:10px 12px; border-radius:10px; white-space:pre; color:#C9F2D7; overflow:hidden; }
+.taskchip { display:inline-block; margin-bottom:6px; font-size:12px; font-weight:700; color:#0B0D10; background:#FFD66B; padding:2px 8px; border-radius:6px; }
+.subs { min-height:84px; }
+.state { color:#9AA0AA; min-height:24px; }
+.state.listen { color:#7CE3A3; }
+.state.speak { color:#8FB8FF; }
+.wave { display:none; }
+.state.listen .wave { display:flex; }
+.wave i { animation:wv .9s ease-in-out infinite; }
+.wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.25s}.wave i:nth-child(4){animation-delay:.4s}.wave i:nth-child(5){animation-delay:.15s}.wave i:nth-child(6){animation-delay:.3s}
+@keyframes wv { 0%,100% { transform:scaleY(.4); } 50% { transform:scaleY(1.2); } }
+.mouth { transform-origin:120px 162px; transform-box:view-box; }
+.talking .mouth { animation:talk .22s ease-in-out infinite alternate; }
+@keyframes talk { from { transform:scaleY(.6); } to { transform:scaleY(2.4); } }
+.talk { transition:opacity .2s; }
+.talk.dim { opacity:.35; }
+.pip-chip { position:absolute; left:6px; bottom:6px; font-size:10.5px; font-weight:700; background:rgba(0,0,0,.6); color:#7CE3A3; padding:2px 6px; border-radius:6px; }
+.iv-toast { position:absolute; left:20px; right:20px; top:120px; background:#FFD66B; color:#0B0D10; padding:12px 14px; border-radius:14px; font-size:14px; font-weight:600; display:flex; gap:10px; align-items:flex-start; opacity:0; transform:translateY(-10px); transition:.35s; pointer-events:none; z-index:3; }
+.iv-toast.show { opacity:1; transform:none; }
+
+/* kamera: kontrolli */
+.cam .guide { transition:border-color .4s; }
+.cam.ready .guide { border-color:#7CE3A3; border-style:solid; }
+.micbar { height:8px; border-radius:4px; background:var(--surface2); overflow:hidden; flex:1; }
+.micbar i { display:block; height:100%; width:60%; background:var(--ok); animation:mic 1.1s ease-in-out infinite alternate; transform-origin:left; }
+@keyframes mic { from { transform:scaleX(.2); } to { transform:scaleX(1); } }
+
+/* lock screen */
+.lock { background:linear-gradient(170deg,#2B3A55 0%,#5B4B6B 45%,#B9786A 100%); color:#fff; }
+.lock .sb { color:#fff; }
+.lock-time { text-align:center; margin-top:10px; }
+.lock-time .d { font-size:18px; font-weight:500; opacity:.9; }
+.lock-time .t { font-size:92px; font-weight:600; letter-spacing:-.03em; line-height:1; font-family:-apple-system,"SF Pro Display",system-ui,sans-serif; }
+.notifs { margin-top:auto; padding:0 12px 120px; display:grid; gap:8px; }
+.notif { background:rgba(255,255,255,.28); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-radius:20px; padding:12px 14px; display:flex; gap:12px; color:#fff; opacity:0; transform:translateY(16px) scale(.98); transition:.45s cubic-bezier(.2,.8,.2,1); }
+.notif.show { opacity:1; transform:none; }
+.notif .app { width:38px; height:38px; border-radius:9px; background:#fff; color:#0E0E10; display:grid; place-items:center; font-weight:800; font-size:18px; flex:none; font-family:var(--font-head); }
+.notif b { font-size:15px; }
+.notif p { font-size:14.5px; line-height:1.35; }
+.notif small { opacity:.75; font-size:12.5px; }
+
+/* sheet */
+.dimtop { height:150px; background:color-mix(in oklab, var(--text) 35%, transparent); flex:none; margin-top:-54px; }
+.sheet { flex:1; background:var(--bg); border-radius:24px 24px 0 0; margin-top:-24px; display:flex; flex-direction:column; }
+.grab { width:40px; height:5px; border-radius:3px; background:var(--line); margin:8px auto 4px; }
+
+/* leaderboard, lidhja */
+.lb .li b { font-variant-numeric:tabular-nums; }
+.lb .me { background:var(--accent-soft); }
+.av { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:14px; background:var(--surface2); flex:none; }
+.later-banner { font-size:13px; font-weight:600; color:#B45309; background:#FEF3C7; border-radius:10px; padding:8px 12px; }
+.dark .later-banner { background:#3A2A0A; color:#FBBF24; }
+.lvl { height:10px; border-radius:5px; background:var(--surface2); overflow:hidden; }
+.lvl i { display:block; height:100%; background:var(--streak); }
+
+/* prototipi */
+#proto { position:fixed; inset:0; z-index:50; background:#141416; display:flex; flex-direction:column; align-items:center; }
+#proto[hidden] { display:none; }
+.proto-bar { display:flex; gap:10px; align-items:center; padding:12px; color:#fff; font-size:14px; }
+.proto-bar button { border:1px solid rgba(255,255,255,.3); background:transparent; color:#fff; padding:6px 12px; border-radius:8px; cursor:pointer; font:inherit; }
+.proto-stage { flex:1; position:relative; width:100%; overflow:hidden; min-height:0; }
+#protoPhone { position:absolute; left:50%; top:50%; transform-origin:center center; }
+#protoPhone .screen [data-go], #protoPhone .screen [data-act] { cursor:pointer; }
+.celebrate .rd-num { transition:color .3s; }
+.plus { font-family:var(--font-head); font-weight:800; font-size:22px; color:var(--ok); opacity:0; transition:opacity .4s; }
+.plus.show { opacity:1; }
+
+.content > * { flex-shrink:0; }
+</style>
+</head>
+<body class="dir-c">
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V3m0 0-4 4m4-4 4 4M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H19"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-sb" viewBox="0 0 70 13"><g fill="currentColor" stroke="none"><rect x="0" y="8" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="13" rx="1"/><path d="M31 3.5a10 10 0 0 1 13 0l-1.6 1.7a7.6 7.6 0 0 0-9.8 0zM33.6 6.4a6 6 0 0 1 7.8 0l-1.7 1.7a3.6 3.6 0 0 0-4.4 0zM37.5 12.5 35.4 10.4a3 3 0 0 1 4.2 0z"/><rect x="48" y="1" width="20" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="50" y="3" width="15" height="7" rx="1.5"/></g></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
+</svg>
+<div class="toolbar">
+  <div class="brand">Karriera<span>Bordi UI/UX · v0.2</span></div>
+  <div class="seg" id="dirSeg">
+    <button data-dir="a">A · Qartë</button>
+    <button data-dir="b">B · Leja</button>
+    <button data-dir="c">C · Ritëm</button>
+  </div>
+  <button class="tb-btn" id="darkBtn">Dark</button>
+  <span class="lbl">Roli</span>
+  <div class="seg" id="roleSeg"><button data-role-set="swe">SWE</button><button data-role-set="pr">Asistent/PR</button></div>
+  <span class="lbl">Intervista</span>
+  <div class="seg" id="langSeg"><button data-lang-set="sq">SQ</button><button data-lang-set="en">EN</button><button data-lang-set="de">DE</button></div>
+  <button class="tb-btn play" id="playBtn">▶ Prototipi</button>
+  <div class="spacer"></div>
+  <span class="hint">Tërhiq = lëviz · Ctrl + rrota = zoom · F = gjithçka</span>
+  <button class="tb-btn" id="zOut">−</button><span class="zoom-val" id="zVal">100%</span><button class="tb-btn" id="zIn">+</button>
+  <button class="tb-btn" id="fitBtn">Gjithçka</button>
+</div>
+
+<div id="viewport"><div id="world">
+
+<!-- ===================== 0. INFO ===================== -->
+<div class="row">
+  <div class="row-title">Karriera: dizajni i aplikacionit</div>
+  <div class="row-sub">22 ekrane, çdo veçori që kemi diskutuar. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C), rolin dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
+  <div class="frames">
+    <div class="info feat">
+      <h3>Veçoritë → ekrani (kliko për të shkuar)</h3>
+      <div class="feat-list">
+        <div data-go="s2"><span>Regjistrimi: roli + gjuha e intervistës</span><span>02 · 07</span></div>
+        <div data-go="s3"><span>CV: ngarko PDF</span><span>03 · 05</span></div>
+        <div data-go="s4"><span>CV: ndërtoje me AI (5 pyetje, edhe me zë)</span><span>04</span></div>
+        <div data-go="s6"><span>Analiza e CV-së: nota, seksionet, rishkrimi, Roast</span><span>06</span></div>
+        <div data-go="s9"><span>Shpalljet: portalet e Kosovës, remote, Gjermani, filtrat, kërkimi</span><span>09</span></div>
+        <div data-go="s9"><span>Lokacioni: "Afër meje"</span><span>09</span></div>
+        <div data-go="s10"><span>Sill linkun ose screenshot-in tënd (LinkedIn etj.)</span><span>10</span></div>
+        <div data-go="s12"><span>A jam gati? % · çka ke · çka mungon · si ta mbyllësh</span><span>12</span></div>
+        <div data-go="s13"><span>Kontrolli i kamerës dhe mikrofonit + pëlqimi</span><span>13</span></div>
+        <div data-go="s14"><span>Intervista adaptive me avatar 3D, SQ / EN / DE</span><span>14</span></div>
+        <div data-go="s14"><span>Pyetje vijuese nga përgjigja jote</span><span>14</span></div>
+        <div data-go="s14"><span>SWE: pyetje me kod · PR: detyrë me shkrim/zë</span><span>14</span></div>
+        <div data-go="s15"><span>Rezultatet + feedback për çdo përgjigje + kompetencat</span><span>15</span></div>
+        <div data-go="s15"><span>Gjuha e trupit (MediaPipe + fotografi)</span><span>15</span></div>
+        <div data-go="s15"><span>Integriteti: largimi nga app-i, fytyrë e dytë, leximi</span><span>14 · 15</span></div>
+        <div data-go="s16"><span>Mëso: video YouTube + detyra për çka të mungon</span><span>16</span></div>
+        <div data-go="s17"><span>Praktiko përsëri: gatishmëria rritet</span><span>17</span></div>
+        <div data-go="s8"><span>Gamifikimi: gatishmëria për punë + streak</span><span>08 · 18</span></div>
+        <div data-go="s19"><span>Njoftimet (punë të reja, afate, streak)</span><span>19</span></div>
+        <div data-go="s20" class="later"><span>Nivelet, sfida e javës, renditja e klasës</span><span>20</span></div>
+        <div data-go="s21" class="later"><span>Lidhja: kush mund të të ndihmojë</span><span>21</span></div>
+        <div data-go="s22" class="later"><span>Gjermania: Bundesagentur + intervistë në gjermanisht</span><span>22</span></div>
+      </div>
+    </div>
+    <div class="info">
+      <h3>Parimet e UX-it</h3>
+      <ol>
+        <li><b>Një cikël:</b> punë → a jam gati? → praktiko → feedback → mëso → gatishmëria rritet → apliko.</li>
+        <li><b>Një veprim kryesor për ekran</b>, poshtë, aty ku arrin gishti.</li>
+        <li><b>Vlera para llogarisë:</b> roli, gjuha dhe CV-ja vijnë para regjistrimit (Supabase anonymous sign-in, email-i më vonë).</li>
+        <li><b>Gatishmëria për çdo punë</b> është numri kryesor i app-it dhe elementi vizual nënshkrim.</li>
+        <li><b>Intervista është dhomë e qetë:</b> e errët, pa navigim, me titra për çdo pyetje.</li>
+        <li><b>Ton trajneri, jo gjykatësi.</b> Sinjalet e integritetit kanë gjithmonë arsye dhe i sheh vetëm përdoruesi.</li>
+        <li><b>AI-ja tregon hapat</b> ("Po e lexoj CV-në…"), jo spinner të zbrazët.</li>
+        <li><b>Gjuha e app-it ≠ gjuha e intervistës:</b> app-i në shqip, intervista edhe në anglisht ose gjermanisht.</li>
+        <li>Prekje ≥ 44 pt, Dynamic Type, light + dark, shqip i natyrshëm.</li>
+      </ol>
+    </div>
+    <div class="info" id="dirInfo">
+      <h3>Tri drejtime: zgjidh njërin</h3>
+      <div class="dir" data-dir="a">
+        <b>A · Qartë</b><small>e pritshme</small>
+        <div class="sw"><i style="background:#F2F2F7"></i><i style="background:#FFFFFF"></i><i style="background:#111418"></i><i style="background:#0B63CE"></i></div>
+        Si një app i iPhone-it: i qetë dhe i besueshëm. Fonti i sistemit, tab bar prej xhami. Nënshkrimi: <b>unaza e gatishmërisë</b>. Rreziku: mund të duket si shabllon.
+      </div>
+      <div class="dir" data-dir="b">
+        <b>B · Leja e hyrjes</b><small>e veçantë</small>
+        <div class="sw"><i style="background:#EEF0EC"></i><i style="background:#FFFFFF"></i><i style="background:#15201B"></i><i style="background:#14532D"></i><i style="background:#E4572E"></i></div>
+        Çdo punë është një biletë hyrjeje dhe gatishmëria është vula mbi të. Nënshkrimi: <b>karta-biletë me vulën "GATI"</b>.
+      </div>
+      <div class="dir" data-dir="c">
+        <b>C · Ritëm</b><small>e guximshme</small>
+        <div class="sw"><i style="background:#FFFFFF"></i><i style="background:#0E0E10"></i><i style="background:#3D5AFE"></i><i style="background:#FF5A36"></i><i style="background:#FFD23F"></i></div>
+        Energji si Duolingo: blloqe ngjyrash sipas rolit, kontura të trasha, streak. Nënshkrimi: <b>shiriti i segmentuar i gatishmërisë</b>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 1. HYRJA DHE CV-JA ===================== -->
+<div class="row">
+  <div class="row-title">1 · Hyrja dhe CV-ja</div>
+  <div class="row-sub">Nga hapja e parë deri te momenti i parë "aha": analiza e CV-së. Llogaria kërkohet vetëm në fund, kur ka çka të ruhet.</div>
+  <div class="frames">
+
+    <section class="frame" id="s1">
+      <div class="frame-label">01 · Mirësevjen <em>hyrja</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="justify-content:space-between;padding-top:20px">
+          <div class="between"><h2 class="h-m">Karriera</h2><span class="chip"><svg class="ico sm"><use href="#i-globe"/></svg>Shqip</span></div>
+          <div style="display:grid;gap:22px">
+            <div class="rd lg" data-count="40,78" style="--v:78;--size:120px"><span class="rd-num">78<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
+            <h1 class="h-xl">Dije sa je gati për punën që do.</h1>
+            <p class="muted" style="font-size:17px">Vlerëso CV-në, gjej shpallje nga portalet e Kosovës dhe praktiko intervistën me një intervistues AI, në shqip, anglisht ose gjermanisht.</p>
+          </div>
+          <div></div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s2">Fillo</button><button class="btn ghost" data-go="s7">Kam llogari</button></div>
+      </div></div>
+      <p class="note">Ta kuptosh app-in për 5 sekonda. Një veprim: <b>Fillo</b>.</p>
+    </section>
+
+    <section class="frame" id="s2">
+      <div class="frame-label">02 · Roli dhe gjuha <em>onboarding</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content">
+          <div class="row-x"><span class="back" data-go="s1"><svg class="ico"><use href="#i-back"/></svg></span><div class="progress grow"><i style="width:50%"></i></div><span class="xs muted">1 nga 2</span></div>
+          <h1 class="h-l">Për çfarë pune po përgatitesh?</h1>
+          <div style="display:grid;gap:10px">
+            <div class="option" data-act="pick-role" data-val="swe"><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><div class="grow"><b>Zhvillues/e softueri</b><div class="small muted">Frontend, backend, mobile</div></div><span class="radio"></span></div>
+            <div class="option" data-act="pick-role" data-val="pr"><span class="ic"><svg class="ico"><use href="#i-mic"/></svg></span><div class="grow"><b>Asistent/e ose PR</b><div class="small muted">Administratë, komunikim, rrjete sociale</div></div><span class="radio"></span></div>
+            <div class="option off"><span class="ic"><svg class="ico"><use href="#i-spark"/></svg></span><div class="grow"><b>Tjetër</b><div class="small muted">Së shpejti</div></div><span class="radio"></span></div>
+          </div>
+          <h2 class="h-s" style="margin-top:8px">Në cilën gjuhë do ta bësh intervistën?</h2>
+          <div class="segm"><span data-act="pick-lang" data-val="sq">Shqip</span><span data-act="pick-lang" data-val="en">English</span><span data-act="pick-lang" data-val="de">Deutsch</span></div>
+          <p class="xs muted">Mund ta ndërrosh për çdo intervistë. App-i mbetet në shqip.</p>
+        </div>
+        <div class="cta"><button class="btn" data-go="s3">Vazhdo</button></div>
+      </div></div>
+      <p class="note">Prek rolin dhe gjuhën: ndryshojnë pyetjet e intervistës (ekrani 14) dhe gjuha e avatarit.</p>
+    </section>
+
+    <section class="frame" id="s3">
+      <div class="frame-label">03 · CV-ja <em>onboarding</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content">
+          <div class="row-x"><span class="back" data-go="s2"><svg class="ico"><use href="#i-back"/></svg></span><div class="progress grow"><i style="width:100%"></i></div><span class="xs muted">2 nga 2</span></div>
+          <h1 class="h-l">Shto CV-në tënde</h1>
+          <p class="muted">Me CV-në të themi sa i përshtatesh secilës punë.</p>
+          <div class="drop" data-go="s5">
+            <svg class="ico lg" style="color:var(--accent)"><use href="#i-upload"/></svg>
+            <b>Ngarko CV-në (PDF)</b><span class="small muted">Deri në 5 MB</span>
+            <button class="btn sm" style="margin-top:6px">Zgjidh skedarin</button>
+          </div>
+          <div class="card row-x" data-go="s4" style="gap:14px">
+            <span class="option" style="padding:0;box-shadow:none;border:0;background:none"><span class="ic"><svg class="ico"><use href="#i-spark"/></svg></span></span>
+            <div class="grow"><b>Nuk kam CV</b><div class="small muted">Ndërtoje me AI: 5 pyetje, rreth 3 minuta</div></div>
+            <svg class="ico muted"><use href="#i-chev"/></svg>
+          </div>
+          <div class="row-x small muted"><svg class="ico sm"><use href="#i-lock"/></svg>CV-ja jote shihet vetëm nga ti.</div>
+        </div>
+        <div class="cta"><button class="btn ghost" data-go="s8">Më vonë</button></div>
+      </div></div>
+      <p class="note">Dy rrugë të barabarta: ngarko ose ndërto me AI. Privatësia shkruhet aty ku lind frika.</p>
+    </section>
+
+    <section class="frame" id="s4">
+      <div class="frame-label">04 · Ndërto CV-në me AI <em>5 pyetje</em></div>
+      <div class="phone"><div class="screen" data-cvq>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content">
+          <div class="row-x"><span class="back" data-go="s3"><svg class="ico"><use href="#i-back"/></svg></span><div class="progress grow"><i data-cvq-bar style="width:20%"></i></div><span class="xs muted" data-cvq-n>1 nga 5</span></div>
+          <div class="small muted">Pyetja <span data-cvq-k>1</span> nga 5</div>
+          <h1 class="h-l" data-cvq-title>Çka studion dhe në cilin vit je?</h1>
+          <p class="small muted" data-cvq-hint>Shembull: Inxhinieri Kompjuterike, UMIB, viti i tretë.</p>
+          <div class="card" style="min-height:150px"><textarea rows="5" data-cvq-input placeholder="Shkruaj këtu…"></textarea></div>
+          <div class="row-x" style="justify-content:center"><button class="btn soft sm"><svg class="ico sm"><use href="#i-mic"/></svg>Fol në vend të shkrimit</button></div>
+          <p class="xs muted" style="text-align:center">Nuk ka përgjigje të gabuar. AI-ja i kthen në fjali profesionale.</p>
+        </div>
+        <div class="cta"><button class="btn" data-act="cv-next">Tjetra</button></div>
+      </div></div>
+      <p class="note">Formular hap pas hapi, jo chatbot. Prek "Tjetra" për t'i parë të 5 pyetjet; në fund AI-ja e shkruan CV-në dhe të çon te analiza.</p>
+    </section>
+
+    <section class="frame" id="s5">
+      <div class="frame-label">05 · AI po e lexon CV-në <em>hapat e AI-së</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="justify-content:center;gap:28px">
+          <div style="display:grid;justify-items:center;gap:12px;text-align:center">
+            <svg class="ico lg" style="width:48px;height:48px;color:var(--accent)"><use href="#i-file"/></svg>
+            <h1 class="h-l">Po e analizoj CV-në tënde</h1>
+            <p class="muted small">CV_Genti_2026.pdf · 2 faqe</p>
+          </div>
+          <div class="card steps" data-steps data-loop="1">
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po e lexoj tekstin e CV-së</div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i gjej aftësitë dhe përvojën</div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po e krahasoj me shpalljet e javës</div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i shkruaj sugjerimet</div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn hidden" data-after data-go="s6">Shiko analizën</button></div>
+      </div></div>
+      <p class="note">Claude e lexon PDF-në direkt. Në vend të një spinner-i, përdoruesi sheh çka po bën AI-ja (10–20 sekonda).</p>
+    </section>
+
+    <section class="frame" id="s6">
+      <div class="frame-label">06 · Analiza e CV-së <em>aha #1 · Roast</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><span class="back" data-go="s3"><svg class="ico"><use href="#i-back"/></svg>CV</span><span class="small muted">Versioni 1</span></div>
+          <div class="card" style="display:grid;gap:10px">
+            <div class="between"><div><div class="small muted">Nota e CV-së</div><div class="rd-num" style="font-size:40px">64<small style="font-size:18px" class="muted">/100</small></div></div>
+            <div class="row-x" data-act="roast" style="gap:8px"><span class="small" style="font-weight:600">Roast</span><span class="switch"></span></div></div>
+            <div class="small muted normal-only">2 gjëra e ngrenë mbi 75</div><div class="small roast-only" style="color:var(--streak);font-weight:600">Ka shpresë. Pak.</div>
+          </div>
+          <div class="list">
+            <div class="li normal-only"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Profili</b><div class="small muted">I qartë dhe i shkurtër</div></div></div>
+            <div class="li normal-only"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Përvoja</b><div class="small muted">Shkruaj rezultate, jo vetëm detyra</div></div></div>
+            <div class="li normal-only"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Projektet</b><div class="small muted">Shto linkun e GitHub-it</div></div></div>
+            <div class="li normal-only"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Formati</b><div class="small muted">Një faqe, lexohet lehtë</div></div></div>
+            <div class="li roast-only"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Profili</b><div class="small muted">Ok, të paktën dihet si quhesh.</div></div></div>
+            <div class="li roast-only"><svg class="ico bad"><use href="#i-alert"/></svg><div class="grow"><b>Përvoja</b><div class="small muted">"Kam punuar me React." Edhe kalkulatori im ka punuar me React. Çka ndërtove?</div></div></div>
+            <div class="li roast-only"><svg class="ico bad"><use href="#i-alert"/></svg><div class="grow"><b>Projektet</b><div class="small muted">Projekt pa link në GitHub = projekt imagjinar.</div></div></div>
+            <div class="li roast-only"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Formati</b><div class="small muted">Tri fonte në një faqe. Zgjidh njërin, s'je në dasmë.</div></div></div>
+          </div>
+          <div class="card ba">
+            <div class="row-x small"><svg class="ico sm" style="color:var(--accent)"><use href="#i-spark"/></svg><b>Rishkrim nga AI</b></div>
+            <p class="before">Kam punuar me React.</p>
+            <p class="after">Ndërtova 3 ekrane në React Native për aplikacionin e klasës, me navigim dhe të dhëna nga Supabase.</p>
+          </div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s7">Ruaje dhe shiko punët</button></div>
+      </div></div>
+      <p class="note">Prek <b>Roast-o CV-në</b>: e njëjta analizë me humor. Momenti që studentët ia tregojnë shokut, pra marketing falas.</p>
+    </section>
+
+    <section class="frame" id="s7">
+      <div class="frame-label">07 · Ruaje progresin <em>llogaria</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <span class="back" data-go="s6"><svg class="ico"><use href="#i-back"/></svg></span>
+          <h1 class="h-l">Ruaje progresin tënd</h1>
+          <p class="muted">Analiza e CV-së dhe gatishmëria për çdo punë ruhen në llogarinë tënde, edhe po ta ndërrosh telefonin.</p>
+          <button class="btn soft" data-go="s8"><b style="font-family:Arial;font-size:18px">G</b>Vazhdo me Google</button>
+          <button class="btn soft" data-go="s8"><svg class="ico sm"><use href="#i-lock"/></svg>Vazhdo me Apple</button>
+          <div class="row-x xs muted" style="justify-content:center">ose me email</div>
+          <div class="field"><svg class="ico sm"><use href="#i-mail"/></svg><input placeholder="emri@umib.net" /></div>
+          <p class="xs muted">Të dërgojmë një link për hyrje. Pa fjalëkalim.</p>
+        </div>
+        <div class="cta"><button class="btn" data-go="s8">Vazhdo</button><button class="btn ghost" data-go="s8">Më vonë, vetëm në këtë telefon</button></div>
+      </div></div>
+      <p class="note">Supabase Auth: Google, Apple ose magic link. Llogaria anonime e deritanishme lidhet me email-in, pa humbur asgjë.</p>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===================== 2. PUNËT ===================== -->
+<div class="row">
+  <div class="row-title">2 · Punët dhe përputhja</div>
+  <div class="row-sub">Kreu → punët → detajet → "A jam gati?". Gatishmëria shihet kudo dhe çdo ekran të shtyn te hapi i radhës.</div>
+  <div class="frames">
+
+    <section class="frame" id="s8">
+      <div class="frame-label">08 · Kreu <em>tab 1</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content">
+          <div class="between"><div><div class="small muted">E enjte, 22 tetor</div><h1 class="h-l">Mirëmbrëma, Genti</h1></div><span class="streak" data-go="s18"><svg class="ico sm"><use href="#i-flame"/></svg>5</span></div>
+          <div class="card" style="display:grid;gap:14px">
+            <div class="small muted">Hapi i radhës</div>
+            <div class="row-x" style="align-items:flex-start;gap:14px">
+              <div class="grow"><h2 class="h-m">Praktiko intervistën për <span data-bind="iv-job">Junior React Native Developer</span></h2><div class="small muted" style="margin-top:4px" data-bind="iv-co">Dardania Soft, Prishtinë</div></div>
+              <div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
+            </div>
+            <button class="btn sm" data-go="s13"><svg class="ico sm"><use href="#i-mic"/></svg>Fillo, rreth 8 minuta</button>
+          </div>
+          <div class="between"><h2 class="h-s">Punët për ty</h2><span class="small" style="color:var(--accent)" data-go="s9">Të gjitha</span></div>
+          <div class="jc" data-role="swe" data-go="s11">
+            <div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div></div>
+            <div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
+          </div>
+          <div class="jc" data-role="pr" data-go="s11">
+            <div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div></div>
+            <div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
+          </div>
+        </div>
+        <div class="tabbar"><div class="tab on" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+      </div></div>
+      <p class="note">Gjithmonë një <b>hap i radhës</b>, i zgjedhur nga AI-ja sipas punës ku je më afër. Streak-u lart djathtas. Ndërro rolin lart dhe ndryshon edhe kjo kartë.</p>
+    </section>
+
+    <section class="frame" id="s9">
+      <div class="frame-label">09 · Punët <em>tab 2 · filtrat</em></div>
+      <div class="phone"><div class="screen has-tabs" data-jobs>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <div class="between"><h1 class="h-l">Punët</h1><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></div>
+          <div class="field"><svg class="ico sm"><use href="#i-search"/></svg><input data-search placeholder="Kërko punë, kompani, qytet" /></div>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap">
+            <span class="chip on" data-act="filter" data-val="all">Të gjitha</span><span class="chip" data-act="filter" data-val="swe">SWE</span><span class="chip" data-act="filter" data-val="pr">Asistent/PR</span><span class="chip" data-act="filter" data-val="near"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje</span><span class="chip" data-act="filter" data-val="remote">Remote</span><span class="chip" data-act="filter" data-val="de">Gjermani</span>
+          </div>
+          <div class="xs muted" data-near-note style="display:none">Sipas lokacionit tënd: Mitrovicë (deri në 10 km)</div>
+          <div class="jc" data-role="swe" data-tags="swe" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 05.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe near" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div><div class="jc-foot"><span>Portalpune</span><span>Afati 30.10</span></div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="pr" data-tags="pr" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">OP-1180</span></div><div class="jc-title">Koordinator/e PR dhe rrjete sociale</div><div class="jc-meta">Agjencia Iliria, Prishtinë</div><div class="jc-foot"><span>Ofertapune</span><span>Afati 12.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:38"><span class="rd-num">38<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="pr" data-tags="pr near" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 08.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe remote" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">RO-7741</span></div><div class="jc-title">Frontend Developer</div><div class="jc-meta">Kodi Studio, remote</div><div class="jc-foot"><span>RemoteOK</span><span>Pa afat</span></div></div><div class="jc-stub"><div class="rd" style="--v:54"><span class="rd-num">54<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe de" data-go="s22"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">AN-5521</span></div><div class="jc-title">Junior Frontend Developer (m/w/d)</div><div class="jc-meta">Nordlicht GmbH, Berlin</div><div class="jc-foot"><span>Arbeitnow</span><span>Afati 20.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:41"><span class="rd-num">41<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="small muted" data-empty style="display:none;text-align:center;padding:20px">Asnjë punë me këtë filtër. Provo "Sill linkun tënd".</div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+      </div></div>
+      <p class="note">Filtrat dhe kërkimi punojnë: prek "Afër meje" (lokacioni i telefonit), "Gjermani" ose shkruaj "Mitrovicë". Butoni me link lart hap ekranin 10.</p>
+    </section>
+
+    <section class="frame" id="s10">
+      <div class="frame-label">10 · Sill linkun tënd <em>LinkedIn, screenshot</em></div>
+      <div class="phone"><div class="screen" data-link>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="dimtop"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="content" style="gap:14px">
+            <div class="between"><h1 class="h-m">Sill një shpallje</h1><span class="iconbtn" style="background:var(--surface2);color:var(--text)" data-go="s9"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <p class="small muted">Linku nga LinkedIn, Indeed ose çdo faqe. Nëse faqja nuk lexohet, AI-ja e lexon nga screenshot-i.</p>
+            <div class="field"><svg class="ico sm"><use href="#i-link"/></svg><input value="linkedin.com/jobs/view/4029…" /></div>
+            <div class="row-x"><button class="btn sm grow" data-act="read-link">Lexoje</button><button class="btn soft sm grow"><svg class="ico sm"><use href="#i-image"/></svg>Screenshot</button></div>
+            <div class="steps" data-steps>
+              <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po e hap faqen</div>
+              <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>LinkedIn s'lejon lexim, po e lexoj nga pamja</div>
+              <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i nxjerr aftësitë që kërkohen</div>
+            </div>
+            <div class="jc hidden" data-after data-role="swe" data-go="s12"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">LI-4029</span></div><div class="jc-title">Junior QA Engineer</div><div class="jc-meta">Arbëria Labs, Prishtinë · u shtua</div></div><div class="jc-stub"><div class="rd" style="--v:58"><span class="rd-num">58<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="note">Prek <b>Lexoje</b>. LinkedIn bllokon leximin automatik, prandaj zgjidhja rezervë është screenshot-i që e lexon AI-ja (vision).</p>
+    </section>
+
+    <section class="frame" id="s11">
+      <div class="frame-label">11 · Detajet e punës <em>/pune/[id]</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" data-role="swe">
+          <div class="between"><span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span><span data-act="save" style="color:var(--muted)"><svg class="ico"><use href="#i-bookmark"/></svg></span></div>
+          <div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div>
+          <h1 class="h-l">Junior React Native Developer</h1>
+          <div class="list">
+            <div class="li"><svg class="ico sm muted"><use href="#i-brief"/></svg><div class="grow">Dardania Soft, Prishtinë</div></div>
+            <div class="li"><svg class="ico sm muted"><use href="#i-clock"/></svg><div class="grow">Afati: 05.11.2026</div></div>
+            <div class="li"><svg class="ico sm muted"><use href="#i-link"/></svg><div class="grow">Hape në KosovaJob</div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          </div>
+          <p>Zhvillim i aplikacioneve mobile për klientë në Gjermani. Mentorim nga një zhvillues senior gjatë 6 muajve të parë.</p>
+          <h2 class="h-s">Aftësitë që kërkohen</h2>
+          <div class="wrap"><span class="skill">React Native</span><span class="skill">TypeScript</span><span class="skill">Git</span><span class="skill">Testimi (Jest)</span><span class="skill">REST API</span></div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s12">A jam gati për këtë?</button></div>
+      </div></div>
+      <p class="note">Ruaje me shenjën lart (prek). Ruajmë vetëm titullin, përmbledhjen dhe linkun: teksti i plotë mbetet te portali.</p>
+    </section>
+
+    <section class="frame" id="s12">
+      <div class="frame-label">12 · A jam gati? <em>aha #2</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content">
+          <span class="back" data-go="s11"><svg class="ico"><use href="#i-back"/></svg>Detajet</span>
+          <div style="display:grid;justify-items:center;gap:10px;text-align:center">
+            <div class="rd lg" data-count="0,62" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
+            <p class="muted small">Junior React Native Developer, Dardania Soft</p>
+          </div>
+          <div class="card" style="display:grid;gap:10px">
+            <b>Çka ke</b>
+            <div class="wrap"><span class="skill have"><svg class="ico sm"><use href="#i-check"/></svg>React Native</span><span class="skill have"><svg class="ico sm"><use href="#i-check"/></svg>Git</span><span class="skill have"><svg class="ico sm"><use href="#i-check"/></svg>TypeScript</span></div>
+            <b style="margin-top:4px">Çka të mungon</b>
+            <div class="wrap"><span class="skill miss"><svg class="ico sm"><use href="#i-x"/></svg>Testimi (Jest)</span><span class="skill miss"><svg class="ico sm"><use href="#i-x"/></svg>REST API</span></div>
+          </div>
+          <div style="display:grid;gap:10px">
+            <b>Si ta mbyllësh boshllëkun</b>
+            <div class="step"><span class="n">1</span><span class="small">Shiko "Jest për fillestarë" (18 min) dhe shkruaj 3 teste.</span></div>
+            <div class="step"><span class="n">2</span><span class="small">Praktiko intervistën: 4 pyetje për këtë punë.</span></div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s13">Praktiko intervistën</button><button class="btn ghost" data-go="s16">Mëso çka të mungon</button></div>
+      </div></div>
+      <p class="note">Elementi nënshkrim në madhësinë e plotë, me animacion kur hapet. Çka ke · çka të mungon · si ta mbyllësh.</p>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===================== 3. INTERVISTA ===================== -->
+<div class="row">
+  <div class="row-title">3 · Intervista, rezultatet dhe mësimi</div>
+  <div class="row-sub">Momenti WOW i Demo Day-t. Intervista (14) luan vetë: avatari flet, pastaj është radha jote, pastaj analiza. Ndërro rolin dhe gjuhën lart dhe pyetjet ndryshojnë.</div>
+  <div class="frames">
+
+    <section class="frame" id="s13">
+      <div class="frame-label">13 · Para intervistës <em>kamera + mikrofoni</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <span class="back" data-go="s12"><svg class="ico"><use href="#i-back"/></svg></span>
+          <h1 class="h-l">Intervista për <span data-bind="iv-job">Junior React Native Developer</span></h1>
+          <div class="row-x small muted" style="gap:16px"><span class="row-x" style="gap:6px"><svg class="ico sm"><use href="#i-mic"/></svg>4 pyetje</span><span class="row-x" style="gap:6px"><svg class="ico sm"><use href="#i-clock"/></svg>~8 min</span><span class="row-x" style="gap:6px"><svg class="ico sm"><use href="#i-globe"/></svg><span data-bind="lang">Shqip</span></span></div>
+          <div class="cam" data-cam><div class="guide"></div><span class="ok"><svg class="ico sm"><use href="#i-camera"/></svg><span data-cam-txt>Po e kontrolloj kamerën…</span></span></div>
+          <div class="steps" data-steps data-loop="1" style="gap:10px">
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Kamera</div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span><span>Mikrofoni</span><span class="micbar"><i></i></span></div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Drita dhe fytyra në qendër</div>
+          </div>
+          <div class="row-x xs muted" style="align-items:flex-start"><svg class="ico sm"><use href="#i-lock"/></svg>Videoja nuk ruhet. Analizohen vetëm disa fotografi për këshillat mbi gjuhën e trupit.</div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s14">Fillo intervistën</button></div>
+      </div></div>
+      <p class="note">Kamera, mikrofoni dhe drita kontrollohen <b>para</b> fillimit, me pëlqim të qartë. iPhone: WebView me leje për kamerë.</p>
+    </section>
+
+    <section class="frame" id="s14">
+      <div class="frame-label">14 · Intervista live <em>WebView + avatar</em></div>
+      <div class="phone"><div class="screen interview" data-iv>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="iv-top"><span class="iconbtn" data-go="s13"><svg class="ico"><use href="#i-x"/></svg></span><div style="display:grid;justify-items:center;gap:6px"><span class="small" style="color:#9AA0AA" data-iv-count>Pyetja 1 nga 4</span><div class="dots" data-iv-dots><i></i><i></i><i></i><i></i></div></div><span class="small" style="width:44px;text-align:right;color:#9AA0AA" data-iv-timer>00:00</span></div>
+        <div class="avatar">
+          <svg viewBox="0 0 240 280" width="230" aria-label="Avatari 3D (TalkingHead)">
+            <defs><radialGradient id="sk" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#D9B8A0"/><stop offset="1" stop-color="#A9846C"/></radialGradient></defs>
+            <path d="M30 280c4-58 40-84 90-84s86 26 90 84z" fill="#2F3B52"/>
+            <path d="M96 196h48v26c-8 10-40 10-48 0z" fill="#B8937A"/>
+            <ellipse cx="120" cy="120" rx="58" ry="72" fill="url(#sk)"/>
+            <path d="M62 112c-4-52 26-74 60-74s64 20 58 72c-8-24-24-34-58-36-30 0-50 14-60 38z" fill="#2A2320"/>
+            <ellipse cx="98" cy="124" rx="6" ry="4" fill="#2A2320"/><ellipse cx="142" cy="124" rx="6" ry="4" fill="#2A2320"/>
+            <path d="M88 110q10-6 20 0M132 110q10-6 20 0" stroke="#2A2320" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <ellipse class="mouth" cx="120" cy="162" rx="14" ry="3" fill="#6E3B33"/>
+          </svg>
+          <div class="pip"><svg viewBox="0 0 96 128" width="96" height="128"><circle cx="48" cy="54" r="22" fill="#6B7383"/><path d="M10 128c2-28 18-40 38-40s36 12 38 40z" fill="#6B7383"/></svg><span class="pip-chip" data-iv-eye>Sy 72%</span></div>
+        </div>
+        <div class="followup" data-iv-follow style="visibility:hidden">Pyetje vijuese, nga përgjigja jote</div>
+        <div class="subs"><span class="taskchip" data-iv-task style="display:none">Detyrë</span><div data-iv-q></div><div class="snippet" data-iv-code style="display:none"></div></div>
+        <div class="state" data-iv-state><span class="wave"><i style="height:8px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:14px"></i></span><span data-iv-state-txt></span></div>
+        <div class="talk" data-act="end-turn"><svg class="ico"><use href="#i-check"/></svg><span data-iv-btn>Përfundova përgjigjen</span></div>
+        <div class="iv-sub"><span class="row-x" style="gap:6px" data-act="repeat-q"><svg class="ico sm"><use href="#i-repeat"/></svg>Përsërite pyetjen</span><span class="row-x" style="gap:6px" data-go="s15">Shiko rezultatet</span></div>
+        <div class="iv-toast" data-iv-toast><svg class="ico sm"><use href="#i-shield"/></svg><span>U largove nga aplikacioni për 4 sekonda. Kjo shënohet te integriteti.</span></div>
+      </div></div>
+      <div class="frame-tools"><button data-act="sim-leave">Simulo: largohu nga app-i</button><button data-act="sim-face">Simulo: fytyrë e dytë</button></div>
+      <p class="note">Luan vetë: <b>avatari flet</b> (goja lëviz, titrat shkruhen) → <b>radha jote</b> → <b>po analizoj</b> → pyetja tjetër. Pyetja 2 është vijuese, pyetja 3 është me kod (SWE) ose detyrë (PR). Prek "Përfundova" për ta shpejtuar.</p>
+    </section>
+
+    <section class="frame" id="s15">
+      <div class="frame-label">15 · Rezultatet <em>3 skeda</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><h1 class="h-l">Intervista mbaroi</h1><span class="iconbtn" style="background:var(--surface2);color:var(--text)" data-go="s8"><svg class="ico"><use href="#i-x"/></svg></span></div>
+          <div class="segm"><span class="on" data-act="tab" data-val="a">Përgjigjet</span><span data-act="tab" data-val="b">Gjuha e trupit</span><span data-act="tab" data-val="c">Integriteti</span></div>
+          <div data-panel="a" class="on" style="gap:12px">
+            <div class="card between" style="padding:12px 16px">
+              <div><div class="small muted">Gatishmëria</div><div class="row-x" style="gap:8px"><span class="rd-num muted" style="font-size:20px">62%</span><svg class="ico sm muted"><use href="#i-chev"/></svg><span class="rd-num" style="font-size:30px">70%</span></div><div class="small" style="color:var(--ok);font-weight:600">+8 nga kjo intervistë</div></div>
+              <div class="rd" style="--v:70"><span class="rd-num">70<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
+            </div>
+            <div class="wrap"><span class="skill have"><svg class="ico sm"><use href="#i-check"/></svg>Zgjidhja e problemeve</span><span class="skill have"><svg class="ico sm"><use href="#i-check"/></svg>React</span><span class="skill miss"><svg class="ico sm"><use href="#i-x"/></svg>Testimi</span></div>
+            <div class="list">
+              <div class="li exp" data-act="expand"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Pyetja 1 · 82</b><div class="small muted">Shembull i qartë, me rezultat</div></div><svg class="ico sm muted chev"><use href="#i-chev"/></svg><div class="more"><b>Mirë:</b> e përshkrove problemin dhe zgjidhjen me radhë.<br/><b>Provo:</b> fillo me rezultatin: "E ula kohën e ngarkimit nga 4 në 1 sekondë."</div></div>
+              <div class="li exp" data-act="expand"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Pyetja 2 · 64</b><div class="small muted">Pyetje vijuese: arsyeja mungonte</div></div><svg class="ico sm muted chev"><use href="#i-chev"/></svg><div class="more"><b>Mungon:</b> pse Supabase dhe jo server yti.<br/><b>Provo:</b> "E zgjodha sepse Auth dhe RLS vijnë gati, kështu u fokusova te app-i."</div></div>
+              <div class="li exp" data-act="expand"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Pyetja 3 · 58</b><div class="small muted">Kodi: përgjigje e saktë, shpjegim i shkurtër</div></div><svg class="ico sm muted chev"><use href="#i-chev"/></svg><div class="more"><b>Mirë:</b> e the që shfaqet 1.<br/><b>Shto:</b> pse: useEffect me [] ekzekutohet një herë pas render-it të parë.</div></div>
+            </div>
+          </div>
+          <div data-panel="b" style="gap:12px">
+            <div class="card" style="display:grid;gap:12px">
+              <div class="bar-row"><span>Kontakti me sy</span><div class="progress"><i style="width:58%"></i></div><b>58%</b></div>
+              <div class="bar-row"><span>Koka e qetë</span><div class="progress"><i style="width:81%"></i></div><b>81%</b></div>
+              <div class="bar-row"><span>Buzëqeshja</span><div class="progress"><i style="width:40%"></i></div><b>40%</b></div>
+            </div>
+            <div class="list">
+              <div class="li"><svg class="ico warn"><use href="#i-eye"/></svg><div class="grow"><b>Shikove anash 6 herë</b><div class="small muted">Shumica te pyetja 3. Shiko kamerën kur e mbyll përgjigjen.</div></div></div>
+              <div class="li"><svg class="ico warn"><use href="#i-camera"/></svg><div class="grow"><b>Drita: pak e errët</b><div class="small muted">Ulu përballë dritares, jo me shpinë nga ajo.</div></div></div>
+              <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Qëndrimi: i drejtë</b><div class="small muted">Nga 4 fotografi gjatë intervistës</div></div></div>
+            </div>
+            <p class="xs muted">MediaPipe në telefon (pa video në server) + 4 fotografi për modelin. Këshilla, jo psikologji.</p>
+          </div>
+          <div data-panel="c" style="gap:12px">
+            <div class="card between"><div><div class="small muted">Integriteti</div><div class="rd-num" style="font-size:40px">86<small class="muted" style="font-size:18px">/100</small></div></div><svg class="ico lg" style="color:var(--ok);width:44px;height:44px"><use href="#i-shield"/></svg></div>
+            <div class="list">
+              <div class="li"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Dole nga app-i 1 herë</b><div class="small muted">Pyetja 3, 4 sekonda</div></div></div>
+              <div class="li"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Pauzë 9 sek, pastaj përgjigje shumë e rrjedhshme</b><div class="small muted">Pyetja 2, prandaj erdhi pyetja vijuese</div></div></div>
+              <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Asnjë fytyrë e dytë</b></div></div>
+              <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Shikimi: pa model leximi</b></div></div>
+            </div>
+            <p class="xs muted">Sinjalet janë arsye për t'u kontrolluar, jo akuzë. I sheh vetëm ti.</p>
+          </div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s16">Mëso çka të mungon</button><button class="btn ghost" data-go="s14">Praktiko përsëri</button></div>
+      </div></div>
+      <p class="note">Prek skedat dhe hape çdo pyetje. Lajmi kryesor është progresi i gatishmërisë, jo nota. Gjuha e trupit dhe integriteti kanë ekranin e tyre.</p>
+    </section>
+
+    <section class="frame" id="s16">
+      <div class="frame-label">16 · Mëso <em>YouTube + detyra</em></div>
+      <div class="phone"><div class="screen" data-learn>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content">
+          <span class="back" data-go="s15"><svg class="ico"><use href="#i-back"/></svg>Rezultatet</span>
+          <h1 class="h-l">Mëso: testimi në React Native</h1>
+          <div class="between small"><span class="muted" data-learn-n>1 nga 3 hapa</span><span class="muted">Për: Junior React Native Developer</span></div>
+          <div class="progress"><i data-learn-bar style="width:33%"></i></div>
+          <div class="list">
+            <div class="li done-item" data-act="check"><span class="cbx"><svg class="ico"><use href="#i-check"/></svg></span><div class="grow"><b>Jest për fillestarë</b><div class="small muted">Video në YouTube, 18 min</div></div><svg class="ico sm" style="color:var(--bad)"><use href="#i-play"/></svg></div>
+            <div class="li" data-act="check"><span class="cbx"><svg class="ico"><use href="#i-check"/></svg></span><div class="grow"><b>React Native Testing Library</b><div class="small muted">Video në YouTube, 24 min</div></div><svg class="ico sm" style="color:var(--bad)"><use href="#i-play"/></svg></div>
+            <div class="li" data-act="check"><span class="cbx"><svg class="ico"><use href="#i-check"/></svg></span><div class="grow"><b>Detyrë e vogël</b><div class="small muted">Shkruaj 3 teste për komponentin KartaPunes</div></div><svg class="ico sm muted"><use href="#i-book"/></svg></div>
+          </div>
+          <div class="card row-x"><svg class="ico" style="color:var(--accent)"><use href="#i-spark"/></svg><div class="grow small">Kur t'i mbarosh, intervista e radhës pyet për testimin dhe përputhja rillogaritet.</div></div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s17">I mbarova, praktiko përsëri</button></div>
+      </div></div>
+      <p class="note">Prek hapat për t'i shënuar. Videot ruhen sipas aftësisë (cache), sepse YouTube API jep vetëm rreth 100 kërkime në ditë.</p>
+    </section>
+
+    <section class="frame" id="s17">
+      <div class="frame-label">17 · Gatishmëria u rrit <em>mbyllja e ciklit</em></div>
+      <div class="phone"><div class="screen celebrate">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="justify-content:center;gap:22px;text-align:center">
+          <p class="small muted">Junior React Native Developer, Dardania Soft</p>
+          <div style="display:grid;justify-items:center;gap:8px">
+            <div class="rd lg" data-count="62,78" data-loop="1" style="--v:78"><span class="rd-num">78<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
+            <span class="plus" data-plus>+16 këtë javë</span>
+          </div>
+          <h1 class="h-l">Je gati të aplikosh.</h1>
+          <div class="list" style="text-align:left">
+            <div class="li"><svg class="ico ok"><use href="#i-mic"/></svg><div class="grow">Intervista e parë</div><b style="color:var(--ok)">+8</b></div>
+            <div class="li"><svg class="ico ok"><use href="#i-book"/></svg><div class="grow">Testimi në React Native</div><b style="color:var(--ok)">+5</b></div>
+            <div class="li"><svg class="ico ok"><use href="#i-repeat"/></svg><div class="grow">Intervista e dytë</div><b style="color:var(--ok)">+3</b></div>
+          </div>
+          <span class="streak" style="justify-self:center"><svg class="ico sm"><use href="#i-flame"/></svg>6 ditë rresht</span>
+        </div>
+        <div class="cta"><button class="btn"><svg class="ico sm"><use href="#i-link"/></svg>Apliko në KosovaJob</button><button class="btn ghost" data-go="s8">Kthehu te Kreu</button></div>
+      </div></div>
+      <p class="note">Fundi i ciklit: 62 → 78, me arsyen e çdo pike. Butoni kryesor të çon te aplikimi i vërtetë.</p>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===================== 4. PROFILI, NJOFTIMET, PAS MVP ===================== -->
+<div class="row">
+  <div class="row-title">4 · Profili, njoftimet dhe pas MVP-së</div>
+  <div class="row-sub">Ekranet 20–22 janë për pas Demo Day-t: i tregojmë si vizion, nuk i ndërtojmë tani.</div>
+  <div class="frames">
+
+    <section class="frame" id="s18">
+      <div class="frame-label">18 · Profili <em>tab 4</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="row-x" style="gap:14px"><div class="av" style="width:56px;height:56px;font-size:20px;background:var(--accent-soft);color:var(--accent)">GV</div><div><h1 class="h-m">Genti</h1><div class="small muted"><span data-bind="role">Zhvillues/e softueri</span>, intervista në <span data-bind="lang">Shqip</span></div></div></div>
+          <div class="card" style="display:grid;gap:12px">
+            <div class="between"><b>Kjo javë</b><span class="streak"><svg class="ico sm"><use href="#i-flame"/></svg>5 ditë</span></div>
+            <div class="week"><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>H</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>M</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>M</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>E</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>P</div><div class="day"><i></i>Sh</div><div class="day"><i></i>D</div></div>
+          </div>
+          <div class="list">
+            <div class="li" data-go="s12"><div class="grow"><b>Junior React Native Developer</b><div class="small muted">Dardania Soft</div></div><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
+            <div class="li" data-go="s12"><div class="grow"><b>Praktikant Backend (Node.js)</b><div class="small muted">Ibri Tech</div></div><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
+          </div>
+          <div class="list">
+            <div class="li" data-go="s6"><svg class="ico"><use href="#i-file"/></svg><div class="grow"><b>CV-ja ime</b><div class="small muted">Versioni 2, nota 71/100</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s19"><svg class="ico"><use href="#i-bell"/></svg><div class="grow"><b>Njoftimet</b></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li"><svg class="ico"><use href="#i-lock"/></svg><div class="grow"><b>Privatësia dhe të dhënat</b></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab on" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+      </div></div>
+      <p class="note">Gatishmëria për çdo punë të ruajtur + streak-u. Roli dhe gjuha ndjekin zgjedhjet nga ekrani 02.</p>
+    </section>
+
+    <section class="frame" id="s19">
+      <div class="frame-label">19 · Njoftimet <em>ekrani i kyçur</em></div>
+      <div class="phone"><div class="screen lock">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="lock-time"><div class="d">E premte, 23 tetor</div><div class="t">8:30</div></div>
+        <div class="notifs" data-notifs>
+          <div class="notif" data-go="s9"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>tani</small></div><p>3 punë të reja për SWE në Prishtinë dhe Mitrovicë.</p></div></div>
+          <div class="notif" data-go="s11"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>8:00</small></div><p>Afati për Praktikant Backend (Node.js) mbaron të premten.</p></div></div>
+          <div class="notif" data-go="s8"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>dje</small></div><p>Streak-u 5 ditë. Një pyetje praktike sot e mban gjallë.</p></div></div>
+        </div>
+      </div></div>
+      <p class="note">Aftësia e telefonit "njoftime" (kërkesë e lëndës). Tri lloje: punë të reja, afate, streak. Prek një njoftim dhe hapet ekrani përkatës.</p>
+    </section>
+
+    <section class="frame" id="s20">
+      <div class="frame-label">20 · Sfida dhe renditja <span><span class="badge-later">pas MVP-së</span></span></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <div class="later-banner">Vizion: nuk ndërtohet për Demo Day</div>
+          <h1 class="h-l">Sfida e javës</h1>
+          <div class="card" style="display:grid;gap:10px">
+            <div class="between"><b>Bëj 3 intervista praktike</b><span class="small muted">2 nga 3</span></div>
+            <div class="lvl"><i style="width:66%"></i></div>
+            <div class="small muted">Shpërblimi: +50 pikë dhe distinktivi "I qëndrueshëm"</div>
+          </div>
+          <div class="card" style="display:grid;gap:8px">
+            <div class="between"><b>Niveli 3: Kandidat i përgatitur</b><span class="small muted">340 / 500</span></div>
+            <div class="lvl"><i style="width:68%;background:var(--accent)"></i></div>
+          </div>
+          <h2 class="h-s">Renditja e klasës · UMIB, viti III</h2>
+          <div class="list lb">
+            <div class="li"><div class="av">1</div><div class="grow">E. K.</div><b>520</b></div>
+            <div class="li"><div class="av">2</div><div class="grow">A. B.</div><b>410</b></div>
+            <div class="li me"><div class="av">3</div><div class="grow"><b>Ti</b></div><b>340</b></div>
+            <div class="li"><div class="av">4</div><div class="grow">L. M.</div><b>300</b></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="note">Nivele, sfida javore, renditje e klasës (si Duolingo). Vetëm me pëlqim; emrat shkurtohen në inicialet.</p>
+    </section>
+
+    <section class="frame" id="s21">
+      <div class="frame-label">21 · Lidhja <span><span class="badge-later">pas MVP-së</span></span></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <div class="later-banner">Vizion: nuk ndërtohet për Demo Day</div>
+          <h1 class="h-l">Kush mund të të ndihmojë për këtë punë?</h1>
+          <p class="small muted">Junior React Native Developer, Dardania Soft</p>
+          <div class="list">
+            <div class="li"><div class="av">D</div><div class="grow"><b>D. H.</b><div class="small muted">Alumni i UMIB-it, mobile developer në Dardania Soft</div></div></div>
+            <div class="li"><div class="av">R</div><div class="grow"><b>R. S.</b><div class="small muted">Ka punuar 2 vjet me React Native, mentor vullnetar</div></div></div>
+          </div>
+          <div class="card" style="display:grid;gap:8px">
+            <div class="row-x small"><svg class="ico sm" style="color:var(--accent)"><use href="#i-spark"/></svg><b>Mesazhi hyrës (draft nga AI)</b></div>
+            <p class="small">Përshëndetje D., jam student në vitin e tretë në UMIB dhe po aplikoj për pozitën Junior React Native te Dardania Soft. A keni 10 minuta për dy pyetje mbi ekipin?</p>
+          </div>
+        </div>
+        <div class="cta"><button class="btn"><svg class="ico sm"><use href="#i-send"/></svg>Dërgo kërkesën</button></div>
+      </div></div>
+      <p class="note">Hyrje me AI: të lidh me njerëz që njohin kompaninë. Moduli "Lidhja" nga lista e ideve, vjen pas MVP-së.</p>
+    </section>
+
+    <section class="frame" id="s22">
+      <div class="frame-label">22 · Gjermania <span><span class="badge-later">pas MVP-së</span></span></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <div class="later-banner">Vizion: nuk ndërtohet për Demo Day</div>
+          <span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span>
+          <div class="jc-top"><span class="tag">SWE</span><span class="code">BA-10042</span></div>
+          <h1 class="h-l">Junior Softwareentwickler (m/w/d)</h1>
+          <div class="list">
+            <div class="li"><svg class="ico sm muted"><use href="#i-pin"/></svg><div class="grow">München, Gjermani</div></div>
+            <div class="li"><svg class="ico sm muted"><use href="#i-globe"/></svg><div class="grow">Bundesagentur für Arbeit</div></div>
+          </div>
+          <h2 class="h-s">Çka të duhet për Gjermaninë</h2>
+          <div class="list">
+            <div class="li"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Gjermanisht B1</b><div class="small muted">Praktiko intervistën në gjermanisht</div></div></div>
+            <div class="li"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Njohja e diplomës</b><div class="small muted">anabin: kontrollo statusin e UMIB-it</div></div></div>
+            <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>CV në formatin gjerman</b><div class="small muted">AI-ja e përshtat CV-në tënde</div></div></div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s13"><svg class="ico sm"><use href="#i-mic"/></svg>Intervistë në gjermanisht</button></div>
+      </div></div>
+      <p class="note">Moduli i Gjermanisë: shpallje nga API e Bundesagentur, intervistë në gjermanisht, CV në formatin gjerman.</p>
+    </section>
+
+  </div>
+</div>
+
+</div></div>
+
+<div id="proto" hidden>
+  <div class="proto-bar"><b>Prototipi</b><span id="protoName" style="opacity:.7"></span><button id="protoBack">← Mbrapa</button><button id="protoHome">Nga fillimi</button><button id="protoClose">Mbyll (Esc)</button></div>
+  <div class="proto-stage"><div class="phone" id="protoPhone"></div></div>
+</div>
+
+<script>
+(() => {
+  const body = document.body, vp = document.getElementById('viewport'), world = document.getElementById('world');
+  const zVal = document.getElementById('zVal');
+  const proto = document.getElementById('proto'), protoPhone = document.getElementById('protoPhone');
+
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem('karriera-board-2') || '{}'); } catch (e) {}
+  let x = st.x ?? 0, y = st.y ?? 0, s = st.s ?? 0.4;
+  let dir = st.dir || 'c', dark = !!st.dark;
+  const S = { role: st.role || 'swe', lang: st.lang || 'sq' };
+  const save = () => { try { localStorage.setItem('karriera-board-2', JSON.stringify({ x, y, s, dir, dark, role: S.role, lang: S.lang })); } catch (e) {} };
+
+  /* ---------------- të dhënat ---------------- */
+  const JOB = { swe: { job: 'Junior React Native Developer', co: 'Dardania Soft, Prishtinë' }, pr: { job: 'Koordinator/e PR dhe rrjete sociale', co: 'Agjencia Iliria, Prishtinë' } };
+  const LANGN = { sq: 'Shqip', en: 'English', de: 'Deutsch' };
+  const ROLEN = { swe: 'Zhvillues/e softueri', pr: 'Asistent/e ose PR' };
+  const Q = {
+    swe: [
+      { sq: 'Më trego për një projekt ku ke hasur një problem teknik. Si e zgjidhe?', en: 'Tell me about a project where you ran into a technical problem. How did you solve it?', de: 'Erzählen Sie von einem Projekt, bei dem Sie auf ein technisches Problem gestoßen sind. Wie haben Sie es gelöst?' },
+      { follow: true, sq: 'E përmende Supabase-in. Pse e zgjodhe atë dhe jo një server tëndin?', en: 'You mentioned Supabase. Why did you pick it over your own server?', de: 'Sie haben Supabase erwähnt. Warum haben Sie es einem eigenen Server vorgezogen?' },
+      { code: 'const [n, setN] = useState(0);\nuseEffect(() => setN(n + 1), []);\nreturn <Text>{n}</Text>;', sq: 'Çka shfaq ky komponent në ekran? Shpjegoje me fjalët e tua.', en: 'What does this component show on screen? Explain it in your own words.', de: 'Was zeigt diese Komponente an? Erklären Sie es mit eigenen Worten.' },
+      { sq: 'Si do ta testoje një ekran me listë që i merr të dhënat nga interneti?', en: 'How would you test a list screen that loads its data from the internet?', de: 'Wie würden Sie einen Listen-Screen testen, der seine Daten aus dem Internet lädt?' },
+    ],
+    pr: [
+      { sq: 'Një klient ankohet publikisht në Instagram për një vonesë. Si i përgjigjesh?', en: 'A customer complains publicly on Instagram about a delay. How do you reply?', de: 'Ein Kunde beschwert sich öffentlich auf Instagram über eine Verspätung. Wie antworten Sie?' },
+      { follow: true, sq: 'The se do kërkoje falje. Si bën që të mos duket si përgjigje e gatshme?', en: "You said you'd apologise. How do you keep it from sounding like a canned reply?", de: 'Sie sagten, Sie würden sich entschuldigen. Wie vermeiden Sie, dass es nach einer Standardantwort klingt?' },
+      { task: true, sq: 'Thuaj me zë një email të shkurtër për ta shtyrë një takim me një klient.', en: 'Say out loud a short email postponing a meeting with a client.', de: 'Formulieren Sie mündlich eine kurze E-Mail, um einen Kundentermin zu verschieben.' },
+      { sq: 'Si e organizon javën kur ke tri afate në të njëjtën ditë?', en: 'How do you plan your week when three deadlines land on the same day?', de: 'Wie planen Sie Ihre Woche, wenn drei Fristen auf denselben Tag fallen?' },
+    ],
+  };
+  const CVQ = [
+    ['Çka studion dhe në cilin vit je?', 'Shembull: Inxhinieri Kompjuterike, UMIB, viti i tretë.'],
+    ['Çka ke ndërtuar që je krenar?', 'Projekt shkollor, personal ose në punë. Edhe i vogël vlen.'],
+    ['Ku ke punuar ose praktikuar?', 'Edhe punë studentore, vullnetarizëm ose ndihmë në biznesin e familjes.'],
+    ['Cilat vegla dhe gjuhë i njeh?', 'Programim, programe zyre, gjuhë të huaja.'],
+    ['Çka do të bësh pas dy vjetësh?', 'Një fjali mjafton. Shkon te profili i CV-së.'],
+  ];
+
+  /* ---------------- lidhjet (roli, gjuha) ---------------- */
+  const applyBindings = (root = document) => {
+    root.querySelectorAll('[data-bind="lang"]').forEach(e => e.textContent = LANGN[S.lang]);
+    root.querySelectorAll('[data-bind="role"]').forEach(e => e.textContent = ROLEN[S.role]);
+    root.querySelectorAll('[data-bind="iv-job"]').forEach(e => e.textContent = JOB[S.role].job);
+    root.querySelectorAll('[data-bind="iv-co"]').forEach(e => e.textContent = JOB[S.role].co);
+    root.querySelectorAll('[data-act="pick-role"]').forEach(e => e.classList.toggle('on', e.dataset.val === S.role));
+    root.querySelectorAll('[data-act="pick-lang"]').forEach(e => e.classList.toggle('on', e.dataset.val === S.lang));
+    document.querySelectorAll('[data-role-set]').forEach(b => b.classList.toggle('on', b.dataset.roleSet === S.role));
+    document.querySelectorAll('[data-lang-set]').forEach(b => b.classList.toggle('on', b.dataset.langSet === S.lang));
+  };
+  const setRole = r => { S.role = r; save(); applyBindings(); applyBindings(protoPhone); resetIvs(); };
+  const setLang = l => { S.lang = l; save(); applyBindings(); applyBindings(protoPhone); resetIvs(); };
+
+  const inProto = el => protoPhone.contains(el);
+
+  /* ---------------- animacionet ---------------- */
+  const runSteps = (c) => {
+    if (!c) return;
+    const token = (c._tok = (c._tok || 0) + 1);
+    const items = [...c.querySelectorAll('.stp')];
+    const scr = c.closest('.screen');
+    const after = scr.querySelector('[data-after]');
+    const cam = scr.querySelector('[data-cam]');
+    items.forEach(i => i.classList.remove('busy', 'done'));
+    if (after) after.classList.add('hidden');
+    if (cam) { cam.classList.remove('ready'); cam.querySelector('[data-cam-txt]').textContent = 'Po e kontrolloj kamerën…'; }
+    let i = 0;
+    const step = () => {
+      if (c._tok !== token) return;
+      if (i > 0) { items[i - 1].classList.remove('busy'); items[i - 1].classList.add('done'); }
+      if (i < items.length) { items[i].classList.add('busy'); i++; setTimeout(step, 850); return; }
+      if (after) after.classList.remove('hidden');
+      if (cam) { cam.classList.add('ready'); cam.querySelector('[data-cam-txt]').textContent = 'Gati: fytyra dhe drita duken mirë'; }
+      if (c.dataset.loop && !inProto(c)) setTimeout(() => { if (c._tok === token) runSteps(c); }, 3800);
+    };
+    setTimeout(step, 400);
+  };
+
+  const runCount = (rd) => {
+    const [from, to] = rd.dataset.count.split(',').map(Number);
+    const token = (rd._tok = (rd._tok || 0) + 1);
+    const num = rd.querySelector('.rd-num');
+    const plus = rd.closest('.screen').querySelector('[data-plus]');
+    if (plus) plus.classList.remove('show');
+    const t0 = performance.now(), dur = 1400;
+    const frame = (now) => {
+      if (rd._tok !== token) return;
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      const v = Math.round(from + (to - from) * e);
+      rd.style.setProperty('--v', v); num.innerHTML = v + '<small>%</small>';
+      if (p < 1) requestAnimationFrame(frame);
+      else {
+        if (plus) plus.classList.add('show');
+        if (rd.dataset.loop && !inProto(rd)) setTimeout(() => { if (rd._tok === token) runCount(rd); }, 4200);
+      }
+    };
+    setTimeout(() => requestAnimationFrame(frame), 300);
+  };
+
+  const runNotifs = (c) => {
+    const token = (c._tok = (c._tok || 0) + 1);
+    const ns = [...c.querySelectorAll('.notif')];
+    ns.forEach(n => n.classList.remove('show'));
+    ns.forEach((n, i) => setTimeout(() => { if (c._tok === token) n.classList.add('show'); }, 600 + i * 900));
+    if (!inProto(c)) setTimeout(() => { if (c._tok === token) runNotifs(c); }, 600 + ns.length * 900 + 4000);
+  };
+
+  /* ---------------- intervista live ---------------- */
+  const initIv = (scr) => {
+    if (scr._iv) scr._iv.stop();
+    const $ = sel => scr.querySelector(sel);
+    const el = {
+      count: $('[data-iv-count]'), dots: [...scr.querySelectorAll('[data-iv-dots] i')], timer: $('[data-iv-timer]'),
+      follow: $('[data-iv-follow]'), q: $('[data-iv-q]'), code: $('[data-iv-code]'), task: $('[data-iv-task]'),
+      state: $('[data-iv-state]'), stateTxt: $('[data-iv-state-txt]'), btn: $('[data-iv-btn]'), talk: $('.talk'),
+      eye: $('[data-iv-eye]'), toast: $('[data-iv-toast]'),
+    };
+    let qi = 0, phase = 'speak', t = 0, secs = 0, lastEye = 0, toastT = 0;
+    const DUR = { listen: 5200, think: 1500, done: 2600 };
+    const qs = () => Q[S.role];
+    const render = () => {
+      const q = qs()[qi], txt = q[S.lang];
+      el.count.textContent = phase === 'done' ? 'Mbaroi' : `Pyetja ${qi + 1} nga 4`;
+      el.dots.forEach((d, i) => { d.className = phase === 'done' || i < qi ? 'done' : i === qi ? 'now' : ''; });
+      el.follow.style.visibility = q.follow && phase !== 'done' ? 'visible' : 'hidden';
+      el.task.style.display = q.task && phase !== 'done' ? 'inline-block' : 'none';
+      el.code.style.display = q.code && phase !== 'done' ? 'block' : 'none';
+      if (q.code) el.code.textContent = q.code;
+      const shown = phase === 'speak' ? Math.min(txt.length, Math.floor(t / 34)) : txt.length;
+      el.q.textContent = phase === 'done' ? 'Faleminderit. Kaq ishte për sot.' : txt.slice(0, shown);
+      scr.classList.toggle('talking', phase === 'speak' && shown < txt.length);
+      el.state.className = 'state ' + (phase === 'speak' ? 'speak' : phase === 'listen' ? 'listen' : '');
+      el.stateTxt.textContent = { speak: 'Intervistuesi po flet', listen: 'Radha jote: po të dëgjoj', think: 'Po e analizoj përgjigjen…', done: 'Po i përgatis rezultatet…' }[phase];
+      el.btn.textContent = { speak: 'Prit sa të mbarojë pyetja', listen: 'Përfundova përgjigjen', think: 'Po e analizoj…', done: 'Intervista mbaroi' }[phase];
+      el.talk.classList.toggle('dim', phase !== 'listen');
+      const mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(Math.floor(secs % 60)).padStart(2, '0');
+      el.timer.textContent = `${mm}:${ss}`;
+    };
+    const go = (p) => { phase = p; t = 0; };
+    const tick = () => {
+      t += 100;
+      if (phase !== 'done') secs += 0.1;
+      if (toastT > 0) { toastT -= 100; if (toastT <= 0) el.toast.classList.remove('show'); }
+      const txt = qs()[qi][S.lang];
+      if (phase === 'speak' && t > txt.length * 34 + 900) go('listen');
+      else if (phase === 'listen') {
+        if (t - lastEye > 1000) { lastEye = t; el.eye.textContent = 'Sy ' + (55 + Math.floor(Math.random() * 30)) + '%'; }
+        if (t > DUR.listen) go('think');
+      } else if (phase === 'think' && t > DUR.think) { if (qi < 3) { qi++; go('speak'); } else go('done'); }
+      else if (phase === 'done' && t > DUR.done) { qi = 0; secs = 0; go('speak'); }
+      if (phase !== 'listen') lastEye = t;
+      render();
+    };
+    const id = setInterval(tick, 100);
+    scr._iv = {
+      stop: () => clearInterval(id),
+      reset: () => { qi = 0; secs = 0; go('speak'); render(); },
+      endTurn: () => { if (phase === 'listen') go('think'); },
+      repeat: () => { if (phase !== 'done') go('speak'); },
+      toast: (msg) => { el.toast.querySelector('span').textContent = msg; el.toast.classList.add('show'); toastT = 3200; },
+    };
+    render();
+  };
+  const resetIvs = () => document.querySelectorAll('[data-iv]').forEach(s => s._iv && s._iv.reset());
+
+  /* ---------------- CV me AI ---------------- */
+  const cvNext = (scr) => {
+    let k = +(scr.dataset.k || 1) + 1;
+    if (k > 5) { scr.dataset.k = 1; renderCv(scr, 1); navigate('s5', scr); return; }
+    scr.dataset.k = k; renderCv(scr, k);
+  };
+  const renderCv = (scr, k) => {
+    scr.querySelector('[data-cvq-title]').textContent = CVQ[k - 1][0];
+    scr.querySelector('[data-cvq-hint]').textContent = CVQ[k - 1][1];
+    scr.querySelector('[data-cvq-k]').textContent = k;
+    scr.querySelector('[data-cvq-n]').textContent = `${k} nga 5`;
+    scr.querySelector('[data-cvq-bar]').style.width = k * 20 + '%';
+    scr.querySelector('[data-cvq-input]').value = '';
+    scr.querySelector('[data-act="cv-next"]').textContent = k === 5 ? 'Shkruaje CV-në' : 'Tjetra';
+  };
+
+  /* ---------------- filtrat e punëve ---------------- */
+  const filterJobs = (scr) => {
+    const chip = scr.querySelector('[data-act="filter"].on'), val = chip ? chip.dataset.val : 'all';
+    const q = (scr.querySelector('[data-search]').value || '').toLowerCase().trim();
+    let n = 0;
+    scr.querySelectorAll('.jc[data-tags]').forEach(j => {
+      const ok = (val === 'all' || j.dataset.tags.split(' ').includes(val)) && (!q || j.textContent.toLowerCase().includes(q));
+      j.style.display = ok ? '' : 'none'; if (ok) n++;
+    });
+    scr.querySelector('[data-near-note]').style.display = val === 'near' ? '' : 'none';
+    scr.querySelector('[data-empty]').style.display = n ? 'none' : '';
+  };
+  document.addEventListener('input', e => { if (e.target.matches('[data-search]')) filterJobs(e.target.closest('.screen')); });
+
+  /* ---------------- veprimet ---------------- */
+  const doAct = (a) => {
+    const scr = a.closest('.screen') || a.closest('.frame').querySelector('.screen');
+    const v = a.dataset.val;
+    switch (a.dataset.act) {
+      case 'pick-role': setRole(v); break;
+      case 'pick-lang': setLang(v); break;
+      case 'filter': scr.querySelectorAll('[data-act="filter"]').forEach(c => c.classList.toggle('on', c === a)); filterJobs(scr); break;
+      case 'save': a.classList.toggle('on'); break;
+      case 'roast': a.classList.toggle('on'); scr.classList.toggle('roast'); break;
+      case 'cv-next': cvNext(scr); break;
+      case 'read-link': runSteps(scr.querySelector('[data-steps]')); break;
+      case 'expand': a.classList.toggle('open'); break;
+      case 'tab':
+        a.parentElement.querySelectorAll('[data-act="tab"]').forEach(t => t.classList.toggle('on', t === a));
+        scr.querySelectorAll('[data-panel]').forEach(p => p.classList.toggle('on', p.dataset.panel === v)); break;
+      case 'check': {
+        a.classList.toggle('done-item');
+        const n = scr.querySelectorAll('.done-item').length;
+        scr.querySelector('[data-learn-n]').textContent = `${n} nga 3 hapa`;
+        scr.querySelector('[data-learn-bar]').style.width = Math.round(n / 3 * 100) + '%'; break;
+      }
+      case 'end-turn': scr._iv && scr._iv.endTurn(); break;
+      case 'repeat-q': scr._iv && scr._iv.repeat(); break;
+      case 'sim-leave': scr._iv && scr._iv.toast('U largove nga aplikacioni për 4 sekonda. Kjo shënohet te integriteti.'); break;
+      case 'sim-face': scr._iv && scr._iv.toast('U pa një fytyrë e dytë në kamerë. Kjo shënohet te integriteti.'); break;
+    }
+  };
+
+  const initScreen = (scr) => {
+    scr.querySelectorAll('[data-steps][data-loop]').forEach(runSteps);
+    scr.querySelectorAll('[data-count]').forEach(runCount);
+    scr.querySelectorAll('[data-notifs]').forEach(runNotifs);
+    if (scr.matches('[data-iv]')) initIv(scr);
+    if (scr.matches('[data-cvq]')) { scr.dataset.k = 1; renderCv(scr, 1); }
+    applyBindings(scr);
+  };
+
+  /* ---------------- kanavaca ---------------- */
+  const apply = (fly) => {
+    world.classList.toggle('fly', !!fly);
+    world.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    zVal.textContent = Math.round(s * 100) + '%';
+    save();
+  };
+  const setDir = d => { dir = d; body.classList.remove('dir-a', 'dir-b', 'dir-c'); body.classList.add('dir-' + d); document.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('on', b.dataset.dir === d)); save(); };
+  const setDark = v => { dark = v; body.classList.toggle('dark', v); document.getElementById('darkBtn').textContent = v ? 'Light' : 'Dark'; save(); };
+  const fit = () => { const w = world.offsetWidth, h = world.offsetHeight, r = vp.getBoundingClientRect(); s = Math.min(r.width / w, r.height / h); x = (r.width - w * s) / 2; y = 0; apply(true); };
+  const flyTo = (el) => {
+    if (!el) return;
+    const r = vp.getBoundingClientRect();
+    let ox = 0, oy = 0, n = el;
+    while (n && n !== world) { ox += n.offsetLeft; oy += n.offsetTop; n = n.offsetParent; }
+    s = Math.min(1, (r.height - 40) / (el.offsetHeight + 40));
+    x = r.width / 2 - (ox + el.offsetWidth / 2) * s; y = r.height / 2 - (oy + el.offsetHeight / 2) * s;
+    apply(true);
+    el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 900);
+    const scr = el.querySelector('.screen'); if (scr && !scr.matches('[data-iv]')) { scr.querySelectorAll('[data-count]').forEach(runCount); }
+  };
+  const zoomAt = (f, cx, cy) => { const ns = Math.min(3, Math.max(0.06, s * f)); x = cx - (cx - x) * (ns / s); y = cy - (cy - y) * (ns / s); s = ns; apply(false); };
+
+  /* ---------------- prototipi ---------------- */
+  const fitProto = () => {
+    const r = document.querySelector('.proto-stage').getBoundingClientRect();
+    const sc = Math.min(1, (r.height - 24) / 864, (r.width - 24) / 410);
+    protoPhone.style.transform = `translate(-50%, -50%) scale(${sc})`;
+  };
+  let hist = [];
+  const protoShow = (id, push = true) => {
+    const frame = document.getElementById(id); if (!frame) return;
+    const old = protoPhone.querySelector('.screen'); if (old && old._iv) old._iv.stop();
+    const clone = frame.querySelector('.screen').cloneNode(true);
+    clone.classList.remove('roast');
+    protoPhone.innerHTML = ''; protoPhone.appendChild(clone);
+    if (push) hist.push(id);
+    document.getElementById('protoName').textContent = frame.querySelector('.frame-label').firstChild.textContent.trim();
+    initScreen(clone);
+    clone.querySelectorAll('[data-steps]:not([data-loop])').forEach(c => { c.querySelectorAll('.stp').forEach(i => i.classList.remove('busy', 'done')); const a = clone.querySelector('[data-after]'); if (a) a.classList.add('hidden'); });
+    if (clone.matches('[data-jobs]')) filterJobs(clone);
+    fitProto();
+  };
+  const openProto = () => { proto.hidden = false; hist = []; protoShow('s1'); };
+  const closeProto = () => { const o = protoPhone.querySelector('.screen'); if (o && o._iv) o._iv.stop(); proto.hidden = true; };
+  const navigate = (id, fromEl) => { if (fromEl && inProto(fromEl)) protoShow(id); else flyTo(document.getElementById(id)); };
+
+  const handleTap = (t) => {
+    const a = t.closest('[data-act]'); if (a) { doAct(a); return; }
+    const g = t.closest('[data-go]'); if (g) { navigate(g.dataset.go, g); return; }
+    if (inProto(t)) return;
+    const lbl = t.closest('.frame-label'); if (lbl) { flyTo(lbl.parentElement); return; }
+    const d = t.closest('.info .dir'); if (d) setDir(d.dataset.dir);
+  };
+
+  /* ---------------- ngjarjet ---------------- */
+  let drag = null;
+  vp.addEventListener('pointerdown', e => { if (e.target.closest('input,textarea')) return; drag = { sx: e.clientX, sy: e.clientY, x, y, moved: false }; });
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; vp.classList.add('panning'); }
+    if (drag.moved) { x = drag.x + dx; y = drag.y + dy; apply(false); }
+  });
+  window.addEventListener('pointerup', e => { if (drag && !drag.moved) handleTap(e.target); drag = null; vp.classList.remove('panning'); });
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = vp.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
+    else { x -= e.deltaX; y -= e.deltaY; apply(false); }
+  }, { passive: false });
+  protoPhone.addEventListener('click', e => handleTap(e.target));
+
+  document.querySelectorAll('#dirSeg button').forEach(b => b.onclick = () => setDir(b.dataset.dir));
+  document.querySelectorAll('[data-role-set]').forEach(b => b.onclick = () => setRole(b.dataset.roleSet));
+  document.querySelectorAll('[data-lang-set]').forEach(b => b.onclick = () => setLang(b.dataset.langSet));
+  document.getElementById('darkBtn').onclick = () => setDark(!dark);
+  document.getElementById('fitBtn').onclick = fit;
+  document.getElementById('playBtn').onclick = openProto;
+  document.getElementById('protoClose').onclick = closeProto;
+  document.getElementById('protoHome').onclick = () => { hist = []; protoShow('s1'); };
+  document.getElementById('protoBack').onclick = () => { if (hist.length > 1) { hist.pop(); protoShow(hist[hist.length - 1], false); } };
+  const center = () => { const r = vp.getBoundingClientRect(); return [r.width / 2, r.height / 2]; };
+  document.getElementById('zIn').onclick = () => zoomAt(1.25, ...center());
+  document.getElementById('zOut').onclick = () => zoomAt(0.8, ...center());
+  window.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('input,textarea')) return;
+    if (e.key === 'Escape' && !proto.hidden) closeProto();
+    else if (e.key === '1' || e.key === '2' || e.key === '3') setDir('abc'[+e.key - 1]);
+    else if (e.key === 'd' || e.key === 'D') setDark(!dark);
+    else if (e.key === 'f' || e.key === 'F') fit();
+    else if (e.key === 'p' || e.key === 'P') openProto();
+  });
+  window.addEventListener('resize', () => { if (!proto.hidden) fitProto(); });
+
+  setDir(dir); setDark(dark); applyBindings();
+  document.querySelectorAll('#world .screen').forEach(initScreen);
+  if (st.s == null) requestAnimationFrame(fit); else apply(false);
+})();
+</script>
+</body>
+</html>
