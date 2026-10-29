@@ -6,7 +6,7 @@
 <title>Karriera · Bordi UI/UX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Familjen+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=Familjen+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
 /* =========================================================
    1. TOKENS: tri drejtime, secili light + dark
@@ -458,9 +458,196 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
 .plus.show { opacity:1; }
 
 .content > * { flex-shrink:0; }
+
+/* ================= v0.3: drejtimi D · Gjurmimi ================= */
+body.dir-d {
+  --bg:#F5F5F4; --surface:#FFFFFF; --surface2:#EEEDEB; --text:#141414; --muted:#75726D; --line:#E4E2DE;
+  --accent:#F2611D; --accent-ink:#FFFFFF; --accent-soft:#FDE8DA; --ok:#1E9E5A; --warn:#C77700; --bad:#D93A2B;
+  --swe:#141414; --pr:#141414; --streak:#F2611D;
+  --r:22px; --r-sm:14px; --btn-r:999px; --btn-shadow:none; --card-border:0;
+  --card-shadow:0 1px 2px rgba(20,20,20,.04), 0 10px 28px -14px rgba(20,20,20,.14);
+  --font-head:"Plus Jakarta Sans",system-ui,sans-serif; --font-body:"Plus Jakarta Sans",system-ui,sans-serif;
+  --head-w:700; --head-track:-0.025em;
+}
+body.dir-d.dark {
+  --bg:#0E0E0F; --surface:#1A1A1C; --surface2:#262628; --text:#F4F4F5; --muted:#9C9CA3; --line:#2E2E31;
+  --accent:#FF7A3D; --accent-ink:#1A0A02; --accent-soft:#2B1A10; --ok:#3DD68C; --warn:#F0A43A; --bad:#FF6B6B;
+  --swe:#F4F4F5; --pr:#F4F4F5; --card-shadow:0 1px 0 rgba(255,255,255,.04);
+}
+body:not(.dir-d) .d-only { display:none !important; }
+.dir-d .screen:not(.interview):not(.lock):not(.splash):not(.home) { background:linear-gradient(180deg, var(--accent-soft) 0, var(--bg) 250px); }
+.dir-d .btn { background:var(--text); color:var(--bg); font-weight:700; }
+.dir-d .btn.ghost { background:transparent; color:var(--text); }
+.dir-d .btn.soft { background:var(--surface); color:var(--text); box-shadow:var(--card-shadow); }
+.dir-d .chip { border:0; background:var(--surface); box-shadow:0 1px 2px rgba(20,20,20,.06); font-weight:600; }
+.dir-d .chip.on { background:var(--text); color:var(--bg); }
+.dir-d .field { border:0; background:var(--surface); box-shadow:0 1px 2px rgba(20,20,20,.06); border-radius:16px; height:50px; }
+.dir-d [data-role] .tag, .dir-d .tag { background:var(--surface2); color:var(--text); }
+.dir-d .option { border:2px solid transparent; }
+.dir-d .option.on { border-color:var(--text); background:var(--surface); }
+.dir-d .option.on .ic { background:var(--text); color:var(--bg); }
+.dir-d .option.on .radio { border-color:var(--text); }
+.dir-d .segm { border-radius:999px; }
+.dir-d .segm span { border-radius:999px; }
+.dir-d .segm span.on { background:var(--text); color:var(--bg); }
+.dir-d .back { color:var(--text); font-weight:600; gap:8px; }
+.dir-d .back .ico { width:40px; height:40px; padding:10px; border-radius:50%; background:var(--surface); box-shadow:var(--card-shadow); }
+.dir-d .step .n { background:var(--text); color:var(--bg); }
+.dir-d .day.done i { background:var(--accent); }
+.dir-d .list .li + .li { border-top-color:var(--line); }
+.dir-d .tabbar { position:absolute; left:16px; right:16px; bottom:26px; height:66px; padding:8px; border-radius:33px; border:0; background:var(--surface); box-shadow:0 12px 30px -10px rgba(20,20,20,.25); }
+.dir-d .has-tabs .content { padding-bottom:100px; }
+.dir-d .h-xl { font-size:36px; }
+.dir-d .jc { align-items:flex-end; overflow:hidden; padding:16px 18px; }
+.dir-d .jc-title { font-weight:700; }
+/* gatishmëria në D: shënjuesi mbi rrugë */
+.dir-d .rd { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.dir-d .rd .rd-num { font-size:19px; }
+.dir-d .rd .rd-lbl { display:none; }
+.dir-d .rd .rd-bar { display:block; position:relative; width:66px; height:12px; }
+.dir-d .rd .rd-bar::before { content:""; position:absolute; left:0; right:0; top:5px; border-top:2px dotted color-mix(in oklab, var(--muted) 60%, transparent); }
+.dir-d .rd .rd-bar i { position:absolute; left:0; top:5px; height:2px; width:calc(var(--v) * 1%); background:var(--accent); border-radius:2px; }
+.dir-d .rd .rd-bar i::after { content:""; position:absolute; right:-6px; top:-5px; width:12px; height:12px; border-radius:50%; background:var(--surface); border:3px solid var(--accent); box-sizing:border-box; }
+.dir-d .rd.lg { align-items:center; width:100%; gap:6px; }
+.dir-d .rd.lg .rd-num { font-size:64px; letter-spacing:-.04em; }
+.dir-d .rd.lg .rd-lbl { display:block; font-size:15px; color:var(--muted); }
+.dir-d .rd.lg .rd-bar { display:none; }
+
+/* rruga e gatishmërisë (trk) */
+.trk { display:flex; align-items:center; margin-top:10px; }
+.trk i { width:14px; height:14px; border-radius:50%; border:2px solid color-mix(in oklab, var(--muted) 45%, transparent); background:var(--surface); flex:none; display:grid; place-items:center; box-sizing:border-box; }
+.trk b { flex:1; height:0; border-top:2px dotted color-mix(in oklab, var(--muted) 55%, transparent); margin:0 3px; }
+.trk b.done { border-top:2px solid var(--accent); }
+.trk i.done { background:var(--accent); border-color:var(--accent); }
+.trk i.now { border-color:var(--accent); animation:ring 1.8s ease-out infinite; }
+.trk i.now::after { content:""; width:4px; height:4px; border-radius:50%; background:var(--accent); }
+.trk i.done.last, .trk.all i.done { background:var(--ok); border-color:var(--ok); }
+.trk.all b.done { border-top-color:var(--ok); }
+.trk-lbl { font-size:12.5px; color:var(--muted); margin-top:6px; }
+.trk-lbl b { color:var(--text); font-weight:700; }
+.trk.lg { align-items:flex-start; margin-top:4px; width:100%; }
+.trk.lg .st { display:grid; justify-items:center; gap:6px; width:22px; }
+.trk.lg .st small { font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
+.trk.lg .st.now small, .trk.lg .st.done small { color:var(--text); }
+.trk.lg i { width:22px; height:22px; }
+.trk.lg i .ico { width:13px; height:13px; color:#fff; stroke-width:3; }
+.trk.lg b { margin:10px 4px 0; }
+@keyframes ring { 0% { box-shadow:0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent); } 100% { box-shadow:0 0 0 8px transparent; } }
+
+.ribbon { position:absolute; top:19px; right:-38px; width:136px; transform:rotate(40deg); text-align:center; font-size:9px; font-weight:800; letter-spacing:.08em; padding:3px 0; background:var(--text); color:var(--bg); }
+.ribbon.p { background:var(--accent); color:#fff; }
+.ribbon.g { background:var(--ok); color:#fff; }
+
+.pill-live { display:flex; gap:10px; align-items:center; background:var(--surface2); border-radius:14px; padding:11px 14px; font-size:14px; font-weight:600; }
+.pill-live .pulse { width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; animation:ring 1.6s ease-out infinite; }
+.pill-live.ok { background:color-mix(in oklab, var(--ok) 14%, transparent); color:var(--ok); }
+.pill-live.ok .pulse { background:var(--ok); }
+.chip .cnt { font-size:11.5px; font-weight:700; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--surface2); display:inline-grid; place-items:center; }
+.chip.on .cnt { background:rgba(255,255,255,.2); }
+.dark .chip.on .cnt { background:rgba(0,0,0,.15); }
+
+/* reagimi i prekjes + ikona aktive e mbushur */
+.screen .btn, .screen .jc, .screen .chip, .screen .option { transition:transform .12s ease; }
+.screen .btn:active, .screen .jc:active, .screen .chip:active, .screen .option:active { transform:scale(.97); }
+.tab.on .ico { fill:currentColor; fill-opacity:.18; }
+
+/* kalimet në prototip */
+.screen.in-f > :not(.sb) { animation:inF .34s cubic-bezier(.2,.8,.2,1); }
+.screen.in-b > :not(.sb) { animation:inB .34s cubic-bezier(.2,.8,.2,1); }
+@keyframes inF { from { opacity:0; transform:translateX(28px); } }
+@keyframes inB { from { opacity:0; transform:translateX(-28px); } }
+
+/* ================= ngarkimi ================= */
+.splash { background:var(--accent); color:#fff; align-items:center; justify-content:center; }
+.splash .sb { position:absolute; top:0; left:0; right:0; color:#fff; }
+.splash-c { display:grid; justify-items:center; gap:18px; margin-top:-40px; }
+.splash-c .appicon { width:132px; height:132px; filter:drop-shadow(0 18px 30px rgba(0,0,0,.25)); }
+.splash .appicon { --ic-bg:#fff; --ic-fg:var(--accent); --ic-acc:#fff; }
+.splash-name { font-family:var(--font-head); font-weight:800; font-size:34px; letter-spacing:-.03em; animation:fadeup 3.4s ease infinite; }
+.splash-sub { font-size:15px; opacity:.85; animation:fadeup 3.4s ease infinite; animation-delay:.15s; }
+.splash-dots { position:absolute; bottom:70px; display:flex; gap:8px; }
+.splash-dots i { width:8px; height:8px; border-radius:50%; background:#fff; opacity:.4; animation:dot 1.2s infinite; }
+.splash-dots i:nth-child(2) { animation-delay:.2s; } .splash-dots i:nth-child(3) { animation-delay:.4s; }
+.draw { stroke-dasharray:100; animation:draw 3.4s ease-in-out infinite; }
+.popend { transform-box:fill-box; transform-origin:center; animation:popend 3.4s ease infinite; }
+@keyframes draw { 0% { stroke-dashoffset:100; } 45%, 100% { stroke-dashoffset:0; } }
+@keyframes popend { 0%, 40% { transform:scale(0); } 52% { transform:scale(1.2); } 60%, 100% { transform:scale(1); } }
+@keyframes fadeup { 0%, 35% { opacity:0; transform:translateY(8px); } 55%, 100% { opacity:1; transform:none; } }
+@keyframes dot { 0%, 100% { opacity:.35; transform:scale(.8); } 50% { opacity:1; transform:scale(1.1); } }
+
+.sk { border-radius:10px; background:linear-gradient(90deg, var(--surface2) 0%, color-mix(in oklab, var(--surface2) 35%, var(--surface)) 50%, var(--surface2) 100%); background-size:200% 100%; animation:shim 1.3s linear infinite; }
+@keyframes shim { from { background-position:150% 0; } to { background-position:-50% 0; } }
+.sk-card { background:var(--surface); border-radius:var(--r); padding:16px; display:flex; gap:14px; align-items:center; box-shadow:var(--card-shadow); border:var(--card-border); }
+.srcs { display:flex; flex-wrap:wrap; gap:6px; }
+.src { font-size:12.5px; font-weight:600; padding:4px 10px; border-radius:999px; background:var(--surface2); color:var(--muted); display:inline-flex; gap:5px; align-items:center; }
+.src.done { color:var(--ok); background:color-mix(in oklab, var(--ok) 12%, transparent); }
+.src.busy::before { content:""; width:9px; height:9px; border-radius:50%; border:2px solid var(--accent); border-right-color:transparent; animation:spin .8s linear infinite; }
+
+.popin span { animation:popin 5s ease infinite; animation-delay:calc(var(--i) * .35s + .6s); }
+@keyframes popin { 0% { opacity:0; transform:scale(.7); } 8%, 88% { opacity:1; transform:none; } 100% { opacity:0; } }
+
+.orb { width:150px; height:150px; border-radius:50%; position:relative; display:grid; place-items:center; }
+.orb::before { content:""; position:absolute; inset:0; border-radius:50%; background:conic-gradient(from 0deg, var(--accent), transparent 40%, #8FB8FF, transparent 80%, var(--accent)); animation:spin 2.6s linear infinite; filter:blur(10px); opacity:.85; }
+.orb::after { content:""; position:absolute; inset:14px; border-radius:50%; background:#0B0D10; }
+.orb .ico { position:relative; z-index:1; width:44px; height:44px; color:#F3F4F6; animation:dot 1.6s ease infinite; }
+.fillrow { display:grid; grid-template-columns:1fr 46px; gap:6px 10px; align-items:center; font-size:14.5px; }
+.fillrow .bar { grid-column:1 / -1; height:6px; border-radius:3px; background:#262A31; overflow:hidden; }
+.fillrow .bar i { display:block; height:100%; width:0; border-radius:3px; background:var(--accent); animation:fillw 5s ease infinite; animation-delay:calc(var(--i) * .7s); }
+.fillrow b { text-align:right; font-variant-numeric:tabular-nums; color:#9AA0AA; }
+@keyframes fillw { 0% { width:0; } 25%, 100% { width:var(--w); } }
+
+.offline-bar { display:flex; gap:10px; align-items:center; padding:10px 14px; border-radius:14px; background:color-mix(in oklab, var(--warn) 15%, transparent); color:var(--warn); font-size:14px; font-weight:600; }
+.saved-b { font-size:11.5px; font-weight:700; color:var(--muted); background:var(--surface2); padding:2px 8px; border-radius:6px; }
+
+/* ================= ikonat ================= */
+.appicon { display:block; }
+.appicon .ibg { fill:var(--ic-bg); }
+.appicon .ifg { fill:var(--ic-fg); }
+.appicon .ifg-s { stroke:var(--ic-fg); fill:none; }
+.appicon .iacc-s { stroke:var(--ic-acc); fill:none; }
+.appicon .itrk { stroke:var(--ic-trk); fill:none; }
+.ic-c1.v-light { --ic-bg:var(--accent); --ic-fg:#fff; --ic-acc:var(--accent); }
+.ic-c1.v-dark { --ic-bg:#111113; --ic-fg:var(--accent); --ic-acc:#111113; }
+.ic-c1.v-tint { --ic-bg:#2B2B2E; --ic-fg:#D9D9DE; --ic-acc:#2B2B2E; }
+.ic-c2.v-light { --ic-bg:#141414; --ic-fg:#FFFFFF; --ic-acc:var(--accent); }
+.ic-c2.v-dark { --ic-bg:#000000; --ic-fg:#EDEDED; --ic-acc:var(--accent); }
+.ic-c2.v-tint { --ic-bg:#2B2B2E; --ic-fg:#D9D9DE; --ic-acc:#A9A9B0; }
+.ic-c3.v-light { --ic-bg:#FFFFFF; --ic-fg:#141414; --ic-acc:var(--accent); --ic-trk:#EDEDED; }
+.ic-c3.v-dark { --ic-bg:#111113; --ic-fg:#FFFFFF; --ic-acc:var(--accent); --ic-trk:#2A2A2D; }
+.ic-c3.v-tint { --ic-bg:#2B2B2E; --ic-fg:#D9D9DE; --ic-acc:#D9D9DE; --ic-trk:#3A3A3E; }
+.info.icons { width:860px; }
+.icon-row { display:grid; grid-template-columns:200px repeat(3, 104px) 1fr; gap:18px; align-items:center; padding:18px 0; border-top:1px solid rgba(0,0,0,.08); }
+body.dark .icon-row { border-color:rgba(255,255,255,.08); }
+.icon-row .appicon { width:96px; height:96px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.18)); }
+.icon-row .sizes { display:flex; align-items:flex-end; gap:12px; }
+.icon-row .sizes .appicon { filter:none; }
+.icon-head { display:grid; grid-template-columns:200px repeat(3, 104px) 1fr; gap:18px; font-size:12px; opacity:.6; margin-top:10px; }
+.reco { margin-top:12px; padding:12px 14px; border-radius:10px; background:rgba(61,139,255,.1); font-size:14.5px; }
+.info.iconset { width:600px; }
+.iconset-grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; margin:14px 0; }
+.iconset-grid div { display:grid; justify-items:center; gap:6px; padding:12px 4px; border-radius:10px; background:rgba(0,0,0,.035); font-size:11.5px; text-align:center; }
+body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
+.iconset-grid .ico { width:26px; height:26px; }
+
+/* ekrani kryesor i iPhone-it */
+.home { background:linear-gradient(165deg,#1F2A44 0%,#3B3355 50%,#8C5A4E 100%); color:#fff; }
+.home .sb { color:#fff; }
+.hs-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:24px 0; padding:26px 16px 0; }
+.app { display:grid; justify-items:center; gap:6px; position:relative; }
+.app .t { width:64px; height:64px; border-radius:15px; display:grid; place-items:center; color:#fff; }
+.app .t .ico { width:30px; height:30px; }
+.app .appicon { width:64px; height:64px; }
+.app small { font-size:11.5px; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,.3); }
+.app .bd { position:absolute; top:-6px; right:4px; min-width:22px; height:22px; border-radius:11px; background:#FF3B30; font-size:13px; font-weight:600; display:grid; place-items:center; padding:0 6px; }
+.app.me small { font-weight:700; }
+.dock { margin:auto 12px 30px; background:rgba(255,255,255,.22); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-radius:32px; padding:14px 10px; display:flex; justify-content:space-around; }
+.hs-hint { margin:22px 20px 0; padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.18); backdrop-filter:blur(18px); font-size:13.5px; line-height:1.4; }
+
+.dir-d .jc .rd .rd-bar { display:none; }
+.dir-d .jc .rd .rd-num { font-size:22px; }
 </style>
 </head>
-<body class="dir-c">
+<body class="dir-d">
 <svg width="0" height="0" style="position:absolute">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
   <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
@@ -492,14 +679,16 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
   <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 4-2.3M19 12.5a10 10 0 0 0-3-2M2 8.8a15 15 0 0 1 4.5-2.7M22 8.8A15 15 0 0 0 11 5M12 20h.01"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
 </svg>
 <div class="toolbar">
-  <div class="brand">Karriera<span>Bordi UI/UX · v0.2</span></div>
+  <div class="brand">Karriera<span>Bordi UI/UX · v0.3</span></div>
   <div class="seg" id="dirSeg">
     <button data-dir="a">A · Qartë</button>
     <button data-dir="b">B · Leja</button>
     <button data-dir="c">C · Ritëm</button>
+    <button data-dir="d">D · Gjurmimi</button>
   </div>
   <button class="tb-btn" id="darkBtn">Dark</button>
   <span class="lbl">Roli</span>
@@ -518,7 +707,7 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
 <!-- ===================== 0. INFO ===================== -->
 <div class="row">
   <div class="row-title">Karriera: dizajni i aplikacionit</div>
-  <div class="row-sub">22 ekrane, çdo veçori që kemi diskutuar. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C), rolin dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
+  <div class="row-sub">28 ekrane, çdo veçori që kemi diskutuar, plus ngarkimi dhe ikonat. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
   <div class="frames">
     <div class="info feat">
       <h3>Veçoritë → ekrani (kliko për të shkuar)</h3>
@@ -545,6 +734,11 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
         <div data-go="s20" class="later"><span>Nivelet, sfida e javës, renditja e klasës</span><span>20</span></div>
         <div data-go="s21" class="later"><span>Lidhja: kush mund të të ndihmojë</span><span>21</span></div>
         <div data-go="s22" class="later"><span>Gjermania: Bundesagentur + intervistë në gjermanisht</span><span>22</span></div>
+        <div data-go="s23"><span>Splash: logoja që vizatohet</span><span>23</span></div>
+        <div data-go="s24"><span>Skeleton për listat + burimet e shpalljeve</span><span>24</span></div>
+        <div data-go="s25"><span>AI po llogarit: përputhja dhe rezultatet</span><span>25 · 26</span></div>
+        <div data-go="s27"><span>Gjendja offline</span><span>27</span></div>
+        <div data-go="s28"><span>Ikona e app-it (3 ide) + ikonat e UI-së</span><span>28</span></div>
       </div>
     </div>
     <div class="info">
@@ -562,7 +756,12 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
       </ol>
     </div>
     <div class="info" id="dirInfo">
-      <h3>Tri drejtime: zgjidh njërin</h3>
+      <h3>Katër drejtime: zgjidh njërin</h3>
+      <div class="dir" data-dir="d">
+        <b>D · Gjurmimi</b><small>e re · rekomandimi</small>
+        <div class="sw"><i style="background:#F5F5F4"></i><i style="background:#FFFFFF"></i><i style="background:#141414"></i><i style="background:#F2611D"></i><i style="background:#1E9E5A"></i></div>
+        Si një app për gjurmimin e pakove: puna jote "udhëton" CV → Përputhja → Intervista → Mëso → Gati. Një ngjyrë e vetme (portokalli) vetëm për progresin, gjithçka tjetër bardh e zi. Nënshkrimi: <b>rruga e gatishmërisë</b> me pikën ku je.
+      </div>
       <div class="dir" data-dir="a">
         <b>A · Qartë</b><small>e pritshme</small>
         <div class="sw"><i style="background:#F2F2F7"></i><i style="background:#FFFFFF"></i><i style="background:#111418"></i><i style="background:#0B63CE"></i></div>
@@ -761,18 +960,18 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
           <div class="card" style="display:grid;gap:14px">
             <div class="small muted">Hapi i radhës</div>
             <div class="row-x" style="align-items:flex-start;gap:14px">
-              <div class="grow"><h2 class="h-m">Praktiko intervistën për <span data-bind="iv-job">Junior React Native Developer</span></h2><div class="small muted" style="margin-top:4px" data-bind="iv-co">Dardania Soft, Prishtinë</div></div>
+              <div class="grow"><h2 class="h-m">Praktiko intervistën për <span data-bind="iv-job">Junior React Native Developer</span></h2><div class="small muted" style="margin-top:4px" data-bind="iv-co">Dardania Soft, Prishtinë</div><div class="trk d-only" data-s="2"></div></div>
               <div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
             </div>
             <button class="btn sm" data-go="s13"><svg class="ico sm"><use href="#i-mic"/></svg>Fillo, rreth 8 minuta</button>
           </div>
           <div class="between"><h2 class="h-s">Punët për ty</h2><span class="small" style="color:var(--accent)" data-go="s9">Të gjitha</span></div>
-          <div class="jc" data-role="swe" data-go="s11">
-            <div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div></div>
+          <div class="jc" data-role="swe" data-go="s11"><span class="ribbon p d-only">NË PROCES</span>
+            <div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div><div class="trk d-only" data-s="3"></div><div class="trk-lbl d-only">Tani: <b>Mëso</b> · 1 hap deri te gati</div></div>
             <div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
           </div>
-          <div class="jc" data-role="pr" data-go="s11">
-            <div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div></div>
+          <div class="jc" data-role="pr" data-go="s11"><span class="ribbon p d-only">NË PROCES</span>
+            <div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div>
             <div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
           </div>
         </div>
@@ -789,15 +988,15 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
           <div class="between"><h1 class="h-l">Punët</h1><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></div>
           <div class="field"><svg class="ico sm"><use href="#i-search"/></svg><input data-search placeholder="Kërko punë, kompani, qytet" /></div>
           <div class="row-x" style="gap:8px;flex-wrap:wrap">
-            <span class="chip on" data-act="filter" data-val="all">Të gjitha</span><span class="chip" data-act="filter" data-val="swe">SWE</span><span class="chip" data-act="filter" data-val="pr">Asistent/PR</span><span class="chip" data-act="filter" data-val="near"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje</span><span class="chip" data-act="filter" data-val="remote">Remote</span><span class="chip" data-act="filter" data-val="de">Gjermani</span>
+            <span class="chip on" data-act="filter" data-val="all">Të gjitha<span class="cnt">6</span></span><span class="chip" data-act="filter" data-val="swe">SWE<span class="cnt">4</span></span><span class="chip" data-act="filter" data-val="pr">Asistent/PR<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="near"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="remote">Remote<span class="cnt">1</span></span><span class="chip" data-act="filter" data-val="de">Gjermani<span class="cnt">1</span></span>
           </div>
           <div class="xs muted" data-near-note style="display:none">Sipas lokacionit tënd: Mitrovicë (deri në 10 km)</div>
-          <div class="jc" data-role="swe" data-tags="swe" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 05.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
-          <div class="jc" data-role="swe" data-tags="swe near" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div><div class="jc-foot"><span>Portalpune</span><span>Afati 30.10</span></div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
-          <div class="jc" data-role="pr" data-tags="pr" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">OP-1180</span></div><div class="jc-title">Koordinator/e PR dhe rrjete sociale</div><div class="jc-meta">Agjencia Iliria, Prishtinë</div><div class="jc-foot"><span>Ofertapune</span><span>Afati 12.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:38"><span class="rd-num">38<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
-          <div class="jc" data-role="pr" data-tags="pr near" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 08.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
-          <div class="jc" data-role="swe" data-tags="swe remote" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">RO-7741</span></div><div class="jc-title">Frontend Developer</div><div class="jc-meta">Kodi Studio, remote</div><div class="jc-foot"><span>RemoteOK</span><span>Pa afat</span></div></div><div class="jc-stub"><div class="rd" style="--v:54"><span class="rd-num">54<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
-          <div class="jc" data-role="swe" data-tags="swe de" data-go="s22"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">AN-5521</span></div><div class="jc-title">Junior Frontend Developer (m/w/d)</div><div class="jc-meta">Nordlicht GmbH, Berlin</div><div class="jc-foot"><span>Arbeitnow</span><span>Afati 20.11</span></div></div><div class="jc-stub"><div class="rd" style="--v:41"><span class="rd-num">41<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 05.11</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe near" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div><div class="jc-foot"><span>Portalpune</span><span>Afati 30.10</span></div><div class="trk d-only" data-s="3"></div><div class="trk-lbl d-only">Tani: <b>Mëso</b> · 1 hap deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="pr" data-tags="pr" data-go="s11"><span class="ribbon d-only">E RE</span><div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">OP-1180</span></div><div class="jc-title">Koordinator/e PR dhe rrjete sociale</div><div class="jc-meta">Agjencia Iliria, Prishtinë</div><div class="jc-foot"><span>Ofertapune</span><span>Afati 12.11</span></div><div class="trk d-only" data-s="1"></div><div class="trk-lbl d-only">Tani: <b>Përputhja</b> · 3 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:38"><span class="rd-num">38<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="pr" data-tags="pr near" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">PR</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 08.11</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe remote" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">RO-7741</span></div><div class="jc-title">Frontend Developer</div><div class="jc-meta">Kodi Studio, remote</div><div class="jc-foot"><span>RemoteOK</span><span>Pa afat</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:54"><span class="rd-num">54<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-tags="swe de" data-go="s22"><span class="ribbon d-only">E RE</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">AN-5521</span></div><div class="jc-title">Junior Frontend Developer (m/w/d)</div><div class="jc-meta">Nordlicht GmbH, Berlin</div><div class="jc-foot"><span>Arbeitnow</span><span>Afati 20.11</span></div><div class="trk d-only" data-s="1"></div><div class="trk-lbl d-only">Tani: <b>Përputhja</b> · 3 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:41"><span class="rd-num">41<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
           <div class="small muted" data-empty style="display:none;text-align:center;padding:20px">Asnjë punë me këtë filtër. Provo "Sill linkun tënd".</div>
         </div>
         <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
@@ -822,7 +1021,7 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
               <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>LinkedIn s'lejon lexim, po e lexoj nga pamja</div>
               <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i nxjerr aftësitë që kërkohen</div>
             </div>
-            <div class="jc hidden" data-after data-role="swe" data-go="s12"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">LI-4029</span></div><div class="jc-title">Junior QA Engineer</div><div class="jc-meta">Arbëria Labs, Prishtinë · u shtua</div></div><div class="jc-stub"><div class="rd" style="--v:58"><span class="rd-num">58<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+            <div class="jc hidden" data-after data-role="swe" data-go="s12"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">LI-4029</span></div><div class="jc-title">Junior QA Engineer</div><div class="jc-meta">Arbëria Labs, Prishtinë · u shtua</div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:58"><span class="rd-num">58<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
           </div>
         </div>
       </div></div>
@@ -837,6 +1036,7 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
           <div class="between"><span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span><span data-act="save" style="color:var(--muted)"><svg class="ico"><use href="#i-bookmark"/></svg></span></div>
           <div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div>
           <h1 class="h-l">Junior React Native Developer</h1>
+          <div class="pill-live d-only"><span class="pulse"></span><span class="grow">Tani: intervista praktike</span><span class="xs muted">2 hapa deri te gati</span></div>
           <div class="list">
             <div class="li"><svg class="ico sm muted"><use href="#i-brief"/></svg><div class="grow">Dardania Soft, Prishtinë</div></div>
             <div class="li"><svg class="ico sm muted"><use href="#i-clock"/></svg><div class="grow">Afati: 05.11.2026</div></div>
@@ -860,6 +1060,7 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
           <div style="display:grid;justify-items:center;gap:10px;text-align:center">
             <div class="rd lg" data-count="0,62" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
             <p class="muted small">Junior React Native Developer, Dardania Soft</p>
+            <div class="trk lg d-only" data-s="2" data-lg="1"></div>
           </div>
           <div class="card" style="display:grid;gap:10px">
             <b>Çka ke</b>
@@ -1016,6 +1217,8 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
             <div class="rd lg" data-count="62,78" data-loop="1" style="--v:78"><span class="rd-num">78<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div>
             <span class="plus" data-plus>+16 këtë javë</span>
           </div>
+          <div class="trk lg all d-only" data-s="5" data-lg="1"></div>
+          <div class="pill-live ok d-only" style="justify-content:center"><span class="pulse"></span>Gati për të aplikuar</div>
           <h1 class="h-l">Je gati të aplikosh.</h1>
           <div class="list" style="text-align:left">
             <div class="li"><svg class="ico ok"><use href="#i-mic"/></svg><div class="grow">Intervista e parë</div><b style="color:var(--ok)">+8</b></div>
@@ -1155,6 +1358,153 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
   </div>
 </div>
 
+<!-- ===================== 5. NGARKIMI, GJENDJET, IKONAT ===================== -->
+<div class="row">
+  <div class="row-title">5 · Ngarkimi, gjendjet dhe ikonat</div>
+  <div class="row-sub">Çdo pritje ka formën e vet: splash me logon që vizatohet, skeleton për listat, AI që tregon çka po llogarit. Te "▶ Prototipi" këto dalin vetë: hapja e app-it, tab-i Punët, "A jam gati?" dhe fundi i intervistës.</div>
+  <div class="frames">
+
+    <section class="frame" id="s23">
+      <div class="frame-label">23 · Splash <em>hapja e app-it</em></div>
+      <div class="phone"><div class="screen splash">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="splash-c">
+          <svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="132" height="132" style="width:132px;height:132px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s draw" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class="popend"><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+          <div class="splash-name">Karriera</div>
+          <div class="splash-sub">Dije sa je gati për punën që do</div>
+        </div>
+        <div class="splash-dots"><i></i><i></i><i></i></div>
+      </div></div>
+      <p class="note">Rruga e ikonës vizatohet, pika "gati" shfaqet në fund. Zgjat sa ngarkohet sesioni nga Supabase (zakonisht nën 1 sekondë), pastaj hapet Kreu ose Mirësevjen.</p>
+    </section>
+
+    <section class="frame" id="s24">
+      <div class="frame-label">24 · Skeleton i listës <em>Punët po ngarkohen</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <h1 class="h-l">Punët</h1>
+          <div class="field"><svg class="ico sm"><use href="#i-search"/></svg>Kërko punë, kompani, qytet</div>
+          <div class="srcs"><span class="src done"><svg class="ico sm"><use href="#i-check"/></svg>KosovaJob</span><span class="src done"><svg class="ico sm"><use href="#i-check"/></svg>Ofertapune</span><span class="src busy">Portalpune</span><span class="src">RemoteOK</span><span class="src">Arbeitnow</span></div>
+          <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:85%;height:16px"></div><div class="sk" style="width:55%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
+          <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:70%;height:16px"></div><div class="sk" style="width:48%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
+          <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:78%;height:16px"></div><div class="sk" style="width:60%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
+          <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:64%;height:16px"></div><div class="sk" style="width:40%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+      </div></div>
+      <p class="note">Skeleton-i ka formën e kartave të vërteta, kështu ekrani nuk "kërcen" kur vijnë të dhënat. Burimet tregojnë nga ku po vijnë shpalljet.</p>
+    </section>
+
+    <section class="frame" id="s25">
+      <div class="frame-label">25 · AI po e llogarit përputhjen <em>para ekranit 12</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="justify-content:center;gap:22px;text-align:center">
+          <div class="rd lg" data-count="0,62" data-loop="1" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">po llogaris…</span><span class="rd-bar"><i></i></span></div>
+          <div class="trk lg d-only" data-s="2" data-lg="1"></div>
+          <h1 class="h-m">Po e krahasoj CV-në tënde me shpalljen</h1>
+          <div class="wrap popin" style="justify-content:center">
+            <span class="skill have" style="--i:0"><svg class="ico sm"><use href="#i-check"/></svg>React Native</span>
+            <span class="skill have" style="--i:1"><svg class="ico sm"><use href="#i-check"/></svg>Git</span>
+            <span class="skill have" style="--i:2"><svg class="ico sm"><use href="#i-check"/></svg>TypeScript</span>
+            <span class="skill miss" style="--i:3"><svg class="ico sm"><use href="#i-x"/></svg>Testimi (Jest)</span>
+            <span class="skill miss" style="--i:4"><svg class="ico sm"><use href="#i-x"/></svg>REST API</span>
+          </div>
+          <p class="small muted">5 aftësi të kërkuara · rreth 5 sekonda</p>
+        </div>
+      </div></div>
+      <p class="note">Numri rritet dhe aftësitë dalin një nga një, ndërsa AI-ja punon. Pritja bëhet pjesë e rezultatit, jo një spinner bosh.</p>
+    </section>
+
+    <section class="frame" id="s26">
+      <div class="frame-label">26 · Po i përgatis rezultatet <em>pas intervistës</em></div>
+      <div class="phone"><div class="screen interview">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="justify-content:center;gap:26px">
+          <div style="display:grid;justify-items:center;gap:16px;text-align:center">
+            <div class="orb"><svg class="ico"><use href="#i-spark"/></svg></div>
+            <h1 class="h-l">Po i përgatis rezultatet</h1>
+            <p class="small" style="color:#9AA0AA">AI-ja po i dëgjon përgjigjet e tua edhe një herë</p>
+          </div>
+          <div style="display:grid;gap:16px">
+            <div class="fillrow"><span>Përmbajtja</span><b>76</b><div class="bar"><i style="--w:76%;--i:0"></i></div></div>
+            <div class="fillrow"><span>Qartësia</span><b>68</b><div class="bar"><i style="--w:68%;--i:1"></i></div></div>
+            <div class="fillrow"><span>Gjuha e trupit</span><b>64</b><div class="bar"><i style="--w:64%;--i:2"></i></div></div>
+            <div class="fillrow"><span>Integriteti</span><b>86</b><div class="bar"><i style="--w:86%;--i:3"></i></div></div>
+          </div>
+          <p class="xs" style="color:#9AA0AA;text-align:center">Rreth 15 sekonda</p>
+        </div>
+      </div></div>
+      <p class="note">Mbetet në "dhomën e errët" të intervistës, kështu kalimi te rezultatet nuk është i vrazhdë. Kompetencat mbushen me radhë, si një parapamje e raportit.</p>
+    </section>
+
+    <section class="frame" id="s27">
+      <div class="frame-label">27 · Pa internet <em>gjendja offline</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <h1 class="h-l">Punët</h1>
+          <div class="offline-bar"><svg class="ico sm"><use href="#i-wifioff"/></svg><span class="grow">Pa internet. Po i shfaq punët e ruajtura.</span></div>
+          <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="saved-b">ruajtur</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="saved-b">ruajtur</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="card" style="display:grid;gap:10px;text-align:center;justify-items:center">
+            <svg class="ico lg muted"><use href="#i-mic"/></svg>
+            <b>Intervista kërkon internet</b>
+            <span class="small muted">CV-ja dhe punët e ruajtura punojnë edhe pa lidhje.</span>
+            <button class="btn sm">Provo përsëri</button>
+          </div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+      </div></div>
+      <p class="note">Interneti mobil në Kosovë nuk është gjithmonë i shpejtë: punët e ruajtura dhe CV-ja ruhen në telefon. Kërkesë e lëndës (java 7: gjendjet e rrjetit, offline).</p>
+    </section>
+
+    <section class="frame" id="s28">
+      <div class="frame-label">28 · Ikona në telefon <em>ekrani kryesor</em></div>
+      <div class="phone"><div class="screen home">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="hs-grid">
+          <div class="app"><span class="t" style="background:#3A3A3C"><svg class="ico"><use href="#i-camera"/></svg></span><small>Kamera</small></div>
+          <div class="app"><span class="t" style="background:#2E7D5B"><svg class="ico"><use href="#i-mail"/></svg></span><small>Mesazhe</small></div>
+          <div class="app"><span class="t" style="background:#3C6FB8"><svg class="ico"><use href="#i-pin"/></svg></span><small>Harta</small></div>
+          <div class="app"><span class="t" style="background:#C2453A"><svg class="ico"><use href="#i-clock"/></svg></span><small>Ora</small></div>
+          <div class="app"><span class="t" style="background:#6B4FA8"><svg class="ico"><use href="#i-play"/></svg></span><small>Muzika</small></div>
+          <div class="app me"><svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="64" height="64" style="width:64px;height:64px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span class="bd">1</span><small>Karriera</small></div>
+          <div class="app"><span class="t" style="background:#C98A1E"><svg class="ico"><use href="#i-book"/></svg></span><small>Shënime</small></div>
+          <div class="app"><span class="t" style="background:#55585E"><svg class="ico"><use href="#i-lock"/></svg></span><small>Cilësimet</small></div>
+        </div>
+        <div class="hs-hint">Ikona e app-it në madhësinë reale të iPhone-it (60 pt). Ndërro drejtimin lart: ngjyra e ikonës ndjek ngjyrën kryesore.</div>
+        <div class="dock">
+          <div class="app"><span class="t" style="background:#2E7D5B"><svg class="ico"><use href="#i-bell"/></svg></span></div>
+          <div class="app"><span class="t" style="background:#3C6FB8"><svg class="ico"><use href="#i-globe"/></svg></span></div>
+          <div class="app"><span class="t" style="background:#3A3A3C"><svg class="ico"><use href="#i-image"/></svg></span></div>
+          <div class="app"><span class="t" style="background:#C2453A"><svg class="ico"><use href="#i-send"/></svg></span></div>
+        </div>
+      </div></div>
+      <p class="note">Ikonat e tjera janë vetëm mbushje për krahasim. Ikona duhet të njihet në 60 pt, mes shumë ngjyrave.</p>
+    </section>
+
+    <div class="info icons">
+      <h3>Ikona e app-it: tri ide</h3>
+      <p class="small" style="opacity:.75">Secila në tri versione, si në iOS 26: e zakonshme, dark dhe e tonuar. Në të djathtë: madhësitë e vogla (Spotlight, Cilësimet), ku shumë ide vdesin.</p>
+      <div class="icon-head"><span></span><span>E zakonshme</span><span>Dark</span><span>E tonuar</span><span>60 · 40 · 29 pt</span></div>
+      <div class="icon-row"><div><b>1 · Rruga</b><div class="small" style="opacity:.7">Rruga deri te puna, me pikën ✓ "gati" në fund. I njëjti motiv si gjurmimi në app.</div></div><svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><svg class="appicon ic-c1 v-dark" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><svg class="appicon ic-c1 v-tint" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><div class="sizes"><svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="60" height="60" style="width:60px;height:60px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="40" height="40" style="width:40px;height:40px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="29" height="29" style="width:29px;height:29px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div></div>
+      <div class="icon-row"><div><b>2 · K-shigjeta</b><div class="small" style="opacity:.7">Monogram: K-ja, këmba e së cilës bëhet shigjetë që ngjitet lart.</div></div><svg class="appicon ic-c2 v-light" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M33 24 V76 M33 56 L61 30 M47 44 L68 76" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path class="iacc-s" d="M50 27 H64 V41" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c2 v-dark" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M33 24 V76 M33 56 L61 30 M47 44 L68 76" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path class="iacc-s" d="M50 27 H64 V41" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c2 v-tint" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M33 24 V76 M33 56 L61 30 M47 44 L68 76" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path class="iacc-s" d="M50 27 H64 V41" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="sizes"><svg class="appicon ic-c2 v-light" viewBox="0 0 100 100" width="60" height="60" style="width:60px;height:60px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M33 24 V76 M33 56 L61 30 M47 44 L68 76" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path class="iacc-s" d="M50 27 H64 V41" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c2 v-light" viewBox="0 0 100 100" width="40" height="40" style="width:40px;height:40px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M33 24 V76 M33 56 L61 30 M47 44 L68 76" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path class="iacc-s" d="M50 27 H64 V41" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c2 v-light" viewBox="0 0 100 100" width="29" height="29" style="width:29px;height:29px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M33 24 V76 M33 56 L61 30 M47 44 L68 76" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path class="iacc-s" d="M50 27 H64 V41" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div class="icon-row"><div><b>3 · Unaza</b><div class="small" style="opacity:.7">Unaza e gatishmërisë me shenjën ✓. E qartë, por më e zakonshme.</div></div><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c3 v-dark" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c3 v-tint" viewBox="0 0 100 100" width="96" height="96" style="width:96px;height:96px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="sizes"><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="60" height="60" style="width:60px;height:60px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="40" height="40" style="width:40px;height:40px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="29" height="29" style="width:29px;height:29px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div class="reco"><b>Rekomandimi: 1 · Rruga.</b> Është i njëjti motiv si rruga e gatishmërisë brenda app-it (splash, kartat, "A jam gati?"), ndaj ikona dhe app-i flasin një gjuhë. Mbetet e lexueshme edhe në 29 pt.</div>
+    </div>
+
+    <div class="info iconset">
+      <h3>Ikonat e UI-së</h3>
+      <p class="small" style="opacity:.75">Një stil i vetëm: vijë 1.8, kënde të rrumbullakëta, rrjet 24 pt. Tab-i aktiv e merr ikonën e mbushur.</p>
+      <div class="iconset-grid"><div><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div><svg class="ico"><use href="#i-user"/></svg>Profili</div><div><svg class="ico"><use href="#i-search"/></svg>Kërko</div><div><svg class="ico"><use href="#i-upload"/></svg>Ngarko</div><div><svg class="ico"><use href="#i-spark"/></svg>AI</div><div><svg class="ico"><use href="#i-check"/></svg>Gati</div><div><svg class="ico"><use href="#i-alert"/></svg>Kujdes</div><div><svg class="ico"><use href="#i-x"/></svg>Mbyll</div><div><svg class="ico"><use href="#i-back"/></svg>Mbrapa</div><div><svg class="ico"><use href="#i-chev"/></svg>Hap</div><div><svg class="ico"><use href="#i-flame"/></svg>Streak</div><div><svg class="ico"><use href="#i-play"/></svg>Video</div><div><svg class="ico"><use href="#i-camera"/></svg>Kamera</div><div><svg class="ico"><use href="#i-book"/></svg>Mëso</div><div><svg class="ico"><use href="#i-link"/></svg>Linku</div><div><svg class="ico"><use href="#i-clock"/></svg>Afati</div><div><svg class="ico"><use href="#i-globe"/></svg>Gjuha</div><div><svg class="ico"><use href="#i-file"/></svg>CV</div><div><svg class="ico"><use href="#i-repeat"/></svg>Përsërit</div><div><svg class="ico"><use href="#i-bookmark"/></svg>Ruaj</div><div><svg class="ico"><use href="#i-bell"/></svg>Njoftime</div><div><svg class="ico"><use href="#i-lock"/></svg>Privatësia</div><div><svg class="ico"><use href="#i-pin"/></svg>Lokacioni</div><div><svg class="ico"><use href="#i-image"/></svg>Screenshot</div><div><svg class="ico"><use href="#i-mail"/></svg>Email</div><div><svg class="ico"><use href="#i-eye"/></svg>Shikimi</div><div><svg class="ico"><use href="#i-shield"/></svg>Integriteti</div><div><svg class="ico"><use href="#i-send"/></svg>Dërgo</div><div><svg class="ico"><use href="#i-wifioff"/></svg>Offline</div></div>
+      <p class="small" style="opacity:.75">Në Expo: <b>lucide-react-native</b> (MIT, punon në Expo Go me react-native-svg) ka të gjitha këto me të njëjtin stil, kështu nuk vizatojmë ikona me dorë.</p>
+    </div>
+
+  </div>
+</div>
+
 </div></div>
 
 <div id="proto" hidden>
@@ -1169,11 +1519,11 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
   const proto = document.getElementById('proto'), protoPhone = document.getElementById('protoPhone');
 
   let st = {};
-  try { st = JSON.parse(localStorage.getItem('karriera-board-2') || '{}'); } catch (e) {}
+  try { st = JSON.parse(localStorage.getItem('karriera-board-3') || '{}'); } catch (e) {}
   let x = st.x ?? 0, y = st.y ?? 0, s = st.s ?? 0.4;
-  let dir = st.dir || 'c', dark = !!st.dark;
+  let dir = st.dir || 'd', dark = !!st.dark;
   const S = { role: st.role || 'swe', lang: st.lang || 'sq' };
-  const save = () => { try { localStorage.setItem('karriera-board-2', JSON.stringify({ x, y, s, dir, dark, role: S.role, lang: S.lang })); } catch (e) {} };
+  const save = () => { try { localStorage.setItem('karriera-board-3', JSON.stringify({ x, y, s, dir, dark, role: S.role, lang: S.lang })); } catch (e) {} };
 
   /* ---------------- të dhënat ---------------- */
   const JOB = { swe: { job: 'Junior React Native Developer', co: 'Dardania Soft, Prishtinë' }, pr: { job: 'Koordinator/e PR dhe rrjete sociale', co: 'Agjencia Iliria, Prishtinë' } };
@@ -1386,7 +1736,20 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
     }
   };
 
+  const TRK = ['CV', 'Përputhja', 'Intervista', 'Mëso', 'Gati'];
+  const CHECK = '<svg class="ico"><use href="#i-check"/></svg>';
+  const buildTrk = (el) => {
+    const s = +el.dataset.s, lg = !!el.dataset.lg;
+    let h = '';
+    TRK.forEach((name, k) => {
+      const cls = (k < s ? 'done' : k === s ? 'now' : '') + (k === 4 ? ' last' : '');
+      if (k) h += `<b class="${k <= s ? 'done' : ''}"></b>`;
+      h += lg ? `<span class="st ${cls}"><i class="${cls}">${k < s ? CHECK : ''}</i><small>${name}</small></span>` : `<i class="${cls}"></i>`;
+    });
+    el.innerHTML = h;
+  };
   const initScreen = (scr) => {
+    scr.querySelectorAll('.trk[data-s]').forEach(buildTrk);
     scr.querySelectorAll('[data-steps][data-loop]').forEach(runSteps);
     scr.querySelectorAll('[data-count]').forEach(runCount);
     scr.querySelectorAll('[data-notifs]').forEach(runNotifs);
@@ -1402,7 +1765,7 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
     zVal.textContent = Math.round(s * 100) + '%';
     save();
   };
-  const setDir = d => { dir = d; body.classList.remove('dir-a', 'dir-b', 'dir-c'); body.classList.add('dir-' + d); document.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('on', b.dataset.dir === d)); save(); };
+  const setDir = d => { dir = d; body.classList.remove('dir-a', 'dir-b', 'dir-c', 'dir-d'); body.classList.add('dir-' + d); document.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('on', b.dataset.dir === d)); save(); };
   const setDark = v => { dark = v; body.classList.toggle('dark', v); document.getElementById('darkBtn').textContent = v ? 'Light' : 'Dark'; save(); };
   const fit = () => { const w = world.offsetWidth, h = world.offsetHeight, r = vp.getBoundingClientRect(); s = Math.min(r.width / w, r.height / h); x = (r.width - w * s) / 2; y = 0; apply(true); };
   const flyTo = (el) => {
@@ -1424,8 +1787,10 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
     const sc = Math.min(1, (r.height - 24) / 864, (r.width - 24) / 410);
     protoPhone.style.transform = `translate(-50%, -50%) scale(${sc})`;
   };
-  let hist = [];
-  const protoShow = (id, push = true) => {
+  let hist = [], seenLoad = new Set(), protoTimer = null;
+  const LOADER = { s9: ['s24', 1400], s12: ['s25', 2600], s15: ['s26', 2600] };
+  const protoShow = (id, push = true, back = false) => {
+    clearTimeout(protoTimer);
     const frame = document.getElementById(id); if (!frame) return;
     const old = protoPhone.querySelector('.screen'); if (old && old._iv) old._iv.stop();
     const clone = frame.querySelector('.screen').cloneNode(true);
@@ -1434,13 +1799,19 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
     if (push) hist.push(id);
     document.getElementById('protoName').textContent = frame.querySelector('.frame-label').firstChild.textContent.trim();
     initScreen(clone);
+    clone.classList.add(back ? 'in-b' : 'in-f');
     clone.querySelectorAll('[data-steps]:not([data-loop])').forEach(c => { c.querySelectorAll('.stp').forEach(i => i.classList.remove('busy', 'done')); const a = clone.querySelector('[data-after]'); if (a) a.classList.add('hidden'); });
     if (clone.matches('[data-jobs]')) filterJobs(clone);
     fitProto();
   };
-  const openProto = () => { proto.hidden = false; hist = []; protoShow('s1'); };
+  const openProto = () => { proto.hidden = false; hist = []; seenLoad = new Set(); protoShow('s23', false); protoTimer = setTimeout(() => protoShow('s1'), 2600); };
   const closeProto = () => { const o = protoPhone.querySelector('.screen'); if (o && o._iv) o._iv.stop(); proto.hidden = true; };
-  const navigate = (id, fromEl) => { if (fromEl && inProto(fromEl)) protoShow(id); else flyTo(document.getElementById(id)); };
+  const navigate = (id, fromEl) => {
+    if (!(fromEl && inProto(fromEl))) { flyTo(document.getElementById(id)); return; }
+    const ld = LOADER[id];
+    if (ld && !seenLoad.has(id)) { seenLoad.add(id); protoShow(ld[0], false); protoTimer = setTimeout(() => protoShow(id), ld[1]); }
+    else protoShow(id);
+  };
 
   const handleTap = (t) => {
     const a = t.closest('[data-act]'); if (a) { doAct(a); return; }
@@ -1475,15 +1846,15 @@ body.dark .frame-tools button { background:#2E2E33; color:#E4E4E7; border-color:
   document.getElementById('fitBtn').onclick = fit;
   document.getElementById('playBtn').onclick = openProto;
   document.getElementById('protoClose').onclick = closeProto;
-  document.getElementById('protoHome').onclick = () => { hist = []; protoShow('s1'); };
-  document.getElementById('protoBack').onclick = () => { if (hist.length > 1) { hist.pop(); protoShow(hist[hist.length - 1], false); } };
+  document.getElementById('protoHome').onclick = () => { openProto(); };
+  document.getElementById('protoBack').onclick = () => { if (hist.length > 1) { hist.pop(); protoShow(hist[hist.length - 1], false, true); } };
   const center = () => { const r = vp.getBoundingClientRect(); return [r.width / 2, r.height / 2]; };
   document.getElementById('zIn').onclick = () => zoomAt(1.25, ...center());
   document.getElementById('zOut').onclick = () => zoomAt(0.8, ...center());
   window.addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('input,textarea')) return;
     if (e.key === 'Escape' && !proto.hidden) closeProto();
-    else if (e.key === '1' || e.key === '2' || e.key === '3') setDir('abc'[+e.key - 1]);
+    else if ('1234'.includes(e.key) && e.key.length === 1) setDir('abcd'[+e.key - 1]);
     else if (e.key === 'd' || e.key === 'D') setDark(!dark);
     else if (e.key === 'f' || e.key === 'F') fit();
     else if (e.key === 'p' || e.key === 'P') openProto();
