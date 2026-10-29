@@ -3,7 +3,11 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { punet } from "@/data/punet";
 
-// Edoniku: këtu vjen FlatList-i me komponentin KartaPunes (çdo rresht hap /pune/[id]).
+// Edoniku · J3: zëvendësoje këtë ekran me listën e punëve.
+// TODO 1: FlatList me data={punet} dhe keyExtractor={(item) => item.id}
+// TODO 2: renderItem: <Link href={`/pune/${item.id}`}> me <KartaPunes ... /> brenda
+// TODO 3: fshiji dy linqet e provës më poshtë kur lista punon
+// Ekrani i detajeve është gati: src/app/pune/[id].tsx
 export default function Index() {
   return (
     <View style={styles.container}>
