@@ -645,6 +645,74 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
 
 .dir-d .jc .rd .rd-bar { display:none; }
 .dir-d .jc .rd .rd-num { font-size:22px; }
+
+/* ================= v0.4: rreshti 6 ================= */
+.mic-wrap { display:grid; justify-items:center; gap:14px; padding:20px 0 6px; }
+.mic-big { width:104px; height:104px; border-radius:50%; background:var(--accent); color:#fff; display:grid; place-items:center; box-shadow:0 14px 30px -10px color-mix(in oklab, var(--accent) 70%, transparent); transition:transform .15s; }
+.mic-big .ico { width:40px; height:40px; }
+.mic-big:active { transform:scale(.94); }
+.daily .mic-rec, .daily .fb { display:none !important; }
+.daily.rec .mic-rec { display:flex !important; }
+.daily.rec .mic-big { animation:ring 1.2s ease-out infinite; }
+.daily.rec .mic-hint, .daily.answered .mic-hint { display:none; }
+.daily.answered .fb { display:grid !important; animation:inF .35s ease; }
+.daily.answered .mic-wrap { display:none; }
+
+.chart { width:100%; height:auto; overflow:visible; }
+.chart .goal { stroke:var(--ok); stroke-width:1.5; stroke-dasharray:4 4; }
+.chart .goal-t { fill:var(--ok); font-size:11px; font-weight:700; }
+.chart .area { fill:color-mix(in oklab, var(--accent) 14%, transparent); }
+.chart .line { fill:none; stroke:var(--accent); stroke-width:3; stroke-linejoin:round; stroke-linecap:round; }
+.chart .pts circle { fill:var(--surface); stroke:var(--accent); stroke-width:2.5; }
+.chart .pts circle.last { fill:var(--accent); }
+.chart .xl text { fill:var(--muted); font-size:11px; text-anchor:middle; }
+
+.score-b { width:44px; height:44px; border-radius:12px; background:var(--surface2); display:grid; place-items:center; font-weight:800; font-family:var(--font-head); font-variant-numeric:tabular-nums; flex:none; }
+.delta { font-weight:700; color:var(--ok); font-size:14px; }
+
+.player { display:flex; align-items:center; gap:12px; background:var(--surface); border-radius:var(--r); padding:10px 14px; box-shadow:var(--card-shadow); border:var(--card-border); }
+.pl-btn { width:40px; height:40px; border-radius:50%; background:var(--text); color:var(--bg); display:grid; place-items:center; flex:none; }
+.pl-btn .ico { width:18px; height:18px; fill:currentColor; }
+.wavebars { flex:1; display:flex; align-items:center; gap:2px; height:32px; }
+.wavebars i { flex:1; border-radius:2px; background:color-mix(in oklab, var(--muted) 45%, transparent); }
+.wavebars i.p { background:var(--accent); }
+.player.playing .wavebars i { animation:wv .9s ease-in-out infinite; }
+.transcript p { font-size:15.5px; line-height:1.65; }
+mark { background:none; color:inherit; border-radius:4px; }
+mark.fill { background:color-mix(in oklab, var(--warn) 22%, transparent); }
+mark.good { background:color-mix(in oklab, var(--ok) 16%, transparent); }
+
+.paper { background:#FFFFFF; color:#1A1A1A; border-radius:6px; padding:18px 18px 16px; box-shadow:0 10px 30px -12px rgba(0,0,0,.3); font-family:Georgia,"Times New Roman",serif; font-size:11.5px; line-height:1.5; display:grid; gap:5px; }
+.paper .p-name { font-size:20px; font-weight:700; font-family:var(--font-head); }
+.paper .p-meta { font-size:10.5px; color:#666; }
+.paper .p-h { font-family:var(--font-head); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#444; border-bottom:1px solid #E5E5E5; padding-bottom:2px; margin-top:6px; }
+.paper mark.good { background:#E3F4EA; }
+.ai-tag { font-family:var(--font-body); font-size:9.5px; font-weight:800; color:var(--accent); background:var(--accent-soft); padding:1px 5px; border-radius:4px; }
+
+.write { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:14px; font-size:15px; line-height:1.5; color:#F3F4F6; min-height:250px; }
+.caret { display:inline-block; width:2px; height:18px; background:#7CE3A3; vertical-align:-3px; margin-left:2px; animation:blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity:0; } }
+
+.story { width:236px; height:420px; border-radius:22px; padding:22px; display:grid; align-content:space-between; color:#fff; background:linear-gradient(160deg, var(--accent) 0%, color-mix(in oklab, var(--accent) 45%, #141414) 100%); box-shadow:0 20px 40px -16px rgba(0,0,0,.45); }
+.story .appicon { --ic-bg:#fff; --ic-fg:var(--accent); --ic-acc:#fff; }
+.story-q { font-family:var(--font-head); font-weight:800; font-size:24px; line-height:1.2; letter-spacing:-.02em; }
+.story-score { font-family:var(--font-head); font-weight:800; font-size:64px; line-height:1; }
+.story-score small { font-size:22px; opacity:.7; }
+.share-row { display:flex; gap:18px; justify-content:center; }
+.share-row div { display:grid; justify-items:center; gap:6px; font-size:12px; }
+.share-row span { width:52px; height:52px; border-radius:50%; background:var(--surface); box-shadow:var(--card-shadow); display:grid; place-items:center; border:var(--card-border); }
+
+.perm { display:grid; justify-items:center; gap:12px; }
+.perm[hidden] { display:none; }
+.perm-ic { display:flex; gap:10px; padding:18px; border-radius:24px; background:var(--accent-soft); color:var(--accent); }
+.perm-ic .ico { width:34px; height:34px; }
+.li.on > .switch { background:var(--ok); }
+
+.toolbar > * { flex-shrink:0; }
+.toolbar .spacer { flex-shrink:1; min-width:0; }
+.toolbar .hint { flex-shrink:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+@media (max-width:1600px) { .toolbar .hint { display:none; } }
+.tb-btn { white-space:nowrap; }
 </style>
 </head>
 <body class="dir-d">
@@ -680,10 +748,17 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 4-2.3M19 12.5a10 10 0 0 0-3-2M2 8.8a15 15 0 0 1 4.5-2.7M22 8.8A15 15 0 0 0 11 5M12 20h.01"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4 4 4M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></symbol>
+  <symbol id="i-camoff" viewBox="0 0 24 24"><path d="M3 3l18 18M7 8H4v11h13M10 5h5l2 3h3v9"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M7 15l4-4 3 3 5-6"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
 </svg>
 <div class="toolbar">
-  <div class="brand">Karriera<span>Bordi UI/UX · v0.3</span></div>
+  <div class="brand">Karriera<span>Bordi UI/UX · v0.4</span></div>
   <div class="seg" id="dirSeg">
     <button data-dir="a">A · Qartë</button>
     <button data-dir="b">B · Leja</button>
@@ -707,7 +782,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
 <!-- ===================== 0. INFO ===================== -->
 <div class="row">
   <div class="row-title">Karriera: dizajni i aplikacionit</div>
-  <div class="row-sub">28 ekrane, çdo veçori që kemi diskutuar, plus ngarkimi dhe ikonat. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
+  <div class="row-sub">40 ekrane: çdo veçori që kemi diskutuar, ngarkimi, ikonat, lejet dhe cilësimet. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
   <div class="frames">
     <div class="info feat">
       <h3>Veçoritë → ekrani (kliko për të shkuar)</h3>
@@ -739,6 +814,16 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
         <div data-go="s25"><span>AI po llogarit: përputhja dhe rezultatet</span><span>25 · 26</span></div>
         <div data-go="s27"><span>Gjendja offline</span><span>27</span></div>
         <div data-go="s28"><span>Ikona e app-it (3 ide) + ikonat e UI-së</span><span>28</span></div>
+        <div data-go="s29"><span>Pyetja e ditës (mban streak-un)</span><span>29</span></div>
+        <div data-go="s30"><span>Progresi: gatishmëria me kohë (grafik)</span><span>30</span></div>
+        <div data-go="s31"><span>Historiku i intervistave + transkripti</span><span>31 · 32</span></div>
+        <div data-go="s33"><span>CV-ja e re: versionet + shkarko PDF</span><span>33</span></div>
+        <div data-go="s34"><span>Zgjidh intervistën: punë/rol, e shpejtë/e plotë</span><span>34</span></div>
+        <div data-go="s35"><span>Detyra me shkrim për Asistent/PR</span><span>35</span></div>
+        <div data-go="s36"><span>Punët e ruajtura + afatet</span><span>36</span></div>
+        <div data-go="s37"><span>Ndaje Roast-in si Instagram Story</span><span>37</span></div>
+        <div data-go="s38"><span>Lejet në kontekst + leja e refuzuar</span><span>38 · 39</span></div>
+        <div data-go="s40"><span>Cilësimet: gjuha, pamja, njoftimet, fshi llogarinë</span><span>40</span></div>
       </div>
     </div>
     <div class="info">
@@ -896,7 +981,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
       <div class="phone"><div class="screen">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" style="gap:12px">
-          <div class="between"><span class="back" data-go="s3"><svg class="ico"><use href="#i-back"/></svg>CV</span><span class="small muted">Versioni 1</span></div>
+          <div class="between"><span class="back" data-go="s3"><svg class="ico"><use href="#i-back"/></svg>CV</span><span class="row-x" style="gap:14px"><span class="small" style="color:var(--accent);font-weight:600" data-go="s33">Shiko CV-në</span><span data-go="s37" style="color:var(--text)"><svg class="ico"><use href="#i-share"/></svg></span></span></div>
           <div class="card" style="display:grid;gap:10px">
             <div class="between"><div><div class="small muted">Nota e CV-së</div><div class="rd-num" style="font-size:40px">64<small style="font-size:18px" class="muted">/100</small></div></div>
             <div class="row-x" data-act="roast" style="gap:8px"><span class="small" style="font-weight:600">Roast</span><span class="switch"></span></div></div>
@@ -956,7 +1041,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
       <div class="phone"><div class="screen has-tabs">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content">
-          <div class="between"><div><div class="small muted">E enjte, 22 tetor</div><h1 class="h-l">Mirëmbrëma, Genti</h1></div><span class="streak" data-go="s18"><svg class="ico sm"><use href="#i-flame"/></svg>5</span></div>
+          <div class="between"><div><div class="small muted">E enjte, 22 tetor</div><h1 class="h-l">Mirëmbrëma, Genti</h1></div><span class="streak" data-go="s29"><svg class="ico sm"><use href="#i-flame"/></svg>5</span></div>
           <div class="card" style="display:grid;gap:14px">
             <div class="small muted">Hapi i radhës</div>
             <div class="row-x" style="align-items:flex-start;gap:14px">
@@ -975,7 +1060,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
             <div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
           </div>
         </div>
-        <div class="tabbar"><div class="tab on" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab on" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s34"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Gjithmonë një <b>hap i radhës</b>, i zgjedhur nga AI-ja sipas punës ku je më afër. Streak-u lart djathtas. Ndërro rolin lart dhe ndryshon edhe kjo kartë.</p>
     </section>
@@ -985,7 +1070,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
       <div class="phone"><div class="screen has-tabs" data-jobs>
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" style="gap:10px">
-          <div class="between"><h1 class="h-l">Punët</h1><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></div>
+          <div class="between"><h1 class="h-l">Punët</h1><span class="row-x" style="gap:8px"><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s36"><svg class="ico"><use href="#i-bookmark"/></svg></span><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></span></div>
           <div class="field"><svg class="ico sm"><use href="#i-search"/></svg><input data-search placeholder="Kërko punë, kompani, qytet" /></div>
           <div class="row-x" style="gap:8px;flex-wrap:wrap">
             <span class="chip on" data-act="filter" data-val="all">Të gjitha<span class="cnt">6</span></span><span class="chip" data-act="filter" data-val="swe">SWE<span class="cnt">4</span></span><span class="chip" data-act="filter" data-val="pr">Asistent/PR<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="near"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="remote">Remote<span class="cnt">1</span></span><span class="chip" data-act="filter" data-val="de">Gjermani<span class="cnt">1</span></span>
@@ -999,7 +1084,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
           <div class="jc" data-role="swe" data-tags="swe de" data-go="s22"><span class="ribbon d-only">E RE</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">AN-5521</span></div><div class="jc-title">Junior Frontend Developer (m/w/d)</div><div class="jc-meta">Nordlicht GmbH, Berlin</div><div class="jc-foot"><span>Arbeitnow</span><span>Afati 20.11</span></div><div class="trk d-only" data-s="1"></div><div class="trk-lbl d-only">Tani: <b>Përputhja</b> · 3 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:41"><span class="rd-num">41<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
           <div class="small muted" data-empty style="display:none;text-align:center;padding:20px">Asnjë punë me këtë filtër. Provo "Sill linkun tënd".</div>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s34"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Filtrat dhe kërkimi punojnë: prek "Afër meje" (lokacioni i telefonit), "Gjermani" ose shkruaj "Mitrovicë". Butoni me link lart hap ekranin 10.</p>
     </section>
@@ -1134,7 +1219,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
         <div class="iv-sub"><span class="row-x" style="gap:6px" data-act="repeat-q"><svg class="ico sm"><use href="#i-repeat"/></svg>Përsërite pyetjen</span><span class="row-x" style="gap:6px" data-go="s15">Shiko rezultatet</span></div>
         <div class="iv-toast" data-iv-toast><svg class="ico sm"><use href="#i-shield"/></svg><span>U largove nga aplikacioni për 4 sekonda. Kjo shënohet te integriteti.</span></div>
       </div></div>
-      <div class="frame-tools"><button data-act="sim-leave">Simulo: largohu nga app-i</button><button data-act="sim-face">Simulo: fytyrë e dytë</button></div>
+      <div class="frame-tools"><button data-act="sim-leave">Simulo: largohu nga app-i</button><button data-act="sim-face">Simulo: fytyrë e dytë</button><button data-go="s35">Detyra me shkrim (PR)</button></div>
       <p class="note">Luan vetë: <b>avatari flet</b> (goja lëviz, titrat shkruhen) → <b>radha jote</b> → <b>po analizoj</b> → pyetja tjetër. Pyetja 2 është vijuese, pyetja 3 është me kod (SWE) ose detyrë (PR). Prek "Përfundova" për ta shpejtuar.</p>
     </section>
 
@@ -1156,6 +1241,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
               <div class="li exp" data-act="expand"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Pyetja 2 · 64</b><div class="small muted">Pyetje vijuese: arsyeja mungonte</div></div><svg class="ico sm muted chev"><use href="#i-chev"/></svg><div class="more"><b>Mungon:</b> pse Supabase dhe jo server yti.<br/><b>Provo:</b> "E zgjodha sepse Auth dhe RLS vijnë gati, kështu u fokusova te app-i."</div></div>
               <div class="li exp" data-act="expand"><svg class="ico warn"><use href="#i-alert"/></svg><div class="grow"><b>Pyetja 3 · 58</b><div class="small muted">Kodi: përgjigje e saktë, shpjegim i shkurtër</div></div><svg class="ico sm muted chev"><use href="#i-chev"/></svg><div class="more"><b>Mirë:</b> e the që shfaqet 1.<br/><b>Shto:</b> pse: useEffect me [] ekzekutohet një herë pas render-it të parë.</div></div>
             </div>
+            <div class="row-x small" style="color:var(--accent);font-weight:600;justify-content:center" data-go="s32"><svg class="ico sm"><use href="#i-play"/></svg>Dëgjo përgjigjet e tua (transkripti)</div>
           </div>
           <div data-panel="b" style="gap:12px">
             <div class="card" style="display:grid;gap:12px">
@@ -1252,16 +1338,14 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
             <div class="week"><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>H</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>M</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>M</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>E</div><div class="day done"><i><svg class="ico sm"><use href="#i-check"/></svg></i>P</div><div class="day"><i></i>Sh</div><div class="day"><i></i>D</div></div>
           </div>
           <div class="list">
-            <div class="li" data-go="s12"><div class="grow"><b>Junior React Native Developer</b><div class="small muted">Dardania Soft</div></div><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
-            <div class="li" data-go="s12"><div class="grow"><b>Praktikant Backend (Node.js)</b><div class="small muted">Ibri Tech</div></div><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
-          </div>
-          <div class="list">
-            <div class="li" data-go="s6"><svg class="ico"><use href="#i-file"/></svg><div class="grow"><b>CV-ja ime</b><div class="small muted">Versioni 2, nota 71/100</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
-            <div class="li" data-go="s19"><svg class="ico"><use href="#i-bell"/></svg><div class="grow"><b>Njoftimet</b></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
-            <div class="li"><svg class="ico"><use href="#i-lock"/></svg><div class="grow"><b>Privatësia dhe të dhënat</b></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s30"><svg class="ico" style="color:var(--accent)"><use href="#i-chart"/></svg><div class="grow"><b>Progresi</b><div class="small muted">78% gati, +40 në 6 javë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s31"><svg class="ico"><use href="#i-history"/></svg><div class="grow"><b>Intervistat e mia</b><div class="small muted">4 intervista</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s36"><svg class="ico"><use href="#i-bookmark"/></svg><div class="grow"><b>Të ruajturat</b><div class="small muted">2 punë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s33"><svg class="ico"><use href="#i-file"/></svg><div class="grow"><b>CV-ja ime</b><div class="small muted">Versioni 2, nota 71/100</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s40"><svg class="ico"><use href="#i-settings"/></svg><div class="grow"><b>Cilësimet</b></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
           </div>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab on" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s34"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab on" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Gatishmëria për çdo punë të ruajtur + streak-u. Roli dhe gjuha ndjekin zgjedhjet nga ekrani 02.</p>
     </section>
@@ -1274,7 +1358,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
         <div class="notifs" data-notifs>
           <div class="notif" data-go="s9"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>tani</small></div><p>3 punë të reja për SWE në Prishtinë dhe Mitrovicë.</p></div></div>
           <div class="notif" data-go="s11"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>8:00</small></div><p>Afati për Praktikant Backend (Node.js) mbaron të premten.</p></div></div>
-          <div class="notif" data-go="s8"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>dje</small></div><p>Streak-u 5 ditë. Një pyetje praktike sot e mban gjallë.</p></div></div>
+          <div class="notif" data-go="s29"><span class="app">K</span><div class="grow"><div class="between"><b>Karriera</b><small>dje</small></div><p>Streak-u 5 ditë. Një pyetje praktike sot e mban gjallë.</p></div></div>
         </div>
       </div></div>
       <p class="note">Aftësia e telefonit "njoftime" (kërkesë e lëndës). Tri lloje: punë të reja, afate, streak. Prek një njoftim dhe hapet ekrani përkatës.</p>
@@ -1391,7 +1475,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
           <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:78%;height:16px"></div><div class="sk" style="width:60%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
           <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:64%;height:16px"></div><div class="sk" style="width:40%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s34"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Skeleton-i ka formën e kartave të vërteta, kështu ekrani nuk "kërcen" kur vijnë të dhënat. Burimet tregojnë nga ku po vijnë shpalljet.</p>
     </section>
@@ -1455,7 +1539,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
             <button class="btn sm">Provo përsëri</button>
           </div>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s13"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s34"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Interneti mobil në Kosovë nuk është gjithmonë i shpejtë: punët e ruajtura dhe CV-ja ruhen në telefon. Kërkesë e lëndës (java 7: gjendjet e rrjetit, offline).</p>
     </section>
@@ -1501,6 +1585,283 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
       <div class="iconset-grid"><div><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div><svg class="ico"><use href="#i-user"/></svg>Profili</div><div><svg class="ico"><use href="#i-search"/></svg>Kërko</div><div><svg class="ico"><use href="#i-upload"/></svg>Ngarko</div><div><svg class="ico"><use href="#i-spark"/></svg>AI</div><div><svg class="ico"><use href="#i-check"/></svg>Gati</div><div><svg class="ico"><use href="#i-alert"/></svg>Kujdes</div><div><svg class="ico"><use href="#i-x"/></svg>Mbyll</div><div><svg class="ico"><use href="#i-back"/></svg>Mbrapa</div><div><svg class="ico"><use href="#i-chev"/></svg>Hap</div><div><svg class="ico"><use href="#i-flame"/></svg>Streak</div><div><svg class="ico"><use href="#i-play"/></svg>Video</div><div><svg class="ico"><use href="#i-camera"/></svg>Kamera</div><div><svg class="ico"><use href="#i-book"/></svg>Mëso</div><div><svg class="ico"><use href="#i-link"/></svg>Linku</div><div><svg class="ico"><use href="#i-clock"/></svg>Afati</div><div><svg class="ico"><use href="#i-globe"/></svg>Gjuha</div><div><svg class="ico"><use href="#i-file"/></svg>CV</div><div><svg class="ico"><use href="#i-repeat"/></svg>Përsërit</div><div><svg class="ico"><use href="#i-bookmark"/></svg>Ruaj</div><div><svg class="ico"><use href="#i-bell"/></svg>Njoftime</div><div><svg class="ico"><use href="#i-lock"/></svg>Privatësia</div><div><svg class="ico"><use href="#i-pin"/></svg>Lokacioni</div><div><svg class="ico"><use href="#i-image"/></svg>Screenshot</div><div><svg class="ico"><use href="#i-mail"/></svg>Email</div><div><svg class="ico"><use href="#i-eye"/></svg>Shikimi</div><div><svg class="ico"><use href="#i-shield"/></svg>Integriteti</div><div><svg class="ico"><use href="#i-send"/></svg>Dërgo</div><div><svg class="ico"><use href="#i-wifioff"/></svg>Offline</div></div>
       <p class="small" style="opacity:.75">Në Expo: <b>lucide-react-native</b> (MIT, punon në Expo Go me react-native-svg) ka të gjitha këto me të njëjtin stil, kështu nuk vizatojmë ikona me dorë.</p>
     </div>
+
+  </div>
+</div>
+
+<!-- ===================== 6. MË SHUMË ===================== -->
+<div class="row">
+  <div class="row-title">6 · Progresi, CV-ja, lejet dhe cilësimet</div>
+  <div class="row-sub">Ekranet që e mbajnë njeriun të kthehet (pyetja e ditës, progresi, historiku) dhe ato që e bëjnë app-in të plotë: CV-ja e re, lejet e telefonit, cilësimet. Të gjitha janë të lidhura në prototip.</div>
+  <div class="frames">
+
+    <section class="frame" id="s29">
+      <div class="frame-label">29 · Pyetja e ditës <em>streak</em></div>
+      <div class="phone"><div class="screen daily">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:16px">
+          <div class="between"><span class="back" data-go="s8"><svg class="ico"><use href="#i-back"/></svg></span><span class="streak"><svg class="ico sm"><use href="#i-flame"/></svg><span class="streak-n">5</span> ditë</span></div>
+          <div class="small muted">Pyetja e ditës · 60 sekonda</div>
+          <h1 class="h-l" data-bind="daily">Çka është props në React dhe si ndryshon nga state?</h1>
+          <div class="mic-wrap">
+            <div class="mic-big" data-act="daily"><svg class="ico"><use href="#i-mic"/></svg></div>
+            <div class="small muted mic-hint">Prek dhe fol. Mund edhe ta shkruash.</div>
+            <div class="state listen mic-rec" style="justify-content:center"><span class="wave"><i style="height:8px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:14px"></i></span>Po të dëgjoj…</div>
+          </div>
+          <div class="card fb" style="display:grid;gap:10px">
+            <div class="row-x"><svg class="ico ok"><use href="#i-check"/></svg><b>E saktë në thelb</b></div>
+            <p class="small">E the që props vijnë nga prindi dhe s'ndryshohen. Shto: state ndryshon brenda komponentit dhe e rifreskon ekranin.</p>
+            <div class="pill-live ok"><span class="pulse"></span>Streak-u u bë 6 ditë</div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn ghost" data-go="s8">Kthehu nesër për pyetjen tjetër</button></div>
+      </div></div>
+      <p class="note">Prek mikrofonin. Një pyetje e vogël në ditë e mban streak-un pa pasur nevojë për një intervistë të plotë. Pyetja ndjek rolin (ndërroje lart).</p>
+    </section>
+
+    <section class="frame" id="s30">
+      <div class="frame-label">30 · Progresi <em>gatishmëria me kohë</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <span class="back" data-go="s18"><svg class="ico"><use href="#i-back"/></svg>Profili</span>
+          <h1 class="h-l">Progresi yt</h1>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">Junior React Native</span><span class="chip" data-act="seg">Backend (Node.js)</span></div>
+          <div class="card" style="display:grid;gap:8px">
+            <div class="between"><div><div class="small muted">Gatishmëria, 6 javët e fundit</div><div class="rd-num" style="font-size:34px">78%</div></div><span class="small" style="color:var(--ok);font-weight:700">+40 pikë</span></div>
+            <svg viewBox="0 0 320 150" class="chart" role="img" aria-label="Gatishmëria nga 38% në 78% gjatë 6 javëve">
+              <line x1="20" y1="37" x2="312" y2="37" class="goal"/>
+              <text x="312" y="31" text-anchor="end" class="goal-t">gati 75%</text>
+              <path class="area" d="M20 122 L78 110 L136 98 L194 81 L252 67 L310 54 L310 140 L20 140 Z"/>
+              <path class="line" d="M20 122 L78 110 L136 98 L194 81 L252 67 L310 54"/>
+              <g class="pts"><circle cx="20" cy="122" r="4"/><circle cx="78" cy="110" r="4"/><circle cx="136" cy="98" r="4"/><circle cx="194" cy="81" r="4"/><circle cx="252" cy="67" r="4"/><circle cx="310" cy="54" r="6" class="last"/></g>
+              <g class="xl"><text x="20" y="148">J1</text><text x="78" y="148">J2</text><text x="136" y="148">J3</text><text x="194" y="148">J4</text><text x="252" y="148">J5</text><text x="306" y="148">sot</text></g>
+            </svg>
+          </div>
+          <div class="list">
+            <div class="li"><svg class="ico" style="color:var(--accent)"><use href="#i-mic"/></svg><div class="grow"><b>3 intervista</b><div class="small muted">Nota mesatare 70</div></div></div>
+            <div class="li"><svg class="ico" style="color:var(--accent)"><use href="#i-book"/></svg><div class="grow"><b>2 aftësi të mësuara</b><div class="small muted">Testimi (Jest), REST API</div></div></div>
+            <div class="li"><svg class="ico" style="color:var(--accent)"><use href="#i-eye"/></svg><div class="grow"><b>Kontakti me sy: 48% → 66%</b><div class="small muted">Nga intervista e parë deri sot</div></div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="note">Tabela <code>readiness</code> në grafik: çdo pikë është një intervistë ose një mësim i mbaruar. Vija e gjelbër tregon kufirin "gati".</p>
+    </section>
+
+    <section class="frame" id="s31">
+      <div class="frame-label">31 · Historiku i intervistave</div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <span class="back" data-go="s18"><svg class="ico"><use href="#i-back"/></svg>Profili</span>
+          <h1 class="h-l">Intervistat e tua</h1>
+          <div class="pill-live ok"><span class="pulse"></span><span class="grow">Nga e para deri te e fundit: +16 pikë</span></div>
+          <div class="list">
+            <div class="li" data-go="s15"><div class="score-b">78</div><div class="grow"><b>Junior React Native Developer</b><div class="small muted">Sot · 4 pyetje · Shqip</div></div><span class="delta">+8</span></div>
+            <div class="li" data-go="s15"><div class="score-b">70</div><div class="grow"><b>Junior React Native Developer</b><div class="small muted">25.10 · 4 pyetje · Shqip</div></div><span class="delta">+8</span></div>
+            <div class="li" data-go="s15"><div class="score-b">66</div><div class="grow"><b>Praktikant Backend (Node.js)</b><div class="small muted">21.10 · 6 pyetje · English</div></div><span class="delta">+4</span></div>
+            <div class="li" data-go="s15"><div class="score-b">62</div><div class="grow"><b>Praktikë e lirë: SWE</b><div class="small muted">18.10 · 3 pyetje · Shqip</div></div><span class="delta muted">e para</span></div>
+          </div>
+          <p class="xs muted">Prek një intervistë për rezultatet, transkriptin dhe feedback-un e plotë.</p>
+        </div>
+      </div></div>
+      <p class="note">Çdo intervistë mbetet: nota, ndryshimi nga e kaluara, gjuha dhe gjatësia. Kështu progresi shihet, jo vetëm ndihet.</p>
+    </section>
+
+    <section class="frame" id="s32">
+      <div class="frame-label">32 · Transkripti <em>çka the vërtet</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <span class="back" data-go="s15"><svg class="ico"><use href="#i-back"/></svg>Rezultatet</span>
+          <div class="small muted">Pyetja 1 nga 4</div>
+          <h1 class="h-m">Më trego për një projekt ku ke hasur një problem teknik. Si e zgjidhe?</h1>
+          <div class="player"><span class="pl-btn" data-act="play"><svg class="ico"><use href="#i-play"/></svg></span><div class="wavebars"><i class="p" style="height:66%"></i><i class="p" style="height:44%"></i><i class="p" style="height:75%"></i><i class="p" style="height:31%"></i><i class="p" style="height:34%"></i><i class="p" style="height:93%"></i><i class="p" style="height:37%"></i><i class="p" style="height:71%"></i><i class="p" style="height:99%"></i><i class="p" style="height:32%"></i><i class="p" style="height:89%"></i><i class="p" style="height:52%"></i><i class="p" style="height:29%"></i><i class="p" style="height:36%"></i><i class="" style="height:80%"></i><i class="" style="height:78%"></i><i class="" style="height:33%"></i><i class="" style="height:55%"></i><i class="" style="height:36%"></i><i class="" style="height:95%"></i><i class="" style="height:79%"></i><i class="" style="height:32%"></i><i class="" style="height:97%"></i><i class="" style="height:40%"></i><i class="" style="height:53%"></i><i class="" style="height:99%"></i><i class="" style="height:32%"></i><i class="" style="height:98%"></i><i class="" style="height:99%"></i><i class="" style="height:75%"></i><i class="" style="height:31%"></i><i class="" style="height:53%"></i><i class="" style="height:30%"></i><i class="" style="height:96%"></i><i class="" style="height:42%"></i><i class="" style="height:62%"></i><i class="" style="height:78%"></i><i class="" style="height:43%"></i></div><span class="small muted">1:12</span></div>
+          <div class="card transcript">
+            <p><mark class="fill">Ëëë</mark>, në projektin e klasës bëmë një app me Expo dhe <mark class="fill">pra</mark> lista ngarkohej shumë ngadalë. <mark class="good">E zgjidha duke e ruajtur rezultatin në telefon dhe duke i marrë vetëm 20 punë në një herë, kështu koha ra nga 4 në 1 sekondë.</mark> Pastaj <mark class="fill">ëëë</mark> e testuam me shokët.</p>
+          </div>
+          <div class="wrap"><span class="skill miss">3 fjalë mbushëse</span><span class="skill have">Tempo: 138 fjalë/min</span><span class="skill have">Rezultat me numra</span></div>
+          <p class="xs muted"><mark class="good" style="padding:0 4px">E gjelbër</mark> = fjali e fortë · <mark class="fill" style="padding:0 4px">e verdhë</mark> = fjalë mbushëse</p>
+        </div>
+      </div></div>
+      <p class="note">Speech-to-text e kthen zërin në tekst, AI-ja e shënon. Dëgjimi i vetes është mënyra më e shpejtë për t'i hequr "ëëë"-të.</p>
+    </section>
+
+    <section class="frame" id="s33">
+      <div class="frame-label">33 · CV-ja e re <em>shkarko PDF</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><span class="back" data-go="s6"><svg class="ico"><use href="#i-back"/></svg>Analiza</span><div class="segm" style="width:170px"><span data-act="seg">v1 · 64</span><span class="on" data-act="seg">v2 · 71</span></div></div>
+          <div class="paper">
+            <div class="p-name">Genti V.</div>
+            <div class="p-meta">Student i Inxhinierisë Kompjuterike · Mitrovicë · genti@email.com</div>
+            <div class="p-h">Profili</div>
+            <p>Student në vitin e tretë në UMIB, ndërtoj aplikacione mobile me React Native dhe Supabase.</p>
+            <div class="p-h">Projektet</div>
+            <p><mark class="good">Ndërtova 3 ekrane në React Native për aplikacionin e klasës, me navigim dhe të dhëna nga Supabase.</mark> <span class="ai-tag">AI</span></p>
+            <p>Karriera: app për përgatitjen e intervistave, github.com/VocaDev <span class="ai-tag">AI</span></p>
+            <div class="p-h">Aftësitë</div>
+            <p>React Native · TypeScript · Git · SQL · Anglisht C1 · Gjermanisht B1</p>
+            <div class="p-h">Përvoja</div>
+            <p>Asistent për procese biznesi, 2025–sot</p>
+          </div>
+          <p class="xs muted" style="text-align:center">Rreshtat me <span class="ai-tag">AI</span> u rishkruan. I ndryshon para se ta shkarkosh.</p>
+        </div>
+        <div class="cta" style="grid-template-columns:1fr 1fr"><button class="btn"><svg class="ico sm"><use href="#i-download"/></svg>Shkarko PDF</button><button class="btn soft" data-go="s37"><svg class="ico sm"><use href="#i-share"/></svg>Ndaje</button></div>
+      </div></div>
+      <p class="note">Pas "Ndërtoje me AI" ose rishkrimit: CV-ja e gatshme si dokument, me versionet (v1 → v2) dhe shkarkim në PDF (expo-print + expo-sharing).</p>
+    </section>
+
+    <section class="frame" id="s34">
+      <div class="frame-label">34 · Zgjidh intervistën <em>tab 3</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <h1 class="h-l">Intervista</h1>
+          <div class="segm"><span class="on" data-act="tab" data-val="a">Për një punë</span><span data-act="tab" data-val="b">Për rolin</span></div>
+          <div data-panel="a" class="on" style="gap:10px">
+            <div class="option on" data-act="seg"><div class="grow"><b>Junior React Native Developer</b><div class="small muted">Dardania Soft · 62% gati</div></div><span class="radio"></span></div>
+            <div class="option" data-act="seg"><div class="grow"><b>Praktikant Backend (Node.js)</b><div class="small muted">Ibri Tech · 71% gati</div></div><span class="radio"></span></div>
+          </div>
+          <div data-panel="b" style="gap:10px">
+            <div class="option" data-act="pick-role" data-val="swe"><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><div class="grow"><b>Zhvillues/e softueri</b><div class="small muted">Pyetje teknike + sjellje</div></div><span class="radio"></span></div>
+            <div class="option" data-act="pick-role" data-val="pr"><span class="ic"><svg class="ico"><use href="#i-mic"/></svg></span><div class="grow"><b>Asistent/e ose PR</b><div class="small muted">Situata + detyrë me shkrim</div></div><span class="radio"></span></div>
+          </div>
+          <h2 class="h-s">Sa e gjatë?</h2>
+          <div class="segm"><span class="on" data-act="seg">E shpejtë · 3 pyetje</span><span data-act="seg">E plotë · deri 10</span></div>
+          <h2 class="h-s">Gjuha</h2>
+          <div class="segm"><span data-act="pick-lang" data-val="sq">Shqip</span><span data-act="pick-lang" data-val="en">English</span><span data-act="pick-lang" data-val="de">Deutsch</span></div>
+          <button class="btn" data-go="s38"><svg class="ico sm"><use href="#i-mic"/></svg>Vazhdo</button>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s8"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab on" data-go="s34"><svg class="ico"><use href="#i-mic"/></svg>Intervista</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+      </div></div>
+      <p class="note">Tab-i Intervista hapet këtu: për një punë konkrete ose praktikë e lirë për rolin, e shpejtë (~5 min) ose e plotë (~15 min), në gjuhën që do.</p>
+    </section>
+
+    <section class="frame" id="s35">
+      <div class="frame-label">35 · Detyra me shkrim <em>vetëm për PR</em></div>
+      <div class="phone"><div class="screen interview">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="iv-top"><span class="iconbtn" data-go="s14"><svg class="ico"><use href="#i-x"/></svg></span><div style="display:grid;justify-items:center;gap:6px"><span class="small" style="color:#9AA0AA">Pyetja 3 nga 4</span><div class="dots"><i class="done"></i><i class="done"></i><i class="now"></i><i></i></div></div><span class="small" style="width:44px;text-align:right;color:#9AA0AA">02:14</span></div>
+        <div class="content" style="gap:14px;padding-top:14px">
+          <span class="taskchip" style="justify-self:start;align-self:flex-start">Detyrë me shkrim</span>
+          <p style="font-size:17px;line-height:1.45">Klienti ka kërkuar takim të enjten në 10:00, por ti s'mund. Shkruaj një email të shkurtër ku e shtyn takimin.</p>
+          <div class="write"><b>Subjekti:</b> Takimi i së enjtes<br/><br/>Përshëndetje z. Krasniqi,<br/><br/>Faleminderit për ftesën. Fatkeqësisht të enjten në 10:00 kam një angazhim tjetër. A ju përshtatet e premtja në 11:00 ose e hëna pasdite?<br/><br/>Me respekt,<br/>Genti<span class="caret"></span></div>
+          <div class="between small" style="color:#9AA0AA"><span>48 fjalë</span><span>Vlerësohet: toni, qartësia, drejtshkrimi</span></div>
+        </div>
+        <div class="cta"><button class="btn" style="background:#F3F4F6;color:#0B0D10" data-go="s15">Dërgo përgjigjen</button></div>
+      </div></div>
+      <p class="note">Për rolin Asistent/PR, një pyetje shkruhet në vend që të thuhet: email, postim ose përgjigje klientit, sepse kjo është puna e vërtetë e tyre.</p>
+    </section>
+
+    <section class="frame" id="s36">
+      <div class="frame-label">36 · Të ruajturat</div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span>
+          <div class="between"><h1 class="h-l">Të ruajturat</h1><span class="chip on">Sipas afatit</span></div>
+          <div class="offline-bar"><svg class="ico sm"><use href="#i-clock"/></svg><span class="grow">Afati për Praktikant Backend mbaron pas 2 ditësh</span></div>
+          <div class="jc" data-role="swe" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë · afati 30.10</div><div class="trk d-only" data-s="3"></div><div class="trk-lbl d-only">Tani: <b>Mëso</b> · 1 hap deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë · afati 05.11</div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <p class="xs muted" style="text-align:center">Rrëshqit majtas për ta hequr një punë.</p>
+        </div>
+      </div></div>
+      <p class="note">Punët e ruajtura me shenjën, të renditura sipas afatit. Njoftimi për afatin vjen nga kjo listë.</p>
+    </section>
+
+    <section class="frame" id="s37">
+      <div class="frame-label">37 · Ndaje <em>Roast + rezultatet</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px;align-items:center">
+          <div class="between" style="width:100%"><span class="back" data-go="s6"><svg class="ico"><use href="#i-back"/></svg></span><b>Ndaje</b><span style="width:40px"></span></div>
+          <div class="story">
+            <div class="row-x" style="gap:8px"><svg class="appicon ic-c1 v-light" viewBox="0 0 100 100" width="28" height="28" style="width:28px;height:28px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><path class="ifg-s" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 11" opacity=".55"/><path class="ifg-s" pathLength="100" d="M22 78 C 42 78, 30 52, 50 52 S 60 30, 78 26" stroke-width="7" stroke-linecap="round"/><circle class="ifg" cx="22" cy="78" r="6"/><g class=""><circle class="ifg" cx="78" cy="26" r="12"/><path class="iacc-s" d="M72.5 26.5 l3.8 3.8 L84 22.5" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg><b>Karriera</b></div>
+            <div class="story-q">"Projekt pa link në GitHub = projekt imagjinar."</div>
+            <div class="small" style="opacity:.8">Karriera i bëri roast CV-së sime</div>
+            <div class="story-score">64<small>/100</small></div>
+            <div class="xs" style="opacity:.75">Sa i bën CV-ja jote?</div>
+          </div>
+          <div class="share-row">
+            <div><span><svg class="ico"><use href="#i-image"/></svg></span>Story</div>
+            <div><span><svg class="ico"><use href="#i-send"/></svg></span>Mesazh</div>
+            <div><span><svg class="ico"><use href="#i-download"/></svg></span>Ruaje</div>
+            <div><span><svg class="ico"><use href="#i-link"/></svg></span>Linku</div>
+          </div>
+          <p class="xs muted">Pa emrin tënd dhe pa CV-në: vetëm nota dhe një fjali.</p>
+        </div>
+      </div></div>
+      <p class="note">Foto 9:16 për Instagram Story me një fjali nga Roast-i. Studentët e ndajnë, shokët e shkarkojnë: marketing pa kosto.</p>
+    </section>
+
+    <section class="frame" id="s38">
+      <div class="frame-label">38 · Leja para iOS-it <em>në kontekst</em></div>
+      <div class="phone"><div class="screen" data-perms>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="dimtop"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="content" style="gap:14px;text-align:center;justify-items:center;align-items:center">
+            <div data-perm="cam" class="perm"><div class="perm-ic"><svg class="ico"><use href="#i-camera"/></svg><svg class="ico"><use href="#i-mic"/></svg></div><h1 class="h-m">Intervistuesi duhet të të shohë dhe të dëgjojë</h1><p class="small muted">Mikrofoni për përgjigjet. Kamera për këshillat mbi kontaktin me sy dhe qëndrimin. Videoja nuk ruhet.</p></div>
+            <div data-perm="loc" class="perm" hidden><div class="perm-ic"><svg class="ico"><use href="#i-pin"/></svg></div><h1 class="h-m">Punë afër teje?</h1><p class="small muted">Lokacioni përdoret vetëm për filtrin "Afër meje", vetëm kur app-i është i hapur.</p></div>
+            <div data-perm="notif" class="perm" hidden><div class="perm-ic"><svg class="ico"><use href="#i-bell"/></svg></div><h1 class="h-m">Të njoftojmë për punë të reja?</h1><p class="small muted">Punë të reja për rolin tënd, afatet e punëve të ruajtura dhe pyetja e ditës. Maksimum një në ditë.</p></div>
+            <div class="small muted">Pastaj iPhone-i e kërkon lejen një herë.</div>
+          </div>
+          <div class="cta"><button class="btn" data-go="s13">Vazhdo</button><button class="btn ghost" data-go="s39">Jo tani</button></div>
+        </div>
+      </div></div>
+      <div class="frame-tools"><button data-act="perm" data-val="cam">Kamera + mikrofoni</button><button data-act="perm" data-val="loc">Lokacioni</button><button data-act="perm" data-val="notif">Njoftimet</button></div>
+      <p class="note">iOS e lejon dritaren e lejes vetëm një herë. Prandaj e shpjegojmë së pari, pikërisht kur duhet, jo në hapjen e parë të app-it.</p>
+    </section>
+
+    <section class="frame" id="s39">
+      <div class="frame-label">39 · Leja u refuzua</div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:16px">
+          <span class="back" data-go="s34"><svg class="ico"><use href="#i-back"/></svg></span>
+          <div class="perm-ic" style="justify-self:start;align-self:flex-start;background:color-mix(in oklab, var(--warn) 15%, transparent);color:var(--warn)"><svg class="ico"><use href="#i-camoff"/></svg></div>
+          <h1 class="h-l">Kamera është e fikur për Karriera</h1>
+          <p class="muted">Pa kamerë intervista punon, por pa këshillat për gjuhën e trupit dhe pa kontrollin e integritetit.</p>
+          <div class="card" style="display:grid;gap:12px">
+            <div class="step"><span class="n">1</span><span class="small">Hap Cilësimet e iPhone-it</span></div>
+            <div class="step"><span class="n">2</span><span class="small">Gjej Karriera</span></div>
+            <div class="step"><span class="n">3</span><span class="small">Aktivizo Kamerën dhe Mikrofonin</span></div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn">Hap Cilësimet</button><button class="btn ghost" data-go="s14">Vazhdo vetëm me zë</button></div>
+      </div></div>
+      <p class="note">Asnjë rrugë pa dalje: një buton të çon direkt te cilësimet (Linking.openSettings), tjetri e vazhdon intervistën vetëm me zë.</p>
+    </section>
+
+    <section class="frame" id="s40">
+      <div class="frame-label">40 · Cilësimet</div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s18"><svg class="ico"><use href="#i-back"/></svg>Profili</span>
+          <h1 class="h-l">Cilësimet</h1>
+          <h2 class="h-s">Gjuha e app-it</h2>
+          <div class="segm"><span class="on" data-act="seg">Shqip</span><span data-act="seg">English</span><span data-act="seg">Deutsch</span></div>
+          <h2 class="h-s">Pamja</h2>
+          <div class="segm"><span data-act="theme" data-val="light">E çelët</span><span data-act="theme" data-val="dark">E errët</span></div>
+          <h2 class="h-s">Njoftimet</h2>
+          <div class="list">
+            <div class="li on" data-act="toggle"><div class="grow">Punë të reja</div><span class="switch"></span></div>
+            <div class="li on" data-act="toggle"><div class="grow">Afatet e punëve të ruajtura</div><span class="switch"></span></div>
+            <div class="li" data-act="toggle"><div class="grow">Pyetja e ditës</div><span class="switch"></span></div>
+          </div>
+          <h2 class="h-s">Privatësia</h2>
+          <div class="list">
+            <div class="li"><svg class="ico"><use href="#i-download"/></svg><div class="grow">Shkarko të dhënat e mia</div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li exp" data-act="expand" style="color:var(--bad)"><svg class="ico"><use href="#i-trash"/></svg><div class="grow"><b>Fshi llogarinë</b></div><svg class="ico sm chev"><use href="#i-chev"/></svg><div class="more" style="color:var(--text)">Fshihen CV-ja, intervistat, progresi dhe llogaria. Nuk kthehen më. <button class="btn sm" style="background:var(--bad);color:#fff;margin-top:10px;width:100%">Po, fshije përgjithmonë</button></div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="note">Prek "E errët": i gjithë bordi ndërron. Fshirja e llogarisë dhe shkarkimi i të dhënave kërkohen për faqen e privatësisë te APK-ja (java 13).</p>
+    </section>
 
   </div>
 </div>
@@ -1556,6 +1917,7 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
     root.querySelectorAll('[data-bind="lang"]').forEach(e => e.textContent = LANGN[S.lang]);
     root.querySelectorAll('[data-bind="role"]').forEach(e => e.textContent = ROLEN[S.role]);
     root.querySelectorAll('[data-bind="iv-job"]').forEach(e => e.textContent = JOB[S.role].job);
+    root.querySelectorAll('[data-bind="daily"]').forEach(e => e.textContent = S.role === 'swe' ? 'Çka është props në React dhe si ndryshon nga state?' : 'Si i përgjigjesh një klienti që të shkruan i nervozuar në orën 22:00?');
     root.querySelectorAll('[data-bind="iv-co"]').forEach(e => e.textContent = JOB[S.role].co);
     root.querySelectorAll('[data-act="pick-role"]').forEach(e => e.classList.toggle('on', e.dataset.val === S.role));
     root.querySelectorAll('[data-act="pick-lang"]').forEach(e => e.classList.toggle('on', e.dataset.val === S.lang));
@@ -1716,6 +2078,17 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
       case 'pick-lang': setLang(v); break;
       case 'filter': scr.querySelectorAll('[data-act="filter"]').forEach(c => c.classList.toggle('on', c === a)); filterJobs(scr); break;
       case 'save': a.classList.toggle('on'); break;
+      case 'seg': [...a.parentElement.children].filter(c => c.dataset.act === 'seg').forEach(c => c.classList.toggle('on', c === a)); break;
+      case 'toggle': a.classList.toggle('on'); break;
+      case 'theme': setDark(v === 'dark'); syncTheme(); break;
+      case 'play': a.closest('.player').classList.toggle('playing'); break;
+      case 'perm': { const f = a.closest('.frame') || document; f.querySelectorAll('[data-perm]').forEach(p => p.hidden = p.dataset.perm !== v); document.querySelectorAll('#protoPhone [data-perm]').forEach(p => p.hidden = p.dataset.perm !== v); break; }
+      case 'daily': {
+        if (scr.classList.contains('rec') || scr.classList.contains('answered')) break;
+        scr.classList.add('rec');
+        setTimeout(() => { scr.classList.remove('rec'); scr.classList.add('answered'); const n = scr.querySelector('.streak-n'); if (n) n.textContent = '6'; }, 2200);
+        break;
+      }
       case 'roast': a.classList.toggle('on'); scr.classList.toggle('roast'); break;
       case 'cv-next': cvNext(scr); break;
       case 'read-link': runSteps(scr.querySelector('[data-steps]')); break;
@@ -1766,7 +2139,8 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
     save();
   };
   const setDir = d => { dir = d; body.classList.remove('dir-a', 'dir-b', 'dir-c', 'dir-d'); body.classList.add('dir-' + d); document.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('on', b.dataset.dir === d)); save(); };
-  const setDark = v => { dark = v; body.classList.toggle('dark', v); document.getElementById('darkBtn').textContent = v ? 'Light' : 'Dark'; save(); };
+  const syncTheme = () => document.querySelectorAll('[data-act="theme"]').forEach(t => t.classList.toggle('on', (t.dataset.val === 'dark') === dark));
+  const setDark = v => { dark = v; body.classList.toggle('dark', v); document.getElementById('darkBtn').textContent = v ? 'Light' : 'Dark'; save(); if (typeof syncTheme === 'function') syncTheme(); };
   const fit = () => { const w = world.offsetWidth, h = world.offsetHeight, r = vp.getBoundingClientRect(); s = Math.min(r.width / w, r.height / h); x = (r.width - w * s) / 2; y = 0; apply(true); };
   const flyTo = (el) => {
     if (!el) return;
@@ -1789,12 +2163,13 @@ body.dark .iconset-grid div { background:rgba(255,255,255,.05); }
   };
   let hist = [], seenLoad = new Set(), protoTimer = null;
   const LOADER = { s9: ['s24', 1400], s12: ['s25', 2600], s15: ['s26', 2600] };
+  const resetDaily = (c) => { c.classList.remove('rec', 'answered'); const n = c.querySelector('.streak-n'); if (n) n.textContent = '5'; };
   const protoShow = (id, push = true, back = false) => {
     clearTimeout(protoTimer);
     const frame = document.getElementById(id); if (!frame) return;
     const old = protoPhone.querySelector('.screen'); if (old && old._iv) old._iv.stop();
     const clone = frame.querySelector('.screen').cloneNode(true);
-    clone.classList.remove('roast');
+    clone.classList.remove('roast'); resetDaily(clone);
     protoPhone.innerHTML = ''; protoPhone.appendChild(clone);
     if (push) hist.push(id);
     document.getElementById('protoName').textContent = frame.querySelector('.frame-label').firstChild.textContent.trim();
