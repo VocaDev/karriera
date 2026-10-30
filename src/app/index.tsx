@@ -1,19 +1,25 @@
 import { Link } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 
 import { punet } from "@/data/punet";
+import KartaPunes from "@/components/KartaPunes";
 
-// Edoniku: këtu vjen FlatList-i me komponentin KartaPunes (çdo rresht hap /pune/[id]).
 export default function Index() {
   return (
     <View style={styles.container}>
-      <Text>{punet.length} punë gati për listën.</Text>
-      <Link href="/pune/p1" style={styles.linku}>
-        Provo detajet: /pune/p1
-      </Link>
-      <Link href="/pune/x99" style={styles.linku}>
-        Provo rojën: /pune/x99
-      </Link>
+      <FlatList
+        data={punet}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <Link href={("/pune/" + item.id) as any} asChild>
+            <KartaPunes
+              titulli={item.titulli}
+              kompania={item.kompania}
+              qyteti={item.qyteti}
+            />
+          </Link>
+        )}
+      />
     </View>
   );
 }
@@ -21,9 +27,5 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
   },
-  linku: { color: "#155E54", fontSize: 16 },
 });
