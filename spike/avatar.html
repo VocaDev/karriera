@@ -55,7 +55,7 @@ const set = (id, ok, txt) => { const e = $(id); e.className = ok === null ? "wai
 const log = m => { $("log").textContent += m + "\n"; };
 window.addEventListener("error", e => log("Gabim: " + e.message));
 window.addEventListener("unhandledrejection", e => log("Gabim: " + (e.reason && e.reason.message || e.reason)));
-const BASE = new URL(".", location.href).href;
+const BASE = location.protocol === "http:" ? new URL(".", location.href).href : "https://cdn.jsdelivr.net/gh/VocaDev/karriera@461cbaa47946cba42a087ec58db022fc512b69d0/spike/";
 
 // ---- Albanian text → Oculus visemes (shqipja shkruhet si flitet) ----
 const DIG = { dh:"TH", th:"TH", gj:"kk", ll:"nn", nj:"nn", rr:"RR", sh:"CH", xh:"CH", zh:"CH" };
