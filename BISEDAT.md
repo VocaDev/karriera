@@ -18,11 +18,11 @@ Si e zgjidhi: E bëri CV-në me shabllonin Europass dhe e hulumtoi vetë kompani
 Çka i kushtoi: Rreth 4 muaj kërkim, hulumtim dhe aplikime.
 Çka nuk e dinim: Kur e pyetëm çka do t'i duhej ta dinte më herët, tha: "mos me aplikue n'atë punë fare". Pas 4 muajsh punë, e kuptoi vetëm në fund që puna nuk ishte për të. Mësimi për ne: përshtatja me punën duhet të dihet para aplikimit, jo pas.
 
-## Biseda 2 · DD.MM.2026 · roli (p.sh. "i sapodiplomuar që kërkon punën e parë")
-Hera e fundit: ...
-Si e zgjidhi: ...
-Çka i kushtoi: ...
-Çka nuk e dinim: ...
+## Biseda 2 · 02.11.2026 · kandidat për AI Engineer Intern
+Hera e fundit: Në janar 2026 aplikoi për praktikën AI Engineer Intern.
+Si e zgjidhi: E përgatiti CV-në vetë, duke ndjekur "best practices" që i gjeti nëpër faqe të ndryshme. Ia dërgoi një shoqeje që kishte qenë në atë fushë një vit para tij dhe e kontrolloi me një mjet AI për strukturën dhe tekstin. Përgatitjen e bëri paralelisht me kërkimin, duke u aftësuar (upskill).
+Çka i kushtoi: Rreth 2–3 muaj kërkim, sepse ishte fundi i vitit dhe kishte pak vende të hapura.
+Çka nuk e dinim: Do t'i kishte ndihmuar të dinte çka kërkohet dhe çka e bën kandidatin të preferuar në aspektin e njohurive. E vështirësoi edhe pritja e gjatë mes fazave të testimit dhe rezultateve.
 
 ## Biseda 3 · DD.MM.2026 · roli (p.sh. "studente jashtë IT-së që aplikoi si asistente")
 Hera e fundit: ...
