@@ -12,7 +12,7 @@ Rreth 140 fjalë, rreth 60 sekonda me zë. Provë me kronometër: 1. ___ s · 2.
 > Çdo vit 25 deri në 30 mijë të rinj hyjnë në tregun e punës në Kosovë, ndërsa rreth 4 mijë gjejnë punë. [Nga bisedat: një fjali e vërtetë, p.sh. sa nga tre e kishin dërguar CV-në pa ia treguar askujt.] Mjetet që ekzistojnë kushtojnë 8 deri 90 dollarë në muaj dhe janë vetëm në anglisht.
 
 **4 · Puna e vetme**
-> Karriera të tregon sa je gati për një punë konkrete dhe të përgatit deri te "gati": analizon CV-në, gjen shpalljet, të bën intervistë praktike me një avatar në shqip, anglisht ose gjermanisht, dhe të thotë çka të mësosh.
+> Karriera të tregon sa je gati për një punë konkrete dhe të lejon ta praktikosh intervistën për atë punë, me një avatar që të pyet me zë në shqip, anglisht ose gjermanisht. Pas çdo intervistë sheh çka të përmirësosh dhe sa u rrit gatishmëria jote.
 
 **5 · Çka na duhet**
 > Na duhen dhjetë studentë që ta provojnë në dhjetor dhe të na thonë sinqerisht ku ngecin.

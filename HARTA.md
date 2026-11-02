@@ -2,43 +2,50 @@
 
 ## Puna e vetme
 
-**Ta dish sa je gati për një punë konkrete dhe çka të bësh që të bëhesh gati.**
+**Ta dish sa je gati për një punë konkrete dhe ta praktikosh intervistën derisa të bëhesh gati.**
+
+Dy pjesë që lidhen: **gatishmëria** të thotë ku je dhe çka të mungon, **intervista** është mënyra si e rrit atë.
 
 ## Rrjedha kryesore (5 ekrane)
 
 ```
-1. CV-ja            ngarko PDF ose "ndërtoje me AI" (5 pyetje) → nota /100 + çka të rregullosh
+1. CV-ja            ngarko PDF një herë → AI e lexon (aftësitë, përvoja)
       │
       ▼
-2. Punët            shpallje nga portalet e Kosovës + "sill linkun tënd" → detajet e punës
+2. Punët            shpallje nga portalet e Kosovës + "sill linkun tënd"
       │
       ▼
-3. A jam gati?      % gatishmëria · çka ke · çka të mungon · si ta mbyllësh boshllëkun
+3. A jam gati?      % gatishmëria · çka ke · çka të mungon
       │
       ▼
-4. Intervista       avatar 3D që pyet me zë (shqip / anglisht / gjermanisht), ti përgjigjesh me kamerë
+4. Intervista       avatari pyet me zë për atë punë, ti përgjigjesh (shqip / anglisht / gjermanisht)
       │
       ▼
-5. Rezultatet       nota për çdo përgjigje · gjuha e trupit · çka të mësosh (video YouTube)
+5. Rezultatet       feedback për çdo përgjigje · gatishmëria e re (p.sh. 62% → 70%)
       │
-      └──► praktiko përsëri: gatishmëria rritet (p.sh. 62% → 78%)
+      └──► praktiko përsëri derisa të jesh "gati"
 ```
 
-Skica e të gjitha ekraneve: `design/karriera-ui.html` (hape në shfletues, butoni "▶ Prototipi"). Rrjedha më sipër = ekranet 06, 09, 12, 14 dhe 15 në bord.
+Skica e të gjitha ekraneve: `design/karriera-ui.html` (hape në shfletues, butoni "▶ Prototipi"). Rrjedha më sipër = ekranet 03, 09, 12, 14 dhe 15 në bord.
 
-## Brenda / jashtë për MVP-në
+## Brenda / jashtë
 
-| ✅ Brenda (MVP) | ❌ Jashtë (më vonë) |
+**✅ Brenda**, sipas javëve të lëndës:
+
+| Kur | Çka ndërtojmë |
 |---|---|
-| Regjistrimi me rolin dhe gjuhën e intervistës | Rolet e tjera përveç SWE dhe Asistent/PR |
-| CV: ngarko PDF ose ndërtoje me AI | Moduli i Gjermanisë (shpalljet e Bundesagentur) |
-| Analiza e CV-së me AI (nota, seksionet, rishkrimi) | "Lidhja": njerëz që njohin kompaninë |
-| Shpallje nga KosovaJob, Ofertapune, Portalpune | Nivelet, sfida e javës, renditja e klasës |
-| "Sill linkun tënd" (link ose screenshot) | Tracker-i i aplikimeve |
-| "A jam gati?": %, çka ke, çka të mungon | Ndarja e Roast-it si Instagram Story |
-| Intervistë adaptive me avatar, 3–4 pyetje, SQ / EN / DE | Leximi automatik i LinkedIn-it |
-| Rezultatet + gjuha e trupit + sinjalet e integritetit | Bisedë që ndërpritet në mes (full-duplex) |
-| Mëso: video YouTube për aftësitë që mungojnë | Publikimi në App Store (99 $ në vit) |
-| Gatishmëria për çdo punë + streak | Pagesat |
-| Llogaria (Supabase Auth) + RLS | |
-| Njoftimet (punë të reja, afatet) | |
+| **MVP · 18.11** | Llogaria + roli (SWE ose Asistent/PR) · shpalljet nga 2–3 portale + "sill linkun tënd" · ngarkimi i CV-së · të dhënat në Supabase |
+| **AI · 02.12** | Analiza e CV-së · "A jam gati?" (% · ke · mungon) · intervista me tekst: pyetje adaptive + feedback me structured output |
+| **Telefoni · 09.12** | Intervista me zë · avatari 3D · kamera · gatishmëria që rritet pas çdo intervistë · njoftimet |
+| **Demo Day · 13.01** | Gjuha e trupit · sinjalet e integritetit · streak-u · video YouTube për atë që mungon |
+
+**❌ Jashtë** (pas Demo Day-t):
+- Ndërto CV-në me AI (pa CV)
+- Rolet e tjera përveç SWE dhe Asistent/PR
+- Moduli i Gjermanisë (shpalljet e Bundesagentur)
+- "Lidhja": njerëz që njohin kompaninë
+- Nivelet, sfida e javës, renditja e klasës
+- Pyetja e ditës dhe ndarja e rezultateve në rrjete sociale
+- Leximi automatik i LinkedIn-it (zgjidhja: screenshot)
+- Bisedë që ndërpritet në mes (full-duplex)
+- Publikimi në App Store dhe pagesat
