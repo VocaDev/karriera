@@ -14,7 +14,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; background: #0B0D10; color: #F3F4F6; font: 15px/1.4 -apple-system, system-ui, sans-serif; }
-  #avatar { position: fixed; inset: 0 0 46% 0; }
+  #avatar { position: fixed; inset: 0 0 46% 0; pointer-events: none; touch-action: none; }
   #me { position: fixed; top: calc(env(safe-area-inset-top) + 12px); right: 12px; width: 96px; height: 128px; object-fit: cover; border-radius: 14px; border: 2px solid rgba(255,255,255,.3); background: #222; transform: scaleX(-1); }
   #panel { position: fixed; left: 0; right: 0; bottom: 0; height: 46%; padding: 14px 16px calc(env(safe-area-inset-bottom) + 14px); background: #14171C; border-radius: 22px 22px 0 0; overflow: auto; }
   h1 { font-size: 17px; margin-bottom: 8px; }
@@ -76,7 +76,7 @@ let head, stream, analyser, landmarker, video = $("me"), micLevelDuringSpeech = 
 
 // 1 · avatar
 try {
-  head = new TalkingHead($("avatar"), { lipsyncModules: ["fi"], cameraView: "upper", avatarIdleEyeContact: 0.6, avatarSpeakingEyeContact: 0.8 });
+  head = new TalkingHead($("avatar"), { lipsyncModules: ["fi"], cameraView: "upper", cameraRotateEnable: false, cameraPanEnable: false, cameraZoomEnable: false, avatarIdleEyeContact: 0.6, avatarSpeakingEyeContact: 0.8 });
   await head.showAvatar({ url: BASE + "mpfb-opt.glb", body: "F", avatarMood: "neutral", lipsyncLang: "fi" },
     ev => { if (ev.lengthComputable) $("t1").textContent = Math.round(ev.loaded / ev.total * 100) + "%"; });
   set("t1", true);
