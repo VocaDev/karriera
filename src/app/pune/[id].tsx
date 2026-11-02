@@ -19,7 +19,7 @@ export default function DetajetEPunes() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.faqja}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.faqja}>
       <Stack.Screen options={{ title: puna.kompania }} />
       <Text style={styles.titulli}>{puna.titulli}</Text>
       <Text style={styles.nentitulli}>

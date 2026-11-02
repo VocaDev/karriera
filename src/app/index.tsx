@@ -8,6 +8,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <FlatList
+        contentInsetAdjustmentBehavior="automatic"
         data={punet}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
