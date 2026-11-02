@@ -1,5 +1,5 @@
 import { Link } from "expo-router";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 
 import { punet } from "@/data/punet";
 import KartaPunes from "@/components/KartaPunes";
@@ -20,6 +20,11 @@ export default function Index() {
             />
           </Link>
         )}
+        ListFooterComponent={
+          <Link href="/spike" style={styles.spike}>
+            <Text style={styles.spikeText}>🧪 Testi i avatarit</Text>
+          </Link>
+        }
       />
     </View>
   );
@@ -29,4 +34,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  spike: { padding: 16 },
+  spikeText: { color: "#F2611D", fontWeight: "700", fontSize: 16 },
 });

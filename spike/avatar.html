@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Karriera · Testi i avatarit</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/",
+  "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.8/modules/talkinghead.mjs"
+} }
+</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0B0D10; color: #F3F4F6; font: 15px/1.4 -apple-system, system-ui, sans-serif; }
+  #avatar { position: fixed; inset: 0 0 46% 0; }
+  #me { position: fixed; top: calc(env(safe-area-inset-top) + 12px); right: 12px; width: 96px; height: 128px; object-fit: cover; border-radius: 14px; border: 2px solid rgba(255,255,255,.3); background: #222; transform: scaleX(-1); }
+  #panel { position: fixed; left: 0; right: 0; bottom: 0; height: 46%; padding: 14px 16px calc(env(safe-area-inset-bottom) + 14px); background: #14171C; border-radius: 22px 22px 0 0; overflow: auto; }
+  h1 { font-size: 17px; margin-bottom: 8px; }
+  #subs { min-height: 42px; font-size: 16px; color: #C9F2D7; margin-bottom: 10px; }
+  .row { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px solid #262A31; font-size: 14px; }
+  .row b { font-weight: 600; }
+  .ok { color: #7CE3A3; } .bad { color: #FF7A7A; } .wait { color: #9AA0AA; }
+  button { width: 100%; height: 52px; border: 0; border-radius: 26px; font: 700 17px -apple-system, system-ui; margin: 10px 0 4px; background: #F2611D; color: #fff; }
+  button:disabled { opacity: .45; }
+  #meter { height: 8px; border-radius: 4px; background: #262A31; overflow: hidden; margin-top: 4px; }
+  #meter i { display: block; height: 100%; width: 0; background: #7CE3A3; transition: width .08s; }
+  #log { font: 11px ui-monospace, monospace; color: #9AA0AA; white-space: pre-wrap; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="avatar"></div>
+<video id="me" playsinline webkit-playsinline muted autoplay></video>
+<div id="panel">
+  <h1>Testi i avatarit · Karriera</h1>
+  <div id="subs">Prek butonin. iPhone-i do të kërkojë leje për kamerën dhe mikrofonin.</div>
+  <button id="go">Fillo testin</button>
+  <div class="row"><span>1 · Avatari 3D u ngarkua</span><b id="t1" class="wait">…</b></div>
+  <div class="row"><span>2 · Kamera</span><b id="t2" class="wait">…</b></div>
+  <div class="row"><span>3 · Mikrofoni</span><b id="t3" class="wait">…</b></div>
+  <div id="meter"><i></i></div>
+  <div class="row"><span>4 · Avatari flet shqip + buzët lëvizin</span><b id="t4" class="wait">…</b></div>
+  <div class="row"><span>5 · Mikrofoni punon edhe pasi flet avatari</span><b id="t5" class="wait">…</b></div>
+  <div class="row"><span>6 · MediaPipe: fytyra + shikimi</span><b id="t6" class="wait">…</b></div>
+  <div class="row"><span>Fytyra në kamerë / sytë në ekran</span><b id="t7" class="wait">–</b></div>
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import { TalkingHead } from "talkinghead";
+
+const $ = id => document.getElementById(id);
+const set = (id, ok, txt) => { const e = $(id); e.className = ok === null ? "wait" : ok ? "ok" : "bad"; e.textContent = txt || (ok ? "✓ PO" : "✗ JO"); };
+const log = m => { $("log").textContent += m + "\n"; };
+window.addEventListener("error", e => log("Gabim: " + e.message));
+window.addEventListener("unhandledrejection", e => log("Gabim: " + (e.reason && e.reason.message || e.reason)));
+const BASE = new URL(".", location.href).href;
+
+// ---- Albanian text → Oculus visemes (shqipja shkruhet si flitet) ----
+const DIG = { dh:"TH", th:"TH", gj:"kk", ll:"nn", nj:"nn", rr:"RR", sh:"CH", xh:"CH", zh:"CH" };
+const ONE = { a:"aa", e:"E", "ë":"E", i:"I", y:"U", o:"O", u:"U",
+  b:"PP", p:"PP", m:"PP", f:"FF", v:"FF", d:"DD", t:"DD", n:"nn", l:"nn",
+  k:"kk", g:"kk", q:"kk", c:"SS", "ç":"CH", x:"SS", s:"SS", z:"SS", r:"RR", j:"I", h:"kk" };
+function sqVisemes(word) {
+  const w = word.toLowerCase().replace(/[^a-zëç]/g, ""); const out = [];
+  for (let i = 0; i < w.length; i++) {
+    const two = w.slice(i, i + 2);
+    if (DIG[two]) { out.push(DIG[two]); i++; continue; }
+    if (ONE[w[i]]) out.push(ONE[w[i]]);
+  }
+  return out;
+}
+
+let head, stream, analyser, landmarker, video = $("me"), micLevelDuringSpeech = 0, faceStats = { frames: 0, face: 0, look: 0, multi: 0 };
+
+// 1 · avatar
+try {
+  head = new TalkingHead($("avatar"), { lipsyncModules: ["fi"], cameraView: "upper", avatarIdleEyeContact: 0.6, avatarSpeakingEyeContact: 0.8 });
+  await head.showAvatar({ url: BASE + "mpfb-opt.glb", body: "F", avatarMood: "neutral", lipsyncLang: "fi" },
+    ev => { if (ev.lengthComputable) $("t1").textContent = Math.round(ev.loaded / ev.total * 100) + "%"; });
+  set("t1", true);
+} catch (e) { set("t1", false); log("Avatari: " + e.message); }
+
+$("go").onclick = async () => {
+  $("go").disabled = true;
+  // 2 + 3 · camera and microphone at the same time
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 }, audio: true });
+    video.srcObject = stream; await video.play().catch(() => {});
+    set("t2", stream.getVideoTracks().length > 0);
+    const ctx = head ? head.audioCtx : new AudioContext();
+    await ctx.resume();
+    const src = ctx.createMediaStreamSource(stream);
+    analyser = ctx.createAnalyser(); analyser.fftSize = 512; src.connect(analyser);
+    set("t3", stream.getAudioTracks().length > 0);
+    meterLoop();
+  } catch (e) { set("t2", false); set("t3", false); log("Kamera/mikrofoni: " + e.name + " " + e.message); }
+
+  // 6 · MediaPipe
+  startFace();
+
+  // 4 · avatar speaks Albanian
+  try {
+    if (!head) throw new Error("pa avatar");
+    await head.audioCtx.resume();
+    const [buf, words] = await Promise.all([
+      fetch(BASE + "sq.mp3").then(r => r.arrayBuffer()).then(b => head.audioCtx.decodeAudioData(b)),
+      fetch(BASE + "sq.json").then(r => r.json())
+    ]);
+    const W = words.filter(x => x.t === "WordBoundary");
+    const vis = [], vt = [], vd = [];
+    for (const w of W) {
+      const v = sqVisemes(w.w); if (!v.length) continue;
+      const step = w.d / v.length;
+      v.forEach((x, k) => { vis.push(x); vt.push(w.o + k * step); vd.push(step); });
+    }
+    head.speakAudio({ audio: buf, words: W.map(w => w.w), wtimes: W.map(w => w.o), wdurations: W.map(w => w.d), visemes: vis, vtimes: vt, vdurations: vd },
+      {}, s => { $("subs").textContent += s; });
+    $("subs").textContent = "";
+    set("t4", null, "po flet…");
+    setTimeout(() => { set("t4", null, "A lëvizën buzët? Shiko ↑"); checkMicAfter(); }, buf.duration * 1000 + 600);
+  } catch (e) { set("t4", false); log("Të folurit: " + e.message); }
+};
+
+function level() {
+  if (!analyser) return 0;
+  const a = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(a);
+  let s = 0; for (const x of a) s += (x - 128) ** 2; return Math.min(1, Math.sqrt(s / a.length) / 40);
+}
+function meterLoop() { $("meter").firstChild.style.width = (level() * 100) + "%"; requestAnimationFrame(meterLoop); }
+
+// 5 · mic still alive after the avatar spoke
+function checkMicAfter() {
+  set("t5", null, "Thuaj diçka me zë…");
+  let max = 0; const t0 = performance.now();
+  const iv = setInterval(() => {
+    max = Math.max(max, level());
+    if (max > 0.15) { clearInterval(iv); set("t5", true, "✓ PO, të dëgjoj"); }
+    else if (performance.now() - t0 > 8000) { clearInterval(iv); set("t5", false, "✗ s'u dëgjua zë"); }
+  }, 100);
+}
+
+async function startFace() {
+  try {
+    set("t6", null, "po ngarkohet…");
+    const v = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0/vision_bundle.mjs");
+    const files = await v.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0/wasm");
+    const opts = (delegate) => ({ baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate },
+      runningMode: "VIDEO", numFaces: 2, outputFaceBlendshapes: true });
+    try { landmarker = await v.FaceLandmarker.createFromOptions(files, opts("GPU")); log("MediaPipe: GPU"); }
+    catch { landmarker = await v.FaceLandmarker.createFromOptions(files, opts("CPU")); log("MediaPipe: CPU"); }
+    set("t6", true);
+    faceLoop();
+  } catch (e) { set("t6", false); log("MediaPipe: " + e.message); }
+}
+let lastT = -1;
+function faceLoop() {
+  if (video.readyState >= 2 && video.currentTime !== lastT) {
+    lastT = video.currentTime;
+    const r = landmarker.detectForVideo(video, performance.now());
+    faceStats.frames++;
+    const n = r.faceLandmarks.length;
+    if (n >= 1) faceStats.face++;
+    if (n >= 2) faceStats.multi++;
+    if (n >= 1 && r.faceBlendshapes[0]) {
+      const b = Object.fromEntries(r.faceBlendshapes[0].categories.map(c => [c.categoryName, c.score]));
+      const away = Math.max(b.eyeLookOutLeft, b.eyeLookOutRight, b.eyeLookInLeft, b.eyeLookInRight, b.eyeLookDownLeft, b.eyeLookDownRight, b.eyeLookUpLeft, b.eyeLookUpRight);
+      if (away < 0.45) faceStats.look++;
+    }
+    const pct = x => Math.round(x / faceStats.frames * 100) + "%";
+    $("t7").className = "ok";
+    $("t7").textContent = (n === 0 ? "pa fytyrë" : n + " fytyrë") + " · sytë " + (faceStats.face ? Math.round(faceStats.look / faceStats.face * 100) + "%" : "–") + (faceStats.multi ? " · 2+ fytyra!" : "");
+  }
+  requestAnimationFrame(faceLoop);
+}
+</script>
+</body>
+</html>
