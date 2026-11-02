@@ -12,11 +12,11 @@ Tri biseda me njerëz që e kanë vërtet problemin: kërkojnë ose kanë kërku
 
 ---
 
-## Biseda 1 · DD.MM.2026 · roli (p.sh. "studente e vitit të fundit, IT")
-Hera e fundit: ...
-Si e zgjidhi: ...
-Çka i kushtoi: ...
-Çka nuk e dinim: ...
+## Biseda 1 · 02.11.2026 · kandidat për Junior Developer & Asistent
+Hera e fundit: Në prill 2026 aplikoi për pozitën Junior Developer & Asistent.
+Si e zgjidhi: E bëri CV-në me shabllonin Europass dhe e hulumtoi vetë kompaninë ku po aplikonte. Askush nuk ia kontrolloi CV-në.
+Çka i kushtoi: Rreth 4 muaj kërkim, hulumtim dhe aplikime.
+Çka nuk e dinim: Pas gjithë asaj kohe, sot thotë se nuk do të aplikonte fare në atë punë. Askush nuk e ndihmoi ta kuptonte para aplikimit nëse puna i përshtatej, kështu humbi muaj për një punë që nuk ishte për të.
 
 ## Biseda 2 · DD.MM.2026 · roli (p.sh. "i sapodiplomuar që kërkon punën e parë")
 Hera e fundit: ...
