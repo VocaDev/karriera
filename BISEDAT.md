@@ -24,8 +24,8 @@ Si e zgjidhi: E përgatiti CV-në vetë, duke ndjekur "best practices" që i gje
 Çka i kushtoi: Rreth 2–3 muaj kërkim, sepse ishte fundi i vitit dhe kishte pak vende të hapura.
 Çka nuk e dinim: Do t'i kishte ndihmuar të dinte çka kërkohet dhe çka e bën kandidatin të preferuar në aspektin e njohurive. E vështirësoi edhe pritja e gjatë mes fazave të testimit dhe rezultateve.
 
-## Biseda 3 · DD.MM.2026 · roli (p.sh. "studente jashtë IT-së që aplikoi si asistente")
-Hera e fundit: ...
-Si e zgjidhi: ...
-Çka i kushtoi: ...
-Çka nuk e dinim: ...
+## Biseda 3 · 02.11.2026 · kandidat për Senior Call Agent (jashtë IT-së)
+Hera e fundit: Aplikoi për pozitën Senior Call Agent në një kompani që punon me klientë në Amerikë. Pas intervistës së dytë, këtë javë pret përgjigjen.
+Si e zgjidhi: E bëri CV-në në Word me një shabllon të thjeshtë, që lexohet lehtë edhe nga lexuesit automatikë. CV-në ia kontrolloi një kolegë që kishte punuar me vlerësimin e CV-ve. Për intervistën pyeti shokë që punojnë në atë pozitë dhe mësoi si shkojnë pyetjet dhe me çfarë radhe.
+Çka i kushtoi: Rreth 3 javë deri te intervista e parë: 2 ditë për CV-në, 2 ditë për kërkimin e pozitës dhe të kompanisë, 2 javë pritje për ftesën, pastaj edhe një javë për intervistën e dytë. Para, asnjë cent.
+Çka nuk e dinim: Pjesa më e vështirë ishte koha që i mori ta përshtaste CV-në me atë që i pëlqen kompanisë. Do ta kishte ndihmuar një app që ia krijon CV-në sipas asaj që kërkon kompania: pamja, layout-i dhe përshkrimet.

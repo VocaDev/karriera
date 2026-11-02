@@ -9,7 +9,7 @@ Rreth 140 fjalë, rreth 60 sekonda me zë. Provë me kronometër: 1. ___ s · 2.
 > Nuk e dimë a është CV-ja jonë e mirë, a jemi gati për një punë konkrete apo çka na mungon. Shpalljet janë të shpërndara nëpër pesë portale dhe askush s'na përgatit për intervistën e parë.
 
 **3 · Dëshmia**
-> Çdo vit 25 deri në 30 mijë të rinj hyjnë në tregun e punës në Kosovë, ndërsa rreth 4 mijë gjejnë punë. [Nga bisedat: një fjali e vërtetë, p.sh. sa nga tre e kishin dërguar CV-në pa ia treguar askujt.] Mjetet që ekzistojnë kushtojnë 8 deri 90 dollarë në muaj dhe janë vetëm në anglisht.
+> Çdo vit 25 deri në 30 mijë të rinj hyjnë në tregun e punës në Kosovë, ndërsa rreth 4 mijë gjejnë punë. Në bisedat tona: njëri humbi 4 muaj për një punë për të cilën sot thotë "mos me aplikue fare", tjetri do të donte të dinte çka kërkohet nga kandidati, ndërsa i treti tha që pjesa më e vështirë ishte përshtatja e CV-së me kompaninë. Mjetet që ekzistojnë kushtojnë 8 deri 90 dollarë në muaj dhe janë vetëm në anglisht.
 
 **4 · Puna e vetme**
 > Karriera të tregon sa je gati për një punë konkrete dhe të lejon ta praktikosh intervistën për atë punë, me një avatar që të pyet me zë në shqip, anglisht ose gjermanisht. Pas çdo intervistë sheh çka të përmirësosh dhe sa u rrit gatishmëria jote.
@@ -19,4 +19,4 @@ Rreth 140 fjalë, rreth 60 sekonda me zë. Provë me kronometër: 1. ___ s · 2.
 
 ---
 
-⚠️ Para prezantimit: statistikat (25–30 mijë, ~4 mijë) duhen kontrolluar te burimi zyrtar (ASK ose Banka Botërore), dhe fjalia në kllapa zëvendësohet me diçka të vërtetë nga BISEDAT.md.
+⚠️ Para prezantimit: statistikat (25–30 mijë, ~4 mijë) duhen kontrolluar te burimi zyrtar (ASK ose Banka Botërore).
