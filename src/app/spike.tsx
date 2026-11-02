@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { WebView } from "react-native-webview";
 
 // Testi i avatarit: kamera + mikrofoni + avatari 3D + MediaPipe brenda një WebView.
-const URL = "https://raw.githack.com/VocaDev/karriera/cd41aad4ed0cf6e8425e6d8889ad071d8dbc8ef0/spike/avatar.html";
+const URL = "https://raw.githack.com/VocaDev/karriera/72d3147791c1a6ac22d3465d3ff275845606df53/spike/avatar.html";
 
 export default function Spike() {
   return (
