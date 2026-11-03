@@ -802,6 +802,31 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
 .bdg.on { opacity:1; filter:none; border:2px solid var(--accent); }
 .bdg i { font-style:normal; font-size:24px; line-height:1; }
 .bdg small { font-size:10.5px; font-weight:600; line-height:1.2; }
+
+/* ================= v0.6: rreshti 8 · punëdhënësi ================= */
+.stats3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.stats3 div { background:var(--surface); border-radius:var(--r-sm); padding:10px 8px; text-align:center; box-shadow:var(--card-shadow); border:var(--card-border); display:grid; gap:2px; }
+.stats3 b { font-family:var(--font-head); font-size:22px; letter-spacing:-.02em; }
+.stats3 small { font-size:11px; color:var(--muted); }
+.card .stats3 div { background:var(--surface2); box-shadow:none; }
+.av.rank { background:var(--text); color:var(--bg); font-family:var(--font-head); }
+.cand { background:var(--surface); border-radius:var(--r); padding:12px 14px; box-shadow:var(--card-shadow); border:var(--card-border); }
+.cand .btn.sm { height:36px; padding:0 14px; font-size:14px; }
+.cand .btn.sm.sent { background:var(--surface2); color:var(--ok); box-shadow:none; border:0; }
+.locked { position:relative; display:grid; gap:10px; }
+.cand.blur { filter:blur(4px); opacity:.6; pointer-events:none; user-select:none; }
+.unlock { position:absolute; inset:auto 0 0 0; top:0; display:flex; gap:12px; align-items:center; padding:12px 14px; background:color-mix(in oklab, var(--surface) 88%, transparent); backdrop-filter:blur(2px); border-radius:var(--r); border:2px solid var(--accent); }
+.unlock .ico { color:var(--accent); }
+.trend { font-size:11px; font-weight:700; min-width:28px; text-align:right; color:var(--muted); }
+.trend.up { color:var(--ok); } .trend.dn { color:var(--bad); }
+.slots { display:grid; gap:8px; animation:inF .35s ease; }
+.slots.hidden, [data-invited].hidden, [data-hired-pill].hidden, [data-hired-card].hidden, [data-inv-slots].hidden, [data-inv-declined].hidden { display:none !important; }
+.card.plan { border:2px solid var(--accent); }
+.kcard.hidden { display:none; }
+.toolbar .seg button.emp.on { background:var(--seg-emp, #141414); color:#fff; }
+
+.info.feat { width:980px; }
+.info.feat .feat-list { grid-template-columns:1fr 1fr; column-gap:18px; }
 </style>
 </head>
 <body class="dir-d">
@@ -847,7 +872,7 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
 </svg>
 <div class="toolbar">
-  <div class="brand">Karriera<span>Bordi UI/UX · v0.5</span></div>
+  <div class="brand">Karriera<span>Bordi UI/UX · v0.6</span></div>
   <div class="seg" id="dirSeg">
     <button data-dir="a">A · Qartë</button>
     <button data-dir="b">B · Leja</button>
@@ -855,6 +880,8 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
     <button data-dir="d">D · Gjurmimi</button>
   </div>
   <button class="tb-btn" id="darkBtn">Dark</button>
+  <span class="lbl">Llogaria</span>
+  <div class="seg" id="acctSeg"><button data-acct-set="seeker">Kërkoj punë</button><button data-acct-set="employer" class="emp">Punëdhënës</button></div>
   <span class="lbl">Roli</span>
   <div class="seg" id="roleSeg"><button data-role-set="swe">SWE</button><button data-role-set="pr">Kontabilist/e</button></div>
   <span class="lbl">Intervista</span>
@@ -871,7 +898,7 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
 <!-- ===================== 0. INFO ===================== -->
 <div class="row">
   <div class="row-title">Karriera: dizajni i aplikacionit</div>
-  <div class="row-sub">56 ekrane: palestra e karrierës (plani i ditës, simulimet, dokumentet), çdo veçori që kemi diskutuar, ngarkimi, ikonat, lejet dhe cilësimet. Dy persona: student CSE dhe kontabilist/e zyre. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin (SWE ↔ Kontabilist/e) dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
+  <div class="row-sub">70 ekrane, dy anë në një app: <b>Kërkoj punë</b> (gatishmëria, palestra e karrierës, dokumentet) dhe <b>Punëdhënës</b> (gjej njerëzit: lista e ngushtë, renditja, para-testi, ftesat, pipeline). Dy persona studenti: CSE dhe kontabilist/e zyre. Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin (SWE ↔ Kontabilist/e) dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
   <div class="frames">
     <div class="info feat">
       <h3>Veçoritë → ekrani (kliko për të shkuar)</h3>
@@ -926,6 +953,13 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
         <div data-go="s54"><span>Filtrat e plotë + Afër meje me hartë</span><span>54</span></div>
         <div data-go="s55"><span>Çka kërkojnë punëdhënësit: trendet nga shpalljet tona</span><span>55</span></div>
         <div data-go="s56"><span>Distinktivet dhe zhbllokimet (shpërblimet)</span><span>56</span></div>
+        <div data-go="s57"><span><b>Dy anë:</b> zgjedhja e llogarisë, regjistrimi i kompanisë (verifikim)</span><span>57 · 58</span></div>
+        <div data-go="s60"><span><b>Punëdhënësi:</b> sill shpalljen nga linku → kandidatët gati</span><span>59 · 60</span></div>
+        <div data-go="s61"><span>Lista e ngushtë me dëshmi + renditja për rolin</span><span>61 · 62</span></div>
+        <div data-go="s63"><span>Raporti anonim + ftesa me 3 orare (pëlqim i dyfishtë)</span><span>63</span></div>
+        <div data-go="s64"><span>Para-testi me një prekje + pipeline deri te Punësuar</span><span>64 · 65</span></div>
+        <div data-go="s66"><span>Analitika kërkesë/ofertë + plani Falas/Pro (faturë)</span><span>66</span></div>
+        <div data-go="s68"><span><b>Studenti:</b> Renditja ime, dukshmëria, Ftesat, "U punësova"</span><span>68–70</span></div>
       </div>
     </div>
     <div class="info">
@@ -941,6 +975,38 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
         <li><b>Gjuha e app-it ≠ gjuha e intervistës:</b> app-i në shqip, intervista edhe në anglisht ose gjermanisht.</li>
         <li>Prekje ≥ 44 pt, Dynamic Type, light + dark, shqip i natyrshëm.</li>
       </ol>
+    </div>
+    <div class="info" style="width:560px">
+      <h3>🧑‍🎓 Kërkoj punë: çka bën · pse kthehet · pse paguan</h3>
+      <p class="small" style="opacity:.75;margin-bottom:8px">Studenti i vitit të fundit, i sapodiplomuari, kushdo që kërkon punën e parë ose më të mirë.</p>
+      <div class="feat-list">
+        <div data-go="s41"><span><b>Bën:</b> 10 min në ditë nga boshllëku i tij (pyetje, mësim, gjuhë, kuiz)</span><span>41–43</span></div>
+        <div data-go="s9"><span><b>Bën:</b> gjen punë nga shumë burime, afër tij, me filtra që i duhen një junior-i</span><span>09 · 54</span></div>
+        <div data-go="s12"><span><b>Bën:</b> sheh sa është gati për një punë konkrete dhe çka i mungon</span><span>12</span></div>
+        <div data-go="s45"><span><b>Bën:</b> provon punën vetë (simulim) dhe intervistën me avatar; merr certifikatë dhe raport</span><span>45–50</span></div>
+        <div data-go="s52"><span><b>Bën:</b> mban dokumentet në një vend dhe e ndërton pakon e aplikimit me një prekje</span><span>51–53</span></div>
+        <div data-go="s68"><span><b>Kthehet sepse:</b> streak-u, plani i ditës, renditja (#7 nga 120) dhe 3 veprimet për t'u ngjitur</span><span>41 · 68</span></div>
+        <div data-go="s69"><span><b>Kthehet sepse:</b> ftesat nga kompanitë vijnë këtu, jo në telefon</span><span>69</span></div>
+        <div data-go="s56"><span><b>Kthehet sepse:</b> distinktivet, zhbllokimet, sfida e javës</span><span>56</span></div>
+        <div data-go="s48"><span><b>Paguan (Pro) për:</b> intervista pa limit me avatar, gjuha e trupit, simulime pa limit, raporti PDF, jashtë vendit</span><span>48 · 50 · 22</span></div>
+        <div data-go="s70"><span><b>Dëshmia:</b> "U punësova": 62% → 84%, 41 ditë</span><span>70</span></div>
+      </div>
+    </div>
+    <div class="info" style="width:560px">
+      <h3>🏢 Punëdhënësi: çka bën · pse kthehet · pse paguan</h3>
+      <p class="small" style="opacity:.75;margin-bottom:8px">HR ose menaxheri i një kompanie në Kosovë që punëson juniorë: IT, zyrë, call center.</p>
+      <div class="feat-list">
+        <div data-go="s60"><span><b>Bën:</b> ngjit linkun e shpalljes; në 10 sekonda sheh sa kandidatë të verifikuar janë gati</span><span>60</span></div>
+        <div data-go="s61"><span><b>Bën:</b> lista e ngushtë për pozitën, me "pse"-në: simulim ✓, gjuhë ✓, intervista</span><span>61</span></div>
+        <div data-go="s62"><span><b>Bën:</b> renditja për rolin pa shpallje: kush është më i mirë këtë muaj</span><span>62</span></div>
+        <div data-go="s64"><span><b>Bën:</b> para-teston 10 kandidatë me një prekje, merr rezultate të vlerësuara (zëvendëson thirrjen e parë)</span><span>64</span></div>
+        <div data-go="s63"><span><b>Bën:</b> fton me 3 orare; sheh emrin vetëm kur kandidati pranon</span><span>63</span></div>
+        <div data-go="s65"><span><b>Bën:</b> pipeline deri te "Punësuar"</span><span>65</span></div>
+        <div data-go="s59"><span><b>Kthehet sepse:</b> kandidatë të rinj hyjnë çdo javë në renditje; ftesat dhe para-testet jetojnë këtu</span><span>59</span></div>
+        <div data-go="s66"><span><b>Kthehet sepse:</b> analitika e kërkesës dhe ofertës që s'e jep askush ("2 vjet përvojë ju lë 12 kandidatë")</span><span>66</span></div>
+        <div data-go="s61"><span><b>Paguan për:</b> listën e plotë + raportet (29 €/pozitë ose 49 €/muaj, me faturë), para-teste dhe ftesa pa limit</span><span>61 · 66</span></div>
+        <div data-go="s67" class="later"><span><b>Paguan për:</b> simulimin e sponsorizuar me rastin e vet, kompania në krye të renditjes</span><span>67</span></div>
+      </div>
     </div>
     <div class="info" id="dirInfo">
       <h3>Katër drejtime: zgjidh njërin</h3>
@@ -1443,6 +1509,8 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
           <div class="list">
             <div class="li" data-go="s30"><svg class="ico" style="color:var(--accent)"><use href="#i-chart"/></svg><div class="grow"><b>Progresi</b><div class="small muted">78% gati, +40 në 6 javë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" data-go="s31"><svg class="ico"><use href="#i-history"/></svg><div class="grow"><b>Intervistat e mia</b><div class="small muted">4 intervista</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s68"><svg class="ico" style="color:var(--accent)"><use href="#i-chart"/></svg><div class="grow"><b>Renditja ime</b><div class="small muted">#7 nga 120 · Junior Developer · Top 10%</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s69"><svg class="ico" style="color:var(--accent)"><use href="#i-bell"/></svg><div class="grow"><b>Ftesat</b><div class="small muted">Dardania Soft · Ibri Tech</div></div><span class="chip" style="height:26px;font-size:12px">2</span></div>
             <div class="li" data-go="s53"><svg class="ico"><use href="#i-send"/></svg><div class="grow"><b>Aplikimet e mia</b><div class="small muted">5 aplikime · 1 intervistë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" data-go="s36"><svg class="ico"><use href="#i-bookmark"/></svg><div class="grow"><b>Të ruajturat</b><div class="small muted">2 punë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" data-go="s33"><svg class="ico"><use href="#i-file"/></svg><div class="grow"><b>CV-ja ime</b><div class="small muted">Versioni 2, nota 71/100</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
@@ -2402,7 +2470,7 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
             <div class="bdg"><i>🗂️</i><small>Dosja e plotë</small></div>
             <div class="bdg"><i>📬</i><small>5 aplikime</small></div>
             <div class="bdg"><i>🏆</i><small>Sfida e javës</small></div>
-            <div class="bdg"><i>🤝</i><small>I punësuar</small></div>
+            <div class="bdg" data-go="s70"><i>🤝</i><small>I punësuar</small></div>
           </div>
           <h2 class="h-s">Zhbllokimet</h2>
           <div class="list">
@@ -2413,6 +2481,327 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
         </div>
       </div></div>
       <p class="note">Shpërblimet nuk kushtojnë asgjë, por të kthejnë: distinktive për gjërat që kanë vlerë te punëdhënësi, dhe zhbllokime brenda app-it (zëra, mënyra më e vështirë).</p>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===================== 8. PUNËDHËNËSI ===================== -->
+<div class="row">
+  <div class="row-title">8 · Punëdhënësi: gjej njerëzit, jo vetëm posto</div>
+  <div class="row-sub">Ana e dytë e platformës. Kompania sjell shpalljen nga një link, sheh menjëherë sa kandidatë të verifikuar janë gati, i rendit sipas dëshmive (simulim, intervistë, test gjuhe), i para-teston me një prekje dhe i fton. Emrat shfaqen vetëm pasi kandidati e pranon ftesën. Ekranet 57–70; 68–70 janë ana e studentit për këtë.</div>
+  <div class="frames">
+
+    <section class="frame" id="s57">
+      <div class="frame-label">57 · Zgjidh llogarinë <em>një app, dy anë</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="justify-content:center;gap:16px">
+          <div style="display:grid;justify-items:center;gap:8px;text-align:center"><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="64" height="64" style="width:64px;height:64px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><g class=""><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg><h1 class="h-l">Si do ta përdorësh Karrierën?</h1><p class="muted small">Mund ta ndërrosh më vonë te cilësimet.</p></div>
+          <div class="option on" data-go="s1"><span class="ic"><svg class="ico"><use href="#i-user"/></svg></span><div class="grow"><b>Kërkoj punë</b><div class="small muted">Gatishmëria, stërvitja, intervistat, aplikimet</div></div><span class="radio"></span></div>
+          <div class="option" data-go="s58"><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><div class="grow"><b>Punëdhënës</b><div class="small muted">Gjej kandidatë të gatshëm, para-testo, fto</div></div><span class="radio"></span></div>
+          <p class="xs muted" style="text-align:center">Punëdhënësit verifikohen. Kandidatët vendosin vetë a janë të dukshëm.</p>
+        </div>
+      </div></div>
+      <p class="note">Ekrani i parë pas splash-it. E njëjta app, dy role: `account_type` në profil dhe RLS sipas rolit (java 6 e lëndës).</p>
+    </section>
+
+    <section class="frame" id="s58">
+      <div class="frame-label">58 · Regjistro kompaninë <em>verifikimi</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s57"><svg class="ico"><use href="#i-back"/></svg></span>
+          <h1 class="h-l">Kompania juaj</h1>
+          <div class="field"><svg class="ico sm"><use href="#i-brief"/></svg><input value="Dardania Soft SH.P.K." /></div>
+          <div class="field"><svg class="ico sm"><use href="#i-file"/></svg><input placeholder="Numri i biznesit (ARBK)" value="811234567" /></div>
+          <div class="field"><svg class="ico sm"><use href="#i-mail"/></svg><input placeholder="Email zyrtar" value="hr@dardaniasoft.com" /></div>
+          <div class="row-x" style="gap:8px"><span class="chip on" data-act="seg">Prishtinë</span><span class="chip" data-act="seg">Mitrovicë</span><span class="chip" data-act="seg">Tjetër</span></div>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">IT</span><span class="chip" data-act="seg">Kontabilitet</span><span class="chip" data-act="seg">Call center</span><span class="chip" data-act="seg">Tjetër</span></div>
+          <div class="list">
+            <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Falas për të postuar</b><div class="small muted">Dhe për të parë 3 kandidatët më të mirë</div></div></div>
+            <div class="li"><svg class="ico" style="color:var(--accent)"><use href="#i-shield"/></svg><div class="grow"><b>Verifikimi brenda 1 dite pune</b><div class="small muted">Numri i biznesit + email-i i domenit. Pa verifikim nuk sheh kandidatë.</div></div></div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s59">Krijo llogarinë e kompanisë</button></div>
+      </div></div>
+      <p class="note">Besimi fillon këtu: vetëm kompani të verifikuara shohin kandidatë. Studentët e shohin shenjën ✓ dhe kohën e përgjigjes së kompanisë.</p>
+    </section>
+
+    <section class="frame" id="s59">
+      <div class="frame-label">59 · Punëdhënësi · Kreu <em>tab 1</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><div><div class="small muted">Dardania Soft</div><h1 class="h-l">Mirëdita, Arta</h1></div><span class="chip" style="color:var(--ok)"><svg class="ico sm"><use href="#i-shield"/></svg>E verifikuar</span></div>
+          <div class="stats3"><div><b>2</b><small>pozita aktive</small></div><div><b>14</b><small>kandidatë gati</small></div><div><b>3</b><small>ftesa pranuar</small></div></div>
+          <div class="card row-x" data-go="s60" style="border:2px solid var(--accent)"><svg class="ico" style="color:var(--accent)"><use href="#i-link"/></svg><div class="grow"><b>Sill shpalljen nga linku</b><div class="small muted">KosovaJob, LinkedIn, faqja juaj · 10 sekonda</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          <div class="between"><h2 class="h-s">Më të mirët për Junior Developer</h2><span class="small" style="color:var(--accent)" data-go="s62">Renditja</span></div>
+          <div class="list">
+            <div class="li" data-go="s63"><div class="av rank">1</div><div class="grow"><b>Kandidati #A7</b><div class="small muted">84% · simulim 78 ✓ · anglisht C1 ✓ · Mitrovicë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s63"><div class="av rank">2</div><div class="grow"><b>Kandidati #K2</b><div class="small muted">81% · simulim 82 ✓ · anglisht B2 · Prishtinë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s63"><div class="av rank">3</div><div class="grow"><b>Kandidati #M9</b><div class="small muted">77% · 4 intervista · anglisht C1 ✓ · remote</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          </div>
+          <div class="card row-x" data-go="s65"><svg class="ico" style="color:var(--accent)"><use href="#i-clock"/></svg><div class="grow"><b>Nesër 10:00: intervistë me Genti V.</b><div class="small muted">Junior React Native Developer · pipeline</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          <div class="small muted" style="text-align:center">Koha juaj e përgjigjes: <b style="color:var(--ok)">2 ditë</b> · e shohin kandidatët</div>
+        </div>
+        <div class="tabbar"><div class="tab on" data-go="s59"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s61"><svg class="ico"><use href="#i-brief"/></svg>Pozitat</div><div class="tab" data-go="s62"><svg class="ico"><use href="#i-user"/></svg>Kandidatët</div><div class="tab" data-go="s66"><svg class="ico"><use href="#i-settings"/></svg>Kompania</div></div>
+      </div></div>
+      <p class="note">Kreu i kompanisë: numrat që i duhen HR-it, veprimi kryesor (sill shpalljen) dhe top 3 falas. Emrat shfaqen vetëm te ata që e kanë pranuar ftesën (Genti V.).</p>
+    </section>
+
+    <section class="frame" id="s60">
+      <div class="frame-label">60 · Sill shpalljen <em>nga linku, 10 sekonda</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px">
+          <span class="back" data-go="s59"><svg class="ico"><use href="#i-back"/></svg></span>
+          <h1 class="h-l">Sill shpalljen tuaj</h1>
+          <p class="small muted">Ngjisni linkun. AI-ja e lexon shpalljen, i nxjerr aftësitë dhe i numëron kandidatët e gatshëm. Nuk duhet ta shkruani përsëri.</p>
+          <div class="field"><svg class="ico sm"><use href="#i-link"/></svg><input value="kosovajob.com/junior-react-native-developer-2604" /></div>
+          <div class="row-x"><button class="btn sm grow" data-act="read-link">Lexoje</button><button class="btn soft sm grow"><svg class="ico sm"><use href="#i-file"/></svg>Shkruaje vetë</button></div>
+          <div class="steps" data-steps>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po e lexoj shpalljen</div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i nxjerr 5 aftësitë dhe nivelin</div>
+            <div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i krahasoj me kandidatët e dukshëm</div>
+          </div>
+          <div class="card hidden" data-after style="display:grid;gap:10px">
+            <div class="between"><b>Junior React Native Developer</b><span class="tag">SWE</span></div>
+            <div class="wrap"><span class="skill">React Native</span><span class="skill">TypeScript</span><span class="skill">Git</span><span class="skill">Testimi</span><span class="skill">REST API</span></div>
+            <div class="stats3"><div><b>14</b><small>gati (≥ 60%)</small></div><div><b>5</b><small>me simulim ✓</small></div><div><b>6</b><small>anglisht C1</small></div></div>
+            <div class="small" style="color:var(--warn)">Këshillë: "2 vjet përvojë" në shpallje i heq 90% të kandidatëve juniorë.</div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn hidden" data-after data-go="s61">Shiko 14 kandidatët</button></div>
+      </div></div>
+      <p class="note">Hyrja me zero fërkim: kompania s'plotëson formular, vetëm ngjit linkun. Në 10 sekonda e sheh vlerën: sa njerëz të gatshëm ka për këtë pozitë.</p>
+    </section>
+
+    <section class="frame" id="s61">
+      <div class="frame-label">61 · Lista e ngushtë për pozitën <em>tab 2 · me dëshmi</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <div class="between"><div><div class="small muted">Pozita</div><h1 class="h-m">Junior React Native Developer</h1></div><span class="chip"><svg class="ico sm"><use href="#i-clock"/></svg>05.11</span></div>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">Të gjithë 14</span><span class="chip" data-act="seg">Simulim ✓ 5</span><span class="chip" data-act="seg">Anglisht C1 6</span><span class="chip" data-act="seg">Mitrovicë 3</span></div>
+          <div class="cand"><div class="between"><div class="row-x"><div class="av rank">1</div><div><b>Kandidati #A7</b><div class="xs muted">84% përputhje · i lirë nga 1.12</div></div></div><button class="btn sm" data-act="invite">Fto</button></div><div class="wrap" style="margin-top:8px"><span class="skill have">simulim 78 ✓</span><span class="skill have">anglisht C1 ✓</span><span class="skill">3 intervista · 72</span><span class="skill">React Native ✓</span><span class="skill miss">Testimi</span></div></div>
+          <div class="cand"><div class="between"><div class="row-x"><div class="av rank">2</div><div><b>Kandidati #K2</b><div class="xs muted">81% · i lirë tani · remote OK</div></div></div><button class="btn sm" data-act="invite">Fto</button></div><div class="wrap" style="margin-top:8px"><span class="skill have">simulim 82 ✓</span><span class="skill">anglisht B2</span><span class="skill have">TypeScript ✓</span><span class="skill have">Git ✓</span></div></div>
+          <div class="cand"><div class="between"><div class="row-x"><div class="av rank">3</div><div><b>Kandidati #M9</b><div class="xs muted">77% · i lirë nga 15.11</div></div></div><button class="btn sm" data-act="invite">Fto</button></div><div class="wrap" style="margin-top:8px"><span class="skill">4 intervista · 75</span><span class="skill have">anglisht C1 ✓</span><span class="skill have">REST API ✓</span></div></div>
+          <div class="locked">
+            <div class="cand blur"><div class="between"><div class="row-x"><div class="av rank">4</div><div><b>Kandidati #B4</b><div class="xs muted">74% · Prishtinë</div></div></div><button class="btn sm">Fto</button></div></div>
+            <div class="cand blur"><div class="between"><div class="row-x"><div class="av rank">5</div><div><b>Kandidati #R1</b><div class="xs muted">71% · remote</div></div></div><button class="btn sm">Fto</button></div></div>
+            <div class="unlock"><svg class="ico"><use href="#i-lock"/></svg><div class="grow"><b>Edhe 11 kandidatë</b><div class="small">Lista e plotë + raportet + ftesa pa limit · 29 € për pozitë ose 49 €/muaj · me faturë</div></div><button class="btn sm" data-go="s66">Zhblloko</button></div>
+          </div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s59"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s61"><svg class="ico"><use href="#i-brief"/></svg>Pozitat</div><div class="tab" data-go="s62"><svg class="ico"><use href="#i-user"/></svg>Kandidatët</div><div class="tab" data-go="s66"><svg class="ico"><use href="#i-settings"/></svg>Kompania</div></div>
+      </div></div>
+      <p class="note">Renditja sipas përputhjes me <i>këtë</i> shpallje, me "pse"-në për secilin: çka është e verifikuar (✓) dhe çka mungon. Top 3 falas, lista e plotë me pagesë: këtu është modeli i biznesit.</p>
+    </section>
+
+    <section class="frame" id="s62">
+      <div class="frame-label">62 · Renditja për rolin <em>tab 3 · kërkim talentesh</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <h1 class="h-l">Kandidatët</h1>
+          <div class="segm"><span class="on" data-act="seg">Junior Developer</span><span data-act="seg">Kontabilist/e</span><span data-act="seg">Call center</span></div>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">Gjithë Kosova</span><span class="chip" data-act="seg">Prishtinë</span><span class="chip" data-act="seg">Mitrovicë</span><span class="chip" data-act="seg">Remote OK</span><span class="chip" data-act="seg">Anglisht C1</span><span class="chip" data-act="seg">Të lirë tani</span></div>
+          <div class="list lb">
+            <div class="li" data-go="s63"><div class="av rank">1</div><div class="grow"><b>#A7</b><div class="xs muted">simulim ✓ · C1 ✓ · Mitrovicë</div></div><b>84</b><span class="trend up">▲2</span></div>
+            <div class="li" data-go="s63"><div class="av rank">2</div><div class="grow"><b>#K2</b><div class="xs muted">simulim ✓ · B2 · Prishtinë</div></div><b>81</b><span class="trend">–</span></div>
+            <div class="li" data-go="s63"><div class="av rank">3</div><div class="grow"><b>#M9</b><div class="xs muted">4 intervista · C1 ✓ · remote</div></div><b>77</b><span class="trend up">▲5</span></div>
+            <div class="li"><div class="av rank">4</div><div class="grow"><b>#B4</b><div class="xs muted">simulim ✓ · B2 · Prishtinë</div></div><b>74</b><span class="trend dn">▼1</span></div>
+            <div class="li"><div class="av rank">5</div><div class="grow"><b>#R1</b><div class="xs muted">2 intervista · C1 ✓ · remote</div></div><b>71</b><span class="trend up">▲3</span></div>
+            <div class="li" style="opacity:.6"><div class="av rank">6–10</div><div class="grow"><b>5 kandidatë</b><div class="xs muted">65–70 · zhblloko për t'i parë</div></div><svg class="ico sm muted"><use href="#i-lock"/></svg></div>
+          </div>
+          <button class="btn" data-go="s64"><svg class="ico sm"><use href="#i-send"/></svg>Dërgo para-test te top 10</button>
+          <p class="xs muted">Vetëm kandidatë që kanë zgjedhur të jenë të dukshëm · pikët nga 90 ditët e fundit · emrat pas pranimit të ftesës.</p>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s59"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s61"><svg class="ico"><use href="#i-brief"/></svg>Pozitat</div><div class="tab on" data-go="s62"><svg class="ico"><use href="#i-user"/></svg>Kandidatët</div><div class="tab" data-go="s66"><svg class="ico"><use href="#i-settings"/></svg>Kompania</div></div>
+      </div></div>
+      <p class="note">Kërkimi i talenteve pa shpallje: kush është më i miri për rolin këtë muaj, me filtra. Pikët vijnë vetëm nga dëshmi të verifikuara dhe bien me kohë: shpërblen ata që stërviten.</p>
+    </section>
+
+    <section class="frame" id="s63">
+      <div class="frame-label">63 · Kandidati #A7 <em>raporti anonim · ftesa</em></div>
+      <div class="phone"><div class="screen" data-cand>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s61"><svg class="ico"><use href="#i-back"/></svg>Lista</span>
+          <div class="card between"><div><div class="small muted">Kandidati #A7 · Junior Developer</div><div class="rd-num" style="font-size:40px">84%</div><div class="small muted">Mitrovicë · i lirë nga 1.12 · remote OK</div></div><div class="rd" style="--v:84"><span class="rd-num">84<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
+          <div class="card" style="display:grid;gap:10px">
+            <div class="bar-row"><span>Debugging</span><div class="progress"><i style="width:82%"></i></div><b>82</b></div>
+            <div class="bar-row"><span>Komunikimi</span><div class="progress"><i style="width:76%"></i></div><b>76</b></div>
+            <div class="bar-row"><span>Njohuritë teknike</span><div class="progress"><i style="width:71%"></i></div><b>71</b></div>
+            <div class="bar-row"><span>Anglishtja</span><div class="progress"><i style="width:88%"></i></div><b>C1</b></div>
+          </div>
+          <div class="list">
+            <div class="li"><svg class="ico ok"><use href="#i-shield"/></svg><div class="grow"><b>Simulim Junior Developer · 78/100</b><div class="small muted">KR-2026-00318 · integriteti 92 · 28.10</div></div></div>
+            <div class="li"><svg class="ico ok"><use href="#i-mic"/></svg><div class="grow"><b>3 intervista praktike · mesatarja 72</b><div class="small muted">Shqip dhe anglisht · trendi ▲</div></div></div>
+            <div class="li"><svg class="ico ok"><use href="#i-globe"/></svg><div class="grow"><b>Anglisht C1</b><div class="small muted">Test me zë dhe shkrim · 20.10</div></div></div>
+          </div>
+          <div class="small muted">Nuk e shihni ende: emrin, CV-në, kontaktin. Shfaqen kur kandidati e pranon ftesën.</div>
+          <div class="slots hidden" data-slots><b class="small">Zgjidhni 3 orare:</b><div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on">E enjte 10:00</span><span class="chip on">E enjte 14:00</span><span class="chip on">E premte 11:00</span><span class="chip">+ Tjetër</span></div><div class="field"><input value="Përshëndetje! Na pëlqeu profili juaj për pozitën Junior React Native Developer…" /></div></div>
+          <div class="pill-live ok hidden" data-invited><span class="pulse"></span>Ftesa u dërgua · kandidati ka 3 ditë për t'u përgjigjur</div>
+        </div>
+        <div class="cta"><button class="btn" data-act="slots" data-invite-btn><svg class="ico sm"><use href="#i-send"/></svg>Dërgo ftesë</button><button class="btn ghost" data-go="s64">Dërgo para-test</button></div>
+      </div></div>
+      <p class="note">Raporti i kandidatit pa emër: kompetencat, dëshmitë e verifikuara, disponueshmëria. Prek "Dërgo ftesë": zgjedh 3 orare, kandidati e pranon ose jo. Pëlqim i dyfishtë.</p>
+    </section>
+
+    <section class="frame" id="s64">
+      <div class="frame-label">64 · Para-testi <em>zëvendëson thirrjen e parë të HR-it</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s62"><svg class="ico"><use href="#i-back"/></svg></span>
+          <h1 class="h-l">Para-testo kandidatët</h1>
+          <p class="small muted">Dërgoni një detyrë; kandidatët e bëjnë në app, ju merrni rezultatet e vlerësuara. Pa thirrje, pa email.</p>
+          <div class="option on" data-act="seg"><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><div class="grow"><b>Simulimi Junior Developer</b><div class="small muted">30 min · ticket + bug · code review</div></div><span class="radio"></span></div>
+          <div class="option" data-act="seg"><span class="ic"><svg class="ico"><use href="#i-mic"/></svg></span><div class="grow"><b>5 pyetje intervistë me zë</b><div class="small muted">10 min · pyetjet tuaja ose tonat</div></div><span class="radio"></span></div>
+          <div class="option" style="opacity:.55"><span class="ic"><svg class="ico"><use href="#i-upload"/></svg></span><div class="grow"><b>Rasti juaj i vërtetë</b><div class="small muted">Ngarkoni një bug ose një tabelë, AI-ja e bën detyrë</div></div><span class="badge-later">pas MVP-së</span></div>
+          <div class="between small"><span class="muted">Për:</span><span class="chip on">Top 10 · Junior Developer</span></div>
+          <div class="between small"><span class="muted">Afati:</span><span class="chip">E premte, 23:59</span></div>
+          <div class="steps" data-steps style="gap:8px"><div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i njoftoj 10 kandidatët</div><div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po e hap detyrën për ta</div></div>
+          <div class="card hidden" data-after style="display:grid;gap:8px"><b>Rezultatet deri tani · 3 nga 10</b><div class="bar-row"><span>#K2</span><div class="progress"><i style="width:82%"></i></div><b>82</b></div><div class="bar-row"><span>#A7</span><div class="progress"><i style="width:76%"></i></div><b>76</b></div><div class="bar-row"><span>#M9</span><div class="progress"><i style="width:71%"></i></div><b>71</b></div><div class="small muted">Raporti i plotë për secilin: arsyetimi, kodi, integriteti.</div></div>
+        </div>
+        <div class="cta"><button class="btn" data-act="read-link"><svg class="ico sm"><use href="#i-send"/></svg>Dërgo para-testin</button></div>
+      </div></div>
+      <p class="note">Kjo është ajo që HR-i do ta paguajë: shqyrtimi i parë bëhet nga app-i. Prek "Dërgo para-testin": kandidatët njoftohen, rezultatet vijnë të vlerësuara.</p>
+    </section>
+
+    <section class="frame" id="s65">
+      <div class="frame-label">65 · Pipeline <em>deri te "Punësuar"</em></div>
+      <div class="phone"><div class="screen" data-pipe>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <div class="between"><h1 class="h-l">Pipeline</h1><span class="small muted">Junior React Native Dev</span></div>
+          <div class="kgroup"><div class="kh"><span>Ftuar</span><b>3</b></div><div class="kcard"><div class="grow"><b>#B4, #R1, #M9</b><div class="small muted">Presin përgjigje · 2 ditë të mbetura</div></div></div></div>
+          <div class="kgroup"><div class="kh"><span>Pranuar</span><b>2</b></div><div class="kcard"><div class="grow"><b>Genti V.</b><div class="small muted">#A7 · emri dhe raporti u ndanë · intervista nesër 10:00</div></div><span class="chip" style="color:var(--ok)">Raporti</span></div><div class="kcard"><div class="grow"><b>Erza K.</b><div class="small muted">#K2 · para-testi 82 · zgjedh orarin</div></div></div></div>
+          <div class="kgroup"><div class="kh"><span>Ofertë</span><b>1</b></div><div class="kcard" data-offer><div class="grow"><b>Blerim H.</b><div class="small muted">Oferta u dërgua 30.10 · 1.100 € bruto</div></div><button class="btn sm" data-act="hired">Punësuar</button></div></div>
+          <div class="kgroup"><div class="kh"><span>Punësuar</span><b data-hired-n>0</b></div><div class="kcard hidden" data-hired-card style="border-left-color:var(--ok)"><div class="grow"><b>Blerim H.</b><div class="small muted">Fillon më 1.12 · distinktivi "I punësuar" iu dha</div></div><span class="chip" style="color:var(--ok)">✓</span></div></div>
+          <div class="pill-live ok hidden" data-hired-pill><span class="pulse"></span>Punësimi i parë përmes Karrierës. Kandidati u njoftua.</div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s59"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s61"><svg class="ico"><use href="#i-brief"/></svg>Pozitat</div><div class="tab" data-go="s62"><svg class="ico"><use href="#i-user"/></svg>Kandidatët</div><div class="tab" data-go="s66"><svg class="ico"><use href="#i-settings"/></svg>Kompania</div></div>
+      </div></div>
+      <p class="note">Nga ftesa te punësimi, në një vend. Prek "Punësuar": mbyllet cikli, studenti merr distinktivin dhe ne marrim numrin që e shet app-in ("X të punësuar përmes Karrierës").</p>
+    </section>
+
+    <section class="frame" id="s66">
+      <div class="frame-label">66 · Kompania <em>tab 4 · analitika · plani</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><h1 class="h-l">Dardania Soft</h1><span class="chip" style="color:var(--ok)"><svg class="ico sm"><use href="#i-shield"/></svg>✓</span></div>
+          <div class="card" style="display:grid;gap:10px">
+            <b>Kërkesa dhe oferta · Junior Developer · Kosovë</b>
+            <div class="stats3"><div><b>120</b><small>kandidatë gati</small></div><div><b>61%</b><small>gatishmëria mes.</small></div><div><b>18%</b><small>kanë testim ✓</small></div></div>
+            <div class="small" style="color:var(--warn)">"2 vjet përvojë" ju lë 12 kandidatë. Pa të: 108.</div>
+            <div class="small muted">Aftësitë e rralla te juniorët: Testimi, Docker. Të zakonshmet: React, Git, SQL.</div>
+          </div>
+          <div class="list">
+            <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Koha juaj e përgjigjes: 2 ditë</b><div class="small muted">Kandidatët e shohin. Mesatarja në Kosovë: 9 ditë.</div></div></div>
+            <div class="li"><svg class="ico"><use href="#i-user"/></svg><div class="grow"><b>Ekipi</b><div class="small muted">Arta (HR) · + shto menaxherin</div></div><span class="badge-later">pas MVP-së</span></div>
+          </div>
+          <div class="card plan">
+            <div class="between"><b>Plani juaj: Falas</b><span class="small muted">faturë, jo kartë</span></div>
+            <div class="small">Posto pa limit · top 3 për pozitë · renditja deri te #5 · 1 para-test në muaj</div>
+            <div class="small" style="margin-top:6px"><b>Pro · 49 €/muaj ose 29 €/pozitë:</b> lista e plotë + raportet · para-teste pa limit · ftesa pa limit · analitika</div>
+            <div class="small" style="margin-top:6px"><b>Sponsor · me marrëveshje:</b> simulimi me rastin tuaj, kompania në krye të renditjes</div>
+            <button class="btn sm" style="margin-top:10px">Kalo në Pro</button>
+          </div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s59"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s61"><svg class="ico"><use href="#i-brief"/></svg>Pozitat</div><div class="tab" data-go="s62"><svg class="ico"><use href="#i-user"/></svg>Kandidatët</div><div class="tab on" data-go="s66"><svg class="ico"><use href="#i-settings"/></svg>Kompania</div></div>
+      </div></div>
+      <p class="note">Analitika që s'e jep askush në Kosovë: sa kandidatë ka vërtet, çka është e rrallë, çka ju lë pa njerëz. Dhe plani: falas për të filluar, Pro me faturë (punon nga Kosova).</p>
+    </section>
+
+    <section class="frame" id="s67">
+      <div class="frame-label">67 · Simulimi i sponsorizuar <span><span class="badge-later">pas MVP-së</span></span></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="later-banner">Vizion: nuk ndërtohet për Demo Day</div>
+          <h1 class="h-l">Simulimi juaj</h1>
+          <p class="small muted">Ngarkoni një rast të vërtetë nga puna. AI-ja e kthen në detyrë të vlerësuar, me rubrikë. Kandidatët e bëjnë; ju shihni kush bëri më mirë.</p>
+          <div class="drop"><svg class="ico lg" style="color:var(--accent)"><use href="#i-upload"/></svg><b>Ngarko rastin</b><span class="small muted">Një bug, një tabelë Excel, një email klienti, një ticket</span></div>
+          <div class="list">
+            <div class="li"><div class="av">1</div><div class="grow"><b>AI-ja e shkruan detyrën dhe rubrikën</b><div class="small muted">Ju e miratoni</div></div></div>
+            <div class="li"><div class="av">2</div><div class="grow"><b>Hapet për kandidatët e rolit</b><div class="small muted">Me emrin e kompanisë · 2 javë</div></div></div>
+            <div class="li"><div class="av">3</div><div class="grow"><b>Renditja e rezultateve</b><div class="small muted">Ftoni direkt nga lista</div></div></div>
+          </div>
+          <div class="card row-x"><svg class="ico" style="color:var(--accent)"><use href="#i-spark"/></svg><div class="grow small">Kompanitë që sponsorizojnë dalin në krye të renditjes dhe te plani i ditës i kandidatëve.</div></div>
+        </div>
+      </div></div>
+      <p class="note">Modeli Forage, lokal: kompania e sjell punën e vërtetë, studentët e bëjnë për certifikatë dhe dukshmëri, kompania paguan për pipeline-in.</p>
+    </section>
+
+    <section class="frame" id="s68">
+      <div class="frame-label">68 · Renditja ime <em>ana e studentit</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s18"><svg class="ico"><use href="#i-back"/></svg>Profili</span>
+          <div class="card" style="display:grid;justify-items:center;gap:4px;text-align:center"><div class="small muted">Junior Developer · Kosovë · 90 ditët e fundit</div><div class="rd-num" style="font-size:56px;letter-spacing:-.04em">#7</div><div class="small">nga 120 të dukshëm · <b style="color:var(--ok)">Top 10%</b> · ▲3 këtë javë</div></div>
+          <h2 class="h-s">3 veprime për t'u ngjitur</h2>
+          <div class="list">
+            <div class="li" data-go="s46"><div class="av" style="background:var(--accent-soft);color:var(--accent)">+4</div><div class="grow"><b>Përfundo simulimin: detyra 2 dhe 3</b><div class="small muted">Code review + mesazhi për PM-in</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s49"><div class="av" style="background:var(--accent-soft);color:var(--accent)">+3</div><div class="grow"><b>Anglisht C1</b><div class="small muted">Je B2 · 6 kompani e kërkojnë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s34"><div class="av" style="background:var(--accent-soft);color:var(--accent)">+2</div><div class="grow"><b>Një intervistë këtë javë</b><div class="small muted">Pikët bien pas 14 ditësh pa praktikë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          </div>
+          <h2 class="h-s">Dukshmëria te punëdhënësit</h2>
+          <div class="segm"><span data-act="seg">I padukshëm</span><span class="on" data-act="seg">Anonim</span><span data-act="seg">Me emër ku aplikoj</span></div>
+          <p class="xs muted">Anonim: kompanitë shohin "#A7", pikët dhe dëshmitë, jo emrin. Ftesat i pranon ti. Refuzimi nuk e ul renditjen.</p>
+        </div>
+      </div></div>
+      <p class="note">Për studentin, renditja është motivimi i përditshëm: ku je, çka të ngjit, dhe kontrolli i plotë mbi dukshmërinë.</p>
+    </section>
+
+    <section class="frame" id="s69">
+      <div class="frame-label">69 · Ftesat <em>pëlqimi i dyfishtë</em></div>
+      <div class="phone"><div class="screen" data-inv>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><span class="back" data-go="s18"><svg class="ico"><use href="#i-back"/></svg>Profili</span><span class="chip">2 të reja</span></div>
+          <h1 class="h-l">Ftesat</h1>
+          <div class="card" style="display:grid;gap:10px" data-invite-card>
+            <div class="row-x" style="gap:12px"><div class="av" style="background:var(--text);color:var(--bg)">DS</div><div class="grow"><b>Dardania Soft ✓</b><div class="small muted">Junior React Native Developer · Prishtinë · përgjigjet brenda 2 ditësh</div></div></div>
+            <p class="small">"Na pëlqeu profili juaj për pozitën Junior React Native Developer. A keni kohë për një bisedë 30-minutëshe?"</p>
+            <div class="small muted">Nëse pranon, kompania e sheh emrin, CV-në dhe raportin e gatishmërisë.</div>
+            <div class="row-x" data-inv-btns><button class="btn sm grow" data-act="accept">Më intereson</button><button class="btn soft sm grow" data-act="decline">Jo tani</button></div>
+            <div class="hidden" data-inv-slots><b class="small">Zgjidh orarin:</b><div class="row-x" style="gap:8px;flex-wrap:wrap;margin-top:6px"><span class="chip" data-act="seg">E enjte 10:00</span><span class="chip on" data-act="seg">E enjte 14:00</span><span class="chip" data-act="seg">E premte 11:00</span></div><div class="pill-live ok" style="margin-top:8px"><span class="pulse"></span>Emri dhe raporti u ndanë · intervista u shtua te Aplikimet</div></div>
+            <div class="small muted hidden" data-inv-declined">U refuzua. Renditja jote nuk ndryshon.</div>
+          </div>
+          <div class="card" style="display:grid;gap:8px">
+            <div class="row-x" style="gap:12px"><div class="av" style="background:var(--text);color:var(--bg)">IT</div><div class="grow"><b>Ibri Tech ✓</b><div class="small muted">Para-test · Simulimi Junior Developer · 30 min</div></div></div>
+            <div class="small muted">Afati: e premte 23:59 · rezultati shkon te kompania dhe te renditja jote.</div>
+            <div class="row-x"><button class="btn sm grow" data-go="s46">Bëje tani</button><button class="btn soft sm grow">Më vonë</button></div>
+          </div>
+          <p class="xs muted">Kompanitë nuk e kanë numrin tënd. Gjithçka kalon këtu derisa ta pranosh ti.</p>
+        </div>
+      </div></div>
+      <p class="note">Studenti e pranon ose jo. Prek "Më intereson": zgjedh orarin, emri ndahet, intervista hyn te Aplikimet. Pa pranim, kompania s'sheh asgjë personale.</p>
+    </section>
+
+    <section class="frame" id="s70">
+      <div class="frame-label">70 · U punësova <em>mbyllja e ciklit</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:14px;align-items:center;text-align:center">
+          <div class="between" style="width:100%"><span class="back" data-go="s18"><svg class="ico"><use href="#i-back"/></svg></span><b>U punësova</b><span style="width:40px"></span></div>
+          <div class="story" style="background:linear-gradient(160deg, var(--ok) 0%, #0F3D2A 100%)">
+            <div class="row-x" style="gap:8px"><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="28" height="28" style="width:28px;height:28px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><g class=""><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg><b>Karriera</b></div>
+            <div class="story-q">U punësova.</div>
+            <div class="small" style="opacity:.9">Junior Developer · Dardania Soft</div>
+            <div class="story-score" style="font-size:40px">62→84<small>%</small></div>
+            <div class="xs" style="opacity:.8">41 ditë stërvitje · 5 intervista · 1 simulim</div>
+          </div>
+          <div class="bdg on" style="width:120px"><i>🤝</i><small>I punësuar</small></div>
+          <div class="share-row"><div><span><svg class="ico"><use href="#i-send"/></svg></span>WhatsApp</div><div><span><svg class="ico"><use href="#i-image"/></svg></span>Story</div><div><span><svg class="ico"><use href="#i-link"/></svg></span>Linku</div></div>
+          <p class="small muted">Faleminderit: ky lajm ua tregon të tjerëve që rruga funksionon. App-i mbetet: plani i ditës vazhdon për punën e re.</p>
+        </div>
+      </div></div>
+      <p class="note">Momenti që e shet app-in: historia e ndarë në WhatsApp/Story, distinktivi, dhe numri për Demo Day ("X të punësuar përmes Karrierës").</p>
     </section>
 
   </div>
@@ -2436,7 +2825,7 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
   let x = st.x ?? 0, y = st.y ?? 0, s = st.s ?? 0.4;
   let dir = st.dir || 'd', dark = !!st.dark;
   const S = { role: st.role || 'swe', lang: st.lang || 'sq' };
-  const save = () => { try { localStorage.setItem('karriera-board-3', JSON.stringify({ x, y, s, dir, dark, role: S.role, lang: S.lang })); } catch (e) {} };
+  const save = () => { try { localStorage.setItem('karriera-board-3', JSON.stringify({ x, y, s, dir, dark, role: S.role, lang: S.lang, acct: S.acct })); } catch (e) {} };
 
   /* ---------------- të dhënat ---------------- */
   const JOB = { swe: { job: 'Junior React Native Developer', co: 'Dardania Soft, Prishtinë' }, pr: { job: 'Asistent/e Kontabiliteti', co: 'Alfa Consulting, Prishtinë' } };
@@ -2501,6 +2890,12 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
   const setLang = l => { S.lang = l; save(); applyBindings(); applyBindings(protoPhone); resetIvs(); };
 
   const inProto = el => protoPhone.contains(el);
+  S.acct = st.acct || 'seeker';
+  const setAcct = (a, jump) => {
+    S.acct = a; save();
+    document.querySelectorAll('[data-acct-set]').forEach(x => x.classList.toggle('on', x.dataset.acctSet === a));
+    if (jump) { if (!proto.hidden) { hist = []; protoShow(a === 'employer' ? 's59' : 's41'); } else flyTo(document.getElementById(a === 'employer' ? 's59' : 's41')); }
+  };
 
   /* ---------------- animacionet ---------------- */
   const runSteps = (c) => {
@@ -2508,17 +2903,17 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
     const token = (c._tok = (c._tok || 0) + 1);
     const items = [...c.querySelectorAll('.stp')];
     const scr = c.closest('.screen');
-    const after = scr.querySelector('[data-after]');
+    const after = scr.querySelectorAll('[data-after]');
     const cam = scr.querySelector('[data-cam]');
     items.forEach(i => i.classList.remove('busy', 'done'));
-    if (after) after.classList.add('hidden');
+    after.forEach(x => x.classList.add('hidden'));
     if (cam) { cam.classList.remove('ready'); cam.querySelector('[data-cam-txt]').textContent = 'Po e kontrolloj kamerën…'; }
     let i = 0;
     const step = () => {
       if (c._tok !== token) return;
       if (i > 0) { items[i - 1].classList.remove('busy'); items[i - 1].classList.add('done'); }
       if (i < items.length) { items[i].classList.add('busy'); i++; setTimeout(step, 850); return; }
-      if (after) after.classList.remove('hidden');
+      after.forEach(x => x.classList.remove('hidden'));
       if (cam) { cam.classList.add('ready'); cam.querySelector('[data-cam-txt]').textContent = 'Gati: fytyra dhe drita duken mirë'; }
       if (c.dataset.loop && !inProto(c)) setTimeout(() => { if (c._tok === token) runSteps(c); }, 3800);
     };
@@ -2701,6 +3096,22 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
         break;
       }
       case 'flag': a.classList.toggle('flag'); break;
+      case 'invite': a.classList.add('sent'); a.textContent = '✓ Ftuar'; a.removeAttribute('data-act'); break;
+      case 'slots': {
+        const sl = scr.querySelector('[data-slots]');
+        if (sl.classList.contains('hidden')) { sl.classList.remove('hidden'); a.innerHTML = 'Konfirmo ftesën'; }
+        else { sl.classList.add('hidden'); scr.querySelector('[data-invited]').classList.remove('hidden'); a.innerHTML = '✓ Ftesa u dërgua'; a.removeAttribute('data-act'); a.classList.add('soft'); }
+        break;
+      }
+      case 'hired': {
+        const off = scr.querySelector('[data-offer]'); off.style.display = 'none';
+        scr.querySelector('[data-hired-card]').classList.remove('hidden'); scr.querySelector('[data-hired-n]').textContent = '1';
+        scr.querySelector('[data-hired-pill]').classList.remove('hidden');
+        scr.querySelectorAll('.kh b')[2].textContent = '0';
+        break;
+      }
+      case 'accept': scr.querySelector('[data-inv-btns]').style.display = 'none'; scr.querySelector('[data-inv-slots]').classList.remove('hidden'); break;
+      case 'decline': scr.querySelector('[data-inv-btns]').style.display = 'none'; scr.querySelector('[data-inv-declined]').classList.remove('hidden'); break;
       case 'scan': {
         const box = scr.querySelector('[data-scanbox]'); box.hidden = false; a.disabled = true;
         setTimeout(() => { box.hidden = true; const r = scr.querySelector('[data-scanned]'); r.hidden = false; a.disabled = false; const c = scr.querySelector('.h-l + .small, .between .small.muted'); if (c) c.textContent = '7 nga 7'; }, 1800);
@@ -2785,11 +3196,11 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
     document.getElementById('protoName').textContent = frame.querySelector('.frame-label').firstChild.textContent.trim();
     initScreen(clone);
     clone.classList.add(back ? 'in-b' : 'in-f');
-    clone.querySelectorAll('[data-steps]:not([data-loop])').forEach(c => { c.querySelectorAll('.stp').forEach(i => i.classList.remove('busy', 'done')); const a = clone.querySelector('[data-after]'); if (a) a.classList.add('hidden'); });
+    clone.querySelectorAll('[data-steps]:not([data-loop])').forEach(c => { c.querySelectorAll('.stp').forEach(i => i.classList.remove('busy', 'done')); clone.querySelectorAll('[data-after]').forEach(a => a.classList.add('hidden')); });
     if (clone.matches('[data-jobs]')) filterJobs(clone);
     fitProto();
   };
-  const openProto = () => { proto.hidden = false; hist = []; seenLoad = new Set(); protoShow('s23', false); protoTimer = setTimeout(() => protoShow('s1'), 2600); };
+  const openProto = () => { proto.hidden = false; hist = []; seenLoad = new Set(); protoShow('s23', false); protoTimer = setTimeout(() => protoShow('s57'), 2600); };
   const closeProto = () => { const o = protoPhone.querySelector('.screen'); if (o && o._iv) o._iv.stop(); proto.hidden = true; };
   const navigate = (id, fromEl) => {
     if (!(fromEl && inProto(fromEl))) { flyTo(document.getElementById(id)); return; }
@@ -2827,6 +3238,7 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
 
   document.querySelectorAll('#dirSeg button').forEach(b => b.onclick = () => setDir(b.dataset.dir));
   document.querySelectorAll('[data-role-set]').forEach(b => b.onclick = () => setRole(b.dataset.roleSet));
+  document.querySelectorAll('[data-acct-set]').forEach(b => b.onclick = () => setAcct(b.dataset.acctSet, true));
   document.querySelectorAll('[data-lang-set]').forEach(b => b.onclick = () => setLang(b.dataset.langSet));
   document.getElementById('darkBtn').onclick = () => setDark(!dark);
   document.getElementById('fitBtn').onclick = fit;
@@ -2847,7 +3259,7 @@ textarea.mono { font-family:"JetBrains Mono", ui-monospace, monospace; font-size
   });
   window.addEventListener('resize', () => { if (!proto.hidden) fitProto(); });
 
-  setDir(dir); setDark(dark); applyBindings();
+  setDir(dir); setDark(dark); applyBindings(); setAcct(S.acct, false);
   document.querySelectorAll('#world .screen').forEach(initScreen);
   if (st.s == null) requestAnimationFrame(fit); else apply(false);
 })();
