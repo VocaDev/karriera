@@ -889,6 +889,11 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
 
 /* v0.8 */
 [data-post-form].hidden, [data-posted].hidden { display:none !important; }
+
+/* v0.9 soft skills */
+.ev { display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:var(--r-sm); padding:10px 12px; box-shadow:var(--card-shadow); border:var(--card-border); font-size:13.5px; }
+.ev-t { font-size:10.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; width:62px; flex:none; }
+.ev .chip { height:28px; padding:0 10px; font-size:12px; }
 </style>
 </head>
 <body class="dir-d">
@@ -934,7 +939,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
 </svg>
 <div class="toolbar">
-  <div class="brand">Karriera<span>Bordi UI/UX · v0.8</span></div>
+  <div class="brand">Karriera<span>Bordi UI/UX · v0.9</span></div>
   <div class="seg" id="dirSeg">
     <button data-dir="a">A · Qartë</button>
     <button data-dir="b">B · Leja</button>
@@ -960,7 +965,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
 <!-- ===================== 0. INFO ===================== -->
 <div class="row">
   <div class="row-title">Karriera: dizajni i aplikacionit</div>
-  <div class="row-sub">102 ekrane, çdo veçori e dukshme veç e veç. Tri llogari në një app: <b>Kërkoj punë</b>, <b>Punëdhënës</b>, <b>Qendra e karrierës</b> (universiteti, në MVP). <b>Kërkoj punë</b> (gatishmëria, palestra e karrierës, dokumentet) dhe <b>Punëdhënës</b> (gjej njerëzit: lista e ngushtë, renditja, para-testi, ftesat, pipeline). Tre persona: student CSE, kontabilist/e zyre, kamarier/e (çdo punë). Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin (SWE ↔ Kontabilist/e) dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
+  <div class="row-sub">109 ekrane, çdo veçori e dukshme veç e veç, edhe aftësitë e buta. Tri llogari në një app: <b>Kërkoj punë</b>, <b>Punëdhënës</b>, <b>Qendra e karrierës</b> (universiteti, në MVP). <b>Kërkoj punë</b> (gatishmëria, palestra e karrierës, dokumentet) dhe <b>Punëdhënës</b> (gjej njerëzit: lista e ngushtë, renditja, para-testi, ftesat, pipeline). Tre persona: student CSE, kontabilist/e zyre, kamarier/e (çdo punë). Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin (SWE ↔ Kontabilist/e) dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
   <div class="frames">
     <div class="info feat">
       <h3>Veçoritë → ekrani (kliko për të shkuar)</h3>
@@ -1047,6 +1052,13 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         <div data-go="s100"><span><b>Raporti i punësueshmërisë</b> (PDF) + licenca</span><span>100</span></div>
         <div data-go="s101"><span>Punëdhënësit partnerë të universitetit</span><span>101</span></div>
         <div data-go="s102"><span>Studenti: "Nga universiteti yt" (praktikat, sfidat)</span><span>102</span></div>
+        <div data-go="s103"><span><b>Aftësitë e buta:</b> 8 kompetenca të matura nga sjellja</span><span>103</span></div>
+        <div data-go="s104"><span>Role-play me avatarin: shefi, kolegu, klienti ("thuaj jo shefit")</span><span>104</span></div>
+        <div data-go="s105"><span>Prezantimi me kamerë: sytë, fjalët mbushëse, tempo</span><span>105</span></div>
+        <div data-go="s106"><span>Email-i profesional: toni dhe qartësia, rishkrim me shpjegim</span><span>106</span></div>
+        <div data-go="s107"><span><b>Turni i menaxherit:</b> thirrje dhe mesazhe njëkohësisht</span><span>107</span></div>
+        <div data-go="s108"><span>Gjykimi i situatës (SJT): 10 situata + "pse" me zë</span><span>108</span></div>
+        <div data-go="s109"><span>Dëshmia e aftësive të buta në raport</span><span>109</span></div>
         <div data-go="s91" class="later"><span>Pas punësimit: 90 ditët e para</span><span>91</span></div>
         <div data-go="s92" class="later"><span>Përmbledhja javore për punëdhënësin</span><span>92</span></div>
         <div data-go="s93" class="later"><span>Testet e rolit: shkrimi, logjika, Excel, siguria ushqimore</span><span>93</span></div>
@@ -2251,6 +2263,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
             <div class="li" data-go="s34"><svg class="ico" style="color:var(--accent)"><use href="#i-mic"/></svg><div class="grow"><b>Intervista me avatar</b><div class="small muted">4–10 pyetje · me zë · 3 gjuhë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" data-go="s45"><svg class="ico" style="color:var(--accent)"><use href="#i-brief"/></svg><div class="grow"><b>Simulimi i punës</b><div class="small muted">30 min · detyra reale · certifikatë</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" data-go="s49"><svg class="ico" style="color:var(--accent)"><use href="#i-globe"/></svg><div class="grow"><b>Testi i gjuhës</b><div class="small muted">Anglisht: B2 · rifillo kur të duash</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s103"><svg class="ico" style="color:var(--accent)"><use href="#i-user"/></svg><div class="grow"><b>Aftësitë e buta</b><div class="small muted">Role-play, prezantim, email, presion · 8 kompetenca</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" data-go="s29"><svg class="ico" style="color:var(--accent)"><use href="#i-flame"/></svg><div class="grow"><b>Pyetja e ditës</b><div class="small muted">60 sekonda · mban streak-un</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li" style="opacity:.55"><svg class="ico"><use href="#i-file"/></svg><div class="grow"><b>Testet e rolit</b><div class="small muted">Shpejtësia e shkrimit, logjika, kuiz kodi</div></div><span class="badge-later">pas MVP-së</span></div>
           </div>
@@ -2422,6 +2435,8 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
             <p>Simulim <span data-bind="sim-name">Junior Developer</span>: 78/100 (KR-2026-00318) · 3 intervista praktike, mesatarja 70 · Anglisht B2 (test 28.10)</p>
             <div class="p-h">Çka po punon</div>
             <p>Komunikimi me shkrim · Testimi (Jest) · Anglisht C1 deri më 15.12</p>
+            <div class="p-h">Aftësitë e buta (të vëzhguara)</div>
+            <p data-go="s109" style="color:var(--accent);font-weight:600">Komunikimi 61 · Ekipi 70 · Konflikti 54 · Email-i 74 → shih faqen 2</p>
             <div class="between" style="margin-top:6px"><span class="xs" style="color:#666">Verifiko: karriera.app/r/GV-7A2K</span><svg class="qr" viewBox="0 0 21 21" width="36" height="36"><path d="M0 0h7v7H0zM2 2h3v3H2zM14 0h7v7h-7zM16 2h3v3h-3zM0 14h7v7H0zM2 16h3v3H2zM9 0h1v3H9zM11 1h2v1h-2zM9 5h3v1H9zM13 4h1v3h-1zM0 9h2v1H0zM3 9h4v1H3zM9 9h1v1H9zM11 8h1v3h-1zM13 9h2v1h-2zM16 9h5v1h-5zM1 11h3v1H1zM5 12h2v1H5zM9 12h2v1H9zM12 12h1v2h-1zM14 11h1v3h-1zM16 12h2v1h-2zM19 11h2v1h-2zM9 15h1v2H9zM11 14h3v1h-3zM15 15h2v1h-2zM18 14h1v3h-1zM20 15h1v2h-1zM9 18h3v1H9zM13 17h1v4h-1zM15 18h2v1h-2zM18 18h3v1h-3zM9 20h2v1H9zM15 20h5v1h-5z"/></svg></div>
           </div>
           <p class="xs muted" style="text-align:center">Ti vendos kujt ia dërgon. Punëdhënësi e sheh vetëm me linkun tënd.</p>
@@ -3673,6 +3688,188 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         </div>
       </div></div>
       <p class="note">Studenti e sheh universitetin e vet brenda app-it: praktikat, thirrjet, bursat dhe sfidat e qendrës. Pa feed: vetëm lista me afate.</p>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===================== 14. AFTËSITË E BUTA ===================== -->
+<div class="row">
+  <div class="row-title">14 · Aftësitë e buta: maten, stërviten, dëshmohen</div>
+  <div class="row-sub">Komunikimi, puna në ekip, koha, konflikti, feedback-u, prezantimi. Jo libra: role-play me avatarin (shefi, kolegu, klienti), prezantim me kamerë, email-i profesional, turni i menaxherit nën presion, testi i gjykimit të situatës. Pikët hyjnë te gatishmëria dhe te raporti që e sheh punëdhënësi.</div>
+  <div class="frames">
+
+    <section class="frame" id="s103">
+      <div class="frame-label">103 · Aftësitë e buta <em>qendra · 8 kompetenca</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s44"><svg class="ico"><use href="#i-back"/></svg>Stërvitja</span>
+          <div class="between"><h1 class="h-l">Aftësitë e buta</h1><span class="chip">Fokusi i javës: konflikti</span></div>
+          <div class="card" style="display:grid;gap:9px">
+            <div class="bar-row"><span>Komunikimi</span><div class="progress"><i style="width:61%"></i></div><b>61</b></div>
+            <div class="bar-row"><span>Puna në ekip</span><div class="progress"><i style="width:70%"></i></div><b>70</b></div>
+            <div class="bar-row"><span>Menaxhimi i kohës</span><div class="progress"><i style="width:55%"></i></div><b>55</b></div>
+            <div class="bar-row"><span>Konflikti</span><div class="progress"><i style="width:48%"></i></div><b>48</b></div>
+            <div class="bar-row"><span>Marrja e feedback-ut</span><div class="progress"><i style="width:66%"></i></div><b>66</b></div>
+            <div class="bar-row"><span>Prezantimi</span><div class="progress"><i style="width:52%"></i></div><b>52</b></div>
+            <div class="bar-row"><span>Email-i profesional</span><div class="progress"><i style="width:74%"></i></div><b>74</b></div>
+            <div class="bar-row"><span>Përshtatshmëria</span><div class="progress"><i style="width:63%"></i></div><b>63</b></div>
+          </div>
+          <div class="list">
+            <div class="li" data-go="s104"><svg class="ico" style="color:var(--accent)"><use href="#i-mic"/></svg><div class="grow"><b>Role-play me avatarin</b><div class="small muted">Shefi, kolegu, klienti · 3 min</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s105"><svg class="ico" style="color:var(--accent)"><use href="#i-camera"/></svg><div class="grow"><b>Prezantimi me kamerë</b><div class="small muted">2 min · kontakti me sy, fjalët mbushëse</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s106"><svg class="ico" style="color:var(--accent)"><use href="#i-mail"/></svg><div class="grow"><b>Email-i profesional</b><div class="small muted">Toni, qartësia, 5 rreshta</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s107"><svg class="ico" style="color:var(--accent)"><use href="#i-bell"/></svg><div class="grow"><b>Turni i menaxherit</b><div class="small muted">Thirrje, mesazhe, probleme njëkohësisht</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s108"><svg class="ico" style="color:var(--accent)"><use href="#i-check"/></svg><div class="grow"><b>Gjykimi i situatës</b><div class="small muted">10 situata reale · çka do të bëje?</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          </div>
+          <p class="xs muted">Si maten: nga role-play-et, intervistat, simulimet dhe testi i situatës, jo nga vetëvlerësimi. Shfaqen te raporti i gatishmërisë si "të vëzhguara".</p>
+        </div>
+      </div></div>
+      <p class="note">Tetë kompetenca që i kërkojnë punëdhënësit (STIKK 2025: vetëm 2 nga 5 firma investojnë në to). Pikët vijnë nga sjellja e vëzhguar, jo nga pyetësorë "sa i mirë je".</p>
+    </section>
+
+    <section class="frame" id="s104">
+      <div class="frame-label">104 · Role-play · "Thuaj jo shefit" <em>avatari është shefi</em></div>
+      <div class="phone"><div class="screen interview daily" data-rp2>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="iv-top"><span class="iconbtn" data-go="s103"><svg class="ico"><use href="#i-x"/></svg></span><div style="display:grid;justify-items:center;gap:6px"><span class="small" style="color:#9AA0AA">Role-play · konflikti · 1 nga 1</span><div class="dots"><i class="now"></i></div></div><span class="small" style="width:44px;text-align:right;color:#9AA0AA" data-timer="180">03:00</span></div>
+        <div class="avatar" style="flex:0 0 190px">
+          <svg viewBox="0 0 240 280" width="180" aria-label="Shefi (avatar)"><defs><radialGradient id="sk3" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#D9B8A0"/><stop offset="1" stop-color="#A9846C"/></radialGradient></defs><path d="M30 280c4-58 40-84 90-84s86 26 90 84z" fill="#23262F"/><path d="M96 196h48v26c-8 10-40 10-48 0z" fill="#B8937A"/><ellipse cx="120" cy="120" rx="58" ry="72" fill="url(#sk3)"/><path d="M62 112c-4-52 26-74 60-74s64 20 58 72c-8-24-24-34-58-36-30 0-50 14-60 38z" fill="#2A2320"/><ellipse cx="98" cy="124" rx="6" ry="4" fill="#2A2320"/><ellipse cx="142" cy="124" rx="6" ry="4" fill="#2A2320"/><path d="M86 110q12-8 24-2M130 108q12-6 24 2" stroke="#2A2320" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M106 164q14 2 28 0" stroke="#6E3B33" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+          <span class="taskchip" style="position:absolute;left:20px;top:8px">Shefi · e premte 17:30</span>
+        </div>
+        <div class="subs">„Më duhet që të qëndrosh sonte deri në 22:00, klienti e do raportin nesër në mëngjes.” <span class="xs" style="color:#9AA0AA;display:block;margin-top:6px">Ti: ke provim nesër në 9:00. Thuaj jo, pa e humbur raportin me shefin.</span></div>
+        <div class="mic-wrap" style="padding:6px 0 0">
+          <div class="mic-big" data-act="daily" style="width:76px;height:76px"><svg class="ico"><use href="#i-mic"/></svg></div>
+          <div class="small mic-hint" style="color:#9AA0AA">Fol si në zyrë. Vlerësohen: qartësia, toni, alternativa që ofron.</div>
+          <div class="state listen mic-rec" style="justify-content:center"><span class="wave"><i style="height:8px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:14px"></i></span>Po të dëgjoj…</div>
+        </div>
+        <div class="card fb" style="display:grid;gap:8px;margin:0 20px;background:#171A1F;color:#F3F4F6">
+          <div class="row-x"><svg class="ico" style="color:#7CE3A3"><use href="#i-check"/></svg><b>Mirë: the "jo" qartë dhe ofrove alternativë</b></div>
+          <div class="small" style="color:#9AA0AA">"Sonte s'mundem, kam provim nesër. Mund ta nis tani deri në 19:00 dhe ta mbaroj nesër në 11:00 pas provimit." Toni: i qetë ✓ · Qartësia: ✓ · Alternativa: ✓ · Falje e tepërt: ✗ (3 herë "më fal")</div>
+          <div class="row-x" style="gap:8px"><span class="skill have">Konflikti +6</span><span class="skill have">Komunikimi +3</span></div>
+          <button class="btn sm" style="background:#F3F4F6;color:#0B0D10" data-go="s103">Skenari tjetër: jep lajmin e keq klientit</button>
+        </div>
+        <div class="iv-sub" style="margin:10px 0 24px"><span class="row-x" style="gap:6px"><svg class="ico sm"><use href="#i-repeat"/></svg>Provoje përsëri</span></div>
+      </div></div>
+      <p class="note">Skenarët: thuaj jo shefit · jep lajmin e keq klientit · kërko ndihmë pa u dukur i dobët · mosmarrëveshje me kolegun · kërko ngritje. Prek mikrofonin: avatari luan shefin, ti përgjigjesh, feedback si trajner.</p>
+    </section>
+
+    <section class="frame" id="s105">
+      <div class="frame-label">105 · Prezantimi me kamerë <em>2 minuta</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s103"><svg class="ico"><use href="#i-back"/></svg>Aftësitë e buta</span>
+          <h1 class="h-l">Prezanto projektin tënd</h1>
+          <p class="small muted">2 minuta, para kamerës, sikur të ishte takimi i parë me ekipin. Struktura: problemi · çka bëre · rezultati.</p>
+          <div class="cam"><div class="guide"></div><span class="ok"><svg class="ico sm"><use href="#i-check"/></svg>Kamera gati · 01:42 të mbetura</span></div>
+          <div class="card" style="display:grid;gap:10px">
+            <div class="between"><b>Rezultati i fundit · 28.10</b><span class="small muted">52 → 58</span></div>
+            <div class="bar-row"><span>Kontakti me sy</span><div class="progress"><i style="width:62%"></i></div><b>62%</b></div>
+            <div class="bar-row"><span>Fjalët mbushëse</span><div class="progress"><i style="width:40%"></i></div><b>9</b></div>
+            <div class="bar-row"><span>Tempo</span><div class="progress"><i style="width:70%"></i></div><b>142/min</b></div>
+            <div class="bar-row"><span>Struktura</span><div class="progress"><i style="width:55%"></i></div><b>55</b></div>
+            <div class="small muted">Këshilla: fillo me rezultatin ("E ula kohën e ngarkimit nga 4 në 1 sekondë"), pastaj trego si. "Ëëë" u shfaq 9 herë, shumica te kalimet mes pjesëve.</div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn"><svg class="ico sm"><use href="#i-camera"/></svg>Fillo prezantimin</button></div>
+      </div></div>
+      <p class="note">I njëjti motor i gjuhës së trupit (MediaPipe + STT) për prezantim, jo intervistë. Kontakti me sy, fjalët mbushëse, tempo, struktura: pikët hyjnë te "Prezantimi".</p>
+    </section>
+
+    <section class="frame" id="s106">
+      <div class="frame-label">106 · Email-i profesional <em>toni dhe qartësia</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s103"><svg class="ico"><use href="#i-back"/></svg>Aftësitë e buta</span>
+          <div class="small muted">Detyra 3 nga 10 · email-i profesional</div>
+          <h1 class="h-m">Kolegu nuk e dorëzoi pjesën e tij dhe afati është nesër. Shkruaji një email që e zgjidh, jo që e fajëson.</h1>
+          <div class="ba">
+            <div class="row-x small"><svg class="ico sm" style="color:var(--bad)"><use href="#i-x"/></svg><b>Versioni yt i parë</b></div>
+            <p class="before" style="text-decoration:none">Arben, prapë s'e ke dërguar pjesën tënde. Kështu s'mund të punojmë. Dërgoje sot.</p>
+            <div class="row-x small"><svg class="ico sm" style="color:var(--ok)"><use href="#i-check"/></svg><b>Rishkrim nga AI, me shpjegim</b></div>
+            <p class="after">Arben, afati është nesër dhe më duhet pjesa jote (seksioni 2) deri sot në 17:00 që ta bashkoj. A të ndihmon nëse e marr unë tabelën e të dhënave? Më trego deri në 15:00.</p>
+          </div>
+          <div class="card" style="display:grid;gap:6px">
+            <div class="bar-row"><span>Toni</span><div class="progress"><i style="width:35%"></i></div><b>35</b></div>
+            <div class="bar-row"><span>Qartësia</span><div class="progress"><i style="width:70%"></i></div><b>70</b></div>
+            <div class="bar-row"><span>Zgjidhja</span><div class="progress"><i style="width:20%"></i></div><b>20</b></div>
+            <div class="small muted">Çka ndryshoi: afat konkret, ofertë ndihme, pa fajësim. 3 rregullat: çka · deri kur · si ndihmoj.</div>
+          </div>
+          <div class="segm"><span class="on" data-act="seg">Shqip</span><span data-act="seg">English</span></div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s103">Detyra tjetër: email për klientin</button></div>
+      </div></div>
+      <p class="note">Emaili është aftësia e butë që dallohet në ditën e parë. Shkruan, AI-ja e rishkruan dhe shpjegon pse, dhe pikët e tonit rriten me kohë. Në shqip dhe anglisht.</p>
+    </section>
+
+    <section class="frame" id="s107">
+      <div class="frame-label">107 · Turni i menaxherit <em>presion · 10 min</em></div>
+      <div class="phone"><div class="screen" data-feed>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <div class="between"><span class="back" data-go="s103"><svg class="ico"><use href="#i-back"/></svg></span><span class="chip"><svg class="ico sm"><use href="#i-clock"/></svg><span data-timer="560">09:20</span></span></div>
+          <h1 class="h-m">Turni i menaxherit</h1>
+          <p class="small muted">Gjërat vijnë njëkohësisht. Zgjidh çka bën së pari, përgjigju me zë ose delego. Vlerësohet rendi, qetësia dhe çka u zgjidh.</p>
+          <div class="ev"><div class="ev-t">09:02 · thirrje</div><div class="grow"><b>Furnitori: "Dërgesa vonohet 2 ditë."</b></div><div class="row-x" style="gap:6px"><span class="chip on" data-act="seg">Përgjigju</span><span class="chip" data-act="seg">Më vonë</span></div></div>
+          <div class="ev"><div class="ev-t">09:03 · mesazh</div><div class="grow"><b>Pronari: "Ku është raporti?"</b></div><div class="row-x" style="gap:6px"><span class="chip" data-act="seg">Përgjigju</span><span class="chip on" data-act="seg">Më vonë</span></div></div>
+          <div class="ev"><div class="ev-t">09:05 · punonjësi</div><div class="grow"><b>"Arta s'erdhi, turni i mbrëmjes është bosh."</b></div><div class="row-x" style="gap:6px"><span class="chip on" data-act="seg">Delego</span><span class="chip" data-act="seg">Vetë</span></div></div>
+          <div class="ev"><div class="ev-t">09:07 · klient</div><div class="grow"><b>Ankesë: "Prisni 3 ditë për përgjigje?"</b></div><div class="row-x" style="gap:6px"><span class="chip" data-act="seg">Përgjigju</span><span class="chip on" data-act="seg">Tani</span></div></div>
+          <div class="card" style="display:grid;gap:6px;padding:12px"><div class="small muted">Thirrja me furnitorin · përgjigju me zë</div><div class="row-x" style="gap:10px"><div class="mic-big" data-act="daily" style="width:52px;height:52px;flex:none"><svg class="ico" style="width:22px;height:22px"><use href="#i-mic"/></svg></div><div class="small">"Faleminderit që më lajmëruat. Çka mund të dërgoni sot, dhe çka pas 2 ditësh?"</div></div></div>
+          <div class="steps" data-steps style="gap:6px"><div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po e vlerësoj rendin dhe përgjigjet</div></div>
+          <div class="card hidden" data-after style="display:grid;gap:6px"><b>Turni u krye · 72/100</b><div class="bar-row"><span>Prioritizimi</span><div class="progress"><i style="width:80%"></i></div><b>80</b></div><div class="bar-row"><span>Qetësia</span><div class="progress"><i style="width:74%"></i></div><b>74</b></div><div class="bar-row"><span>Delegimi</span><div class="progress"><i style="width:66%"></i></div><b>66</b></div><div class="small muted">Mirë: klienti i parë, furnitori i dytë. Gabim: raportin e pronarit e le pa një fjalë; një "e dërgoj deri në 11" do të mjaftonte.</div></div>
+        </div>
+        <div class="cta"><button class="btn" data-act="read-link">Mbaro turnin</button></div>
+      </div></div>
+      <p class="note">Simulimi i punës nën presion, i natyrshëm për telefon: thirrje, mesazhe, probleme në radhë. Zgjidh rendin me chip-at, përgjigju me zë, prek "Mbaro turnin". Për menaxherë, recepsion, dispeçerë, HR.</p>
+    </section>
+
+    <section class="frame" id="s108">
+      <div class="frame-label">108 · Gjykimi i situatës <em>10 situata</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="row-x"><span class="back" data-go="s103"><svg class="ico"><use href="#i-back"/></svg></span><div class="progress grow"><i style="width:40%"></i></div><span class="xs muted">4 nga 10</span></div>
+          <div class="small muted">Puna në ekip</div>
+          <h1 class="h-m">Në takim, kolegu i merr meritat për punën që e bëre ti. Çka bën?</h1>
+          <div class="quiz" data-quiz>
+            <span data-quiz-ok hidden>3</span>
+            <div class="quiz-opt" data-act="quiz" data-val="1"><span class="radio"></span><span>E ndërpres aty për aty dhe e sqaroj para të gjithëve.</span></div>
+            <div class="quiz-opt" data-act="quiz" data-val="2"><span class="radio"></span><span>S'them asgjë, por e shënoj dhe nuk bashkëpunoj më me të.</span></div>
+            <div class="quiz-opt" data-act="quiz" data-val="3"><span class="radio"></span><span>Pas takimit flas me të privatisht; në takimin tjetër e tregoj kontributin tim me fakte.</span></div>
+            <div class="small" data-quiz-fb></div>
+          </div>
+          <div class="card row-x"><svg class="ico" style="color:var(--accent)"><use href="#i-spark"/></svg><div class="grow small">Nuk ka përgjigje "perfekte": vlerësohet arsyetimi. Pas përgjigjes, AI-ja të pyet "pse" me zë (30 sek).</div></div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s103">Tjetra</button></div>
+      </div></div>
+      <p class="note">Test i gjykimit të situatës (SJT), si ato që përdorin kompanitë e mëdha: 10 situata reale të punës, përgjigje + "pse" me zë. Prek një opsion.</p>
+    </section>
+
+    <section class="frame" id="s109">
+      <div class="frame-label">109 · Dëshmia e aftësive të buta <em>te raporti</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s50"><svg class="ico"><use href="#i-back"/></svg>Raporti</span>
+          <div class="paper" style="gap:7px">
+            <div class="between"><div class="p-name" style="font-size:16px">Aftësitë e buta · të vëzhguara</div><span class="ai-tag">Karriera</span></div>
+            <div class="p-meta">Genti V. · 90 ditët e fundit · 14 role-play · 5 intervista · 2 simulime · 1 SJT</div>
+            <div class="p-h">Pikët (nga sjellja, jo vetëvlerësim)</div>
+            <p>Komunikimi 61 · Puna në ekip 70 · Koha 55 · Konflikti 48 → 54 · Feedback 66 · Prezantimi 58 · Email-i 74 · Përshtatshmëria 63</p>
+            <div class="p-h">Shembuj të vëzhguar</div>
+            <p>"Thuaj jo shefit": tha jo qartë, ofroi alternativë (14.10) · Email kolegut: toni 35 → 72 pas rishkrimit (20.10) · Prezantim: fjalët mbushëse 14 → 9 (28.10)</p>
+            <div class="p-h">Çka po punon</div>
+            <p>Konflikti (fokusi i javës) · prezantimi: struktura</p>
+            <div class="xs" style="color:#666;margin-top:4px">Punëdhënësi i sheh këto vetëm me pëlqimin e mbajtësit, si pjesë e raportit të gatishmërisë.</div>
+          </div>
+          <div class="card row-x"><svg class="ico" style="color:var(--accent)"><use href="#i-shield"/></svg><div class="grow small">Pse vlen: STIKK 2025 thotë që firmat i duan aftësitë e buta por s'i matin dot. Ne i vëzhgojmë në sjellje reale, me datë dhe shembull.</div></div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s50">Shto te raporti i gatishmërisë</button></div>
+      </div></div>
+      <p class="note">Aftësitë e buta si dëshmi, jo si fjalë në CV: pikë nga sjellja e vëzhguar, me shembuj dhe data, brenda raportit që e sheh punëdhënësi.</p>
     </section>
 
   </div>
