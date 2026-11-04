@@ -39,6 +39,12 @@
 
 **Çka bëmë ne:** vendosëm idenë, HARTA-n dhe bisedat, shkruam `AGENTS.md`, krijuam projektin në Supabase, lexuam diff-in e çdo hapi dhe e provuam në telefon. Çelësat janë vetëm në `.env` lokal, që s'është në repo.
 
+### Çka mësuam / çka nuk e kuptuam
+
+> ✏️ Genti / Edonik: rishkruajeni me fjalët tuaja para dorëzimit.
+
+Mësuam që pa një policy RLS për `select` lista del bosh pa asnjë gabim, dhe që Expo i fut në app vetëm variablat `EXPO_PUBLIC_…`, prandaj fjalëkalimi i bazës dhe çelësi i AI-së s'duhet ta kenë kurrë këtë prefiks. Ende s'e kemi të qartë si do ta lidhim shtimin e punëve me përdoruesin kur të vijë login-i.
+
 ### Hapi tjetër (J6 · 11.11 · Auth + RLS)
 
 1. Login me Supabase Auth dhe tabela `profiles` (emri, roli SWE / Asistent/PR, gjuha e intervistës).
