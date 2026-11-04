@@ -886,6 +886,9 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
 /* role-play */
 .daily .iv-top { flex:none; }
 .daily.answered .avatar { flex-basis:140px; }
+
+/* v0.8 */
+[data-post-form].hidden, [data-posted].hidden { display:none !important; }
 </style>
 </head>
 <body class="dir-d">
@@ -931,7 +934,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
 </svg>
 <div class="toolbar">
-  <div class="brand">Karriera<span>Bordi UI/UX · v0.7</span></div>
+  <div class="brand">Karriera<span>Bordi UI/UX · v0.8</span></div>
   <div class="seg" id="dirSeg">
     <button data-dir="a">A · Qartë</button>
     <button data-dir="b">B · Leja</button>
@@ -940,7 +943,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   </div>
   <button class="tb-btn" id="darkBtn">Dark</button>
   <span class="lbl">Llogaria</span>
-  <div class="seg" id="acctSeg"><button data-acct-set="seeker">Kërkoj punë</button><button data-acct-set="employer" class="emp">Punëdhënës</button></div>
+  <div class="seg" id="acctSeg"><button data-acct-set="seeker">Kërkoj punë</button><button data-acct-set="employer" class="emp">Punëdhënës</button><button data-acct-set="center" class="emp">Qendra e karrierës</button></div>
   <span class="lbl">Roli</span>
   <div class="seg" id="roleSeg"><button data-role-set="swe">SWE</button><button data-role-set="pr">Kontabilist/e</button><button data-role-set="ws">Kamarier/e</button></div>
   <span class="lbl">Intervista</span>
@@ -957,7 +960,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
 <!-- ===================== 0. INFO ===================== -->
 <div class="row">
   <div class="row-title">Karriera: dizajni i aplikacionit</div>
-  <div class="row-sub">95 ekrane, çdo veçori e dukshme veç e veç. Dy anë në një app: <b>Kërkoj punë</b> (gatishmëria, palestra e karrierës, dokumentet) dhe <b>Punëdhënës</b> (gjej njerëzit: lista e ngushtë, renditja, para-testi, ftesat, pipeline). Tre persona: student CSE, kontabilist/e zyre, kamarier/e (çdo punë). Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin (SWE ↔ Kontabilist/e) dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
+  <div class="row-sub">102 ekrane, çdo veçori e dukshme veç e veç. Tri llogari në një app: <b>Kërkoj punë</b>, <b>Punëdhënës</b>, <b>Qendra e karrierës</b> (universiteti, në MVP). <b>Kërkoj punë</b> (gatishmëria, palestra e karrierës, dokumentet) dhe <b>Punëdhënës</b> (gjej njerëzit: lista e ngushtë, renditja, para-testi, ftesat, pipeline). Tre persona: student CSE, kontabilist/e zyre, kamarier/e (çdo punë). Gjithçka është e gjallë: prek opsionet, filtrat, butonat. Ndërro stilin (A, B, C, D), rolin (SWE ↔ Kontabilist/e) dhe gjuhën e intervistës lart. "▶ Prototipi" e hap app-in në një telefon të vetëm, si në Expo.</div>
   <div class="frames">
     <div class="info feat">
       <h3>Veçoritë → ekrani (kliko për të shkuar)</h3>
@@ -1037,7 +1040,13 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         <div data-go="s86"><span>A jam gati? për Kamarier/e: përvoja, turnet, HACCP</span><span>86</span></div>
         <div data-go="s87"><span><b>Simulim Kamarier/e:</b> avatari është klienti (role-play)</span><span>87 · 88</span></div>
         <div data-go="s89"><span>Punëdhënësi i vogël: restoranti gjen njerëz sot</span><span>89</span></div>
-        <div data-go="s90" class="later"><span>Universiteti: rol i tretë, licencë, numra të grumbulluar</span><span>90</span></div>
+        <div data-go="s96"><span><b>Qendra e karrierës (rol i tretë, në MVP):</b> regjistrimi me domen universitar</span><span>96</span></div>
+        <div data-go="s97"><span>Qendra · Kreu: numrat, boshllëqet, veprimi kryesor</span><span>97</span></div>
+        <div data-go="s98"><span>Studentët: vetëm të grumbulluar (RLS), sfida për studentët</span><span>98</span></div>
+        <div data-go="s99"><span>Praktikat, thirrjet, bursat: posto te studentët e vet</span><span>99</span></div>
+        <div data-go="s100"><span><b>Raporti i punësueshmërisë</b> (PDF) + licenca</span><span>100</span></div>
+        <div data-go="s101"><span>Punëdhënësit partnerë të universitetit</span><span>101</span></div>
+        <div data-go="s102"><span>Studenti: "Nga universiteti yt" (praktikat, sfidat)</span><span>102</span></div>
         <div data-go="s91" class="later"><span>Pas punësimit: 90 ditët e para</span><span>91</span></div>
         <div data-go="s92" class="later"><span>Përmbledhja javore për punëdhënësin</span><span>92</span></div>
         <div data-go="s93" class="later"><span>Testet e rolit: shkrimi, logjika, Excel, siguria ushqimore</span><span>93</span></div>
@@ -1089,6 +1098,18 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         <div data-go="s66"><span><b>Kthehet sepse:</b> analitika e kërkesës dhe ofertës që s'e jep askush ("2 vjet përvojë ju lë 12 kandidatë")</span><span>66</span></div>
         <div data-go="s61"><span><b>Paguan për:</b> listën e plotë + raportet (29 €/pozitë ose 49 €/muaj, me faturë), para-teste dhe ftesa pa limit</span><span>61 · 66</span></div>
         <div data-go="s67" class="later"><span><b>Paguan për:</b> simulimin e sponsorizuar me rastin e vet, kompania në krye të renditjes</span><span>67</span></div>
+      </div>
+    </div>
+    <div class="info" style="width:560px">
+      <h3>🎓 Qendra e karrierës: çka bën · pse kthehet · pse paguan</h3>
+      <p class="small" style="opacity:.75;margin-bottom:8px">Zyra e karrierës e një universiteti ose fakulteti (p.sh. UMIB · FIMK).</p>
+      <div class="feat-list">
+        <div data-go="s96"><span><b>Bën:</b> regjistrohet me domenin e universitetit; studentët verifikohen vetë me @umib.net</span><span>96 · 77</span></div>
+        <div data-go="s98"><span><b>Bën:</b> sheh gatishmërinë dhe boshllëqet e studentëve si grup, kurrë individualisht</span><span>97 · 98</span></div>
+        <div data-go="s99"><span><b>Bën:</b> poston praktika, thirrje, bursa te studentët e vet</span><span>99 · 102</span></div>
+        <div data-go="s101"><span><b>Bën:</b> fton kompani partnere dhe sheh si sillen me studentët e saj</span><span>101</span></div>
+        <div data-go="s98"><span><b>Kthehet sepse:</b> numrat ndryshojnë çdo javë; sfidat dhe praktikat jetojnë këtu</span><span>98</span></div>
+        <div data-go="s100"><span><b>Paguan për:</b> raportin e punësueshmërisë (akreditim, rektorat) dhe Pro për të gjithë studentët: pilot falas → licencë sipas madhësisë</span><span>100</span></div>
       </div>
     </div>
     <div class="info" id="dirInfo">
@@ -1335,6 +1356,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
           <div class="jc" data-role="swe" data-tags="swe de" data-go="s22"><span class="ribbon d-only">E RE</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">AN-5521</span></div><div class="jc-title">Junior Frontend Developer</div><div class="jc-meta">Nordlicht, remote · BE</div><div class="jc-foot"><span>Arbeitnow</span><span>Afati 20.11</span></div><div class="trk d-only" data-s="1"></div><div class="trk-lbl d-only">Tani: <b>Përputhja</b> · 3 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:41"><span class="rd-num">41<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
           <div class="small muted" data-empty style="display:none;text-align:center;padding:20px">Asnjë punë me këtë filtër. Provo "Sill linkun tënd".</div>
           <div class="card row-x" data-go="s55"><svg class="ico" style="color:var(--accent)"><use href="#i-chart"/></svg><div class="grow"><b>Çka kërkojnë punëdhënësit këtë muaj</b><div class="small muted">Nga 1.240 shpallje · krahasuar me ty</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          <div class="card row-x" data-go="s102"><svg class="ico" style="color:var(--accent)"><use href="#i-book"/></svg><div class="grow"><b>Nga universiteti yt</b><div class="small muted">3 praktika dhe thirrje · UMIB</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
           <div class="card row-x" data-go="s79"><svg class="ico" style="color:var(--accent)"><use href="#i-chart"/></svg><div class="grow"><b>Paga për rolin</b><div class="small muted">Nga shpalljet dhe ofertat anonime</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
         </div>
         <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
@@ -2605,10 +2627,11 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
           <div style="display:grid;justify-items:center;gap:8px;text-align:center"><svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="64" height="64" style="width:64px;height:64px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><g class=""><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg><h1 class="h-l">Si do ta përdorësh Karrierën?</h1><p class="muted small">Mund ta ndërrosh më vonë te cilësimet.</p></div>
           <div class="option on" data-go="s1"><span class="ic"><svg class="ico"><use href="#i-user"/></svg></span><div class="grow"><b>Kërkoj punë</b><div class="small muted">Gatishmëria, stërvitja, intervistat, aplikimet</div></div><span class="radio"></span></div>
           <div class="option" data-go="s58"><span class="ic"><svg class="ico"><use href="#i-brief"/></svg></span><div class="grow"><b>Punëdhënës</b><div class="small muted">Gjej kandidatë të gatshëm, para-testo, fto</div></div><span class="radio"></span></div>
-          <p class="xs muted" style="text-align:center">Punëdhënësit verifikohen. Kandidatët vendosin vetë a janë të dukshëm.</p>
+          <div class="option" data-go="s96"><span class="ic"><svg class="ico"><use href="#i-book"/></svg></span><div class="grow"><b>Qendra e karrierës</b><div class="small muted">Universiteti: studentët, praktikat, raporti</div></div><span class="radio"></span></div>
+          <p class="xs muted" style="text-align:center">Punëdhënësit dhe qendrat verifikohen. Kandidatët vendosin vetë a janë të dukshëm.</p>
         </div>
       </div></div>
-      <p class="note">Ekrani i parë pas splash-it. E njëjta app, dy role: `account_type` në profil dhe RLS sipas rolit (java 6 e lëndës).</p>
+      <p class="note">Ekrani i parë pas splash-it. E njëjta app, tri role: `account_type` në profil (seeker · employer · center) dhe RLS sipas rolit (java 6 e lëndës).</p>
     </section>
 
     <section class="frame" id="s58">
@@ -3386,11 +3409,11 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   <div class="frames">
 
     <section class="frame" id="s90">
-      <div class="frame-label">90 · Universiteti <span><span class="badge-later">rol i tretë · pas MVP-së</span></span></div>
+      <div class="frame-label">90 · Universiteti <em>→ shih rreshtin 13 (në MVP)</em></div>
       <div class="phone"><div class="screen">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" style="gap:12px">
-          <div class="later-banner">Vizion: nuk ndërtohet për Demo Day</div>
+          <div class="pill-live ok" data-go="s97"><span class="pulse"></span>Tani në MVP: shih ekranet 96–102</div>
           <div class="between"><div><div class="small muted">Qendra e karrierës</div><h1 class="h-m">UMIB · FIMK</h1></div><span class="chip" style="color:var(--ok)">Licencë</span></div>
           <div class="stats3"><div><b>312</b><small>studentë të verifikuar</small></div><div><b>58%</b><small>gatishmëria mes.</small></div><div><b>41</b><small>punësime 2026</small></div></div>
           <div class="card" style="display:grid;gap:8px"><b>Aftësitë që u mungojnë studentëve tanë</b><div class="bar-row"><span>Testimi</span><div class="progress"><i style="width:82%"></i></div><b>82%</b></div><div class="bar-row"><span>Anglisht C1</span><div class="progress"><i style="width:64%"></i></div><b>64%</b></div><div class="bar-row"><span>Komunikimi</span><div class="progress"><i style="width:51%"></i></div><b>51%</b></div><div class="small muted">Vetëm numra të grumbulluar; asnjë student individualisht.</div></div>
@@ -3501,6 +3524,160 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   </div>
 </div>
 
+<!-- ===================== 13. QENDRA E KARRIERËS ===================== -->
+<div class="row">
+  <div class="row-title">13 · Qendra e karrierës: roli i tretë, në MVP</div>
+  <div class="row-sub">Universiteti (p.sh. UMIB) si llogari e tretë: studentët e verifikuar me email universitar, numra të grumbulluar (kurrë individualë), praktikat dhe thirrjet e qendrës te studentët e vet, punëdhënësit partnerë dhe raporti i punësueshmërisë. Pilot falas një semestër, pastaj licencë sipas madhësisë.</div>
+  <div class="frames">
+
+    <section class="frame" id="s96">
+      <div class="frame-label">96 · Regjistro qendrën e karrierës <em>verifikimi</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <span class="back" data-go="s57"><svg class="ico"><use href="#i-back"/></svg></span>
+          <h1 class="h-l">Qendra e karrierës</h1>
+          <div class="field"><svg class="ico sm"><use href="#i-book"/></svg><input value="Universiteti Isa Boletini, Mitrovicë (UMIB)" /></div>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">FIMK</span><span class="chip" data-act="seg">Ekonomik</span><span class="chip" data-act="seg">Juridik</span><span class="chip" data-act="seg">Gjithë universiteti</span></div>
+          <div class="field"><svg class="ico sm"><use href="#i-mail"/></svg><input value="karriera@umib.net" /></div>
+          <div class="field"><svg class="ico sm"><use href="#i-user"/></svg><input placeholder="Personi përgjegjës" value="Zyra për Karrierë · FIMK" /></div>
+          <div class="list">
+            <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Studentët verifikohen vetë</b><div class="small muted">Kushdo me @umib.net merr shenjën "Student i verifikuar"</div></div></div>
+            <div class="li"><svg class="ico ok"><use href="#i-check"/></svg><div class="grow"><b>Pilot falas, 1 semestër</b><div class="small muted">Pastaj licencë vjetore sipas numrit të studentëve</div></div></div>
+            <div class="li"><svg class="ico" style="color:var(--accent)"><use href="#i-shield"/></svg><div class="grow"><b>Vetëm numra të grumbulluar</b><div class="small muted">Qendra nuk sheh kurrë një student individualisht</div></div></div>
+          </div>
+        </div>
+        <div class="cta"><button class="btn" data-go="s97">Krijo llogarinë e qendrës</button></div>
+      </div></div>
+      <p class="note">Llogaria e tretë: `account_type = center`, e lidhur me një domen universitar. RLS: qendra lexon vetëm pamje të grumbulluara (view) për studentët e domenit të vet.</p>
+    </section>
+
+    <section class="frame" id="s97">
+      <div class="frame-label">97 · Qendra · Kreu <em>tab 1</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:12px">
+          <div class="between"><div><div class="small muted">Qendra e karrierës</div><h1 class="h-l">UMIB · FIMK</h1></div><span class="chip" style="color:var(--ok)"><svg class="ico sm"><use href="#i-shield"/></svg>Pilot</span></div>
+          <div class="stats3"><div><b>312</b><small>studentë të verifikuar</small></div><div><b>58%</b><small>gatishmëria mes.</small></div><div><b>41</b><small>intervista këtë muaj</small></div></div>
+          <div class="card row-x" data-go="s99" style="border:2px solid var(--accent)"><svg class="ico" style="color:var(--accent)"><use href="#i-brief"/></svg><div class="grow"><b>Posto praktikë ose thirrje</b><div class="small muted">Shfaqet te studentët e verifikuar të UMIB</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          <div class="card" style="display:grid;gap:8px" data-go="s98"><b>Çka u mungon studentëve tanë</b><div class="bar-row"><span>Testimi (SWE)</span><div class="progress"><i style="width:82%"></i></div><b>82%</b></div><div class="bar-row"><span>Anglisht C1</span><div class="progress"><i style="width:64%"></i></div><b>64%</b></div><div class="bar-row"><span>Komunikimi</span><div class="progress"><i style="width:51%"></i></div><b>51%</b></div></div>
+          <div class="list">
+            <div class="li" data-go="s101"><svg class="ico"><use href="#i-user"/></svg><div class="grow"><b>6 punëdhënës partnerë</b><div class="small muted">14 ftesa për studentët tanë këtë muaj</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-go="s100"><svg class="ico"><use href="#i-chart"/></svg><div class="grow"><b>Raporti i semestrit</b><div class="small muted">Gati për akreditim dhe rektorat</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+          </div>
+          <p class="xs muted">Asnjë e dhënë individuale. Studentët vendosin vetë a janë të dukshëm për punëdhënësit.</p>
+        </div>
+        <div class="tabbar"><div class="tab on" data-go="s97"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s98"><svg class="ico"><use href="#i-user"/></svg>Studentët</div><div class="tab" data-go="s99"><svg class="ico"><use href="#i-brief"/></svg>Praktikat</div><div class="tab" data-go="s100"><svg class="ico"><use href="#i-chart"/></svg>Raportet</div></div>
+      </div></div>
+      <p class="note">Kreu i qendrës: numrat që i duhen (studentë, gatishmëri, intervista), boshllëqet e grumbulluara, dhe veprimi kryesor: posto praktikën.</p>
+    </section>
+
+    <section class="frame" id="s98">
+      <div class="frame-label">98 · Studentët <em>tab 2 · vetëm të grumbulluar</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <h1 class="h-l">Studentët</h1>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">FIMK</span><span class="chip" data-act="seg">Ekonomik</span><span class="chip" data-act="seg">Viti III</span><span class="chip" data-act="seg">Të diplomuar 2026</span></div>
+          <div class="stats3"><div><b>112</b><small>aktivë këtë muaj</small></div><div><b>61%</b><small>gatishmëria mes.</small></div><div><b>27</b><small>me simulim ✓</small></div></div>
+          <div class="card" style="display:grid;gap:8px"><b>Gatishmëria sipas rolit</b><div class="bar-row"><span>Junior Developer</span><div class="progress"><i style="width:64%"></i></div><b>64%</b></div><div class="bar-row"><span>QA</span><div class="progress"><i style="width:55%"></i></div><b>55%</b></div><div class="bar-row"><span>IT support</span><div class="progress"><i style="width:70%"></i></div><b>70%</b></div><div class="bar-row"><span>Zyrë</span><div class="progress"><i style="width:48%"></i></div><b>48%</b></div></div>
+          <div class="card" style="display:grid;gap:8px"><b>Boshllëqet më të mëdha</b><div class="wrap"><span class="skill miss">Testimi 82%</span><span class="skill miss">Anglisht C1 64%</span><span class="skill miss">Komunikimi 51%</span><span class="skill miss">Git 38%</span></div><div class="small muted">Këshillë nga app-i: një punëtori 2-orëshe për testim do ta ngrinte gatishmërinë mesatare ~6 pikë.</div></div>
+          <button class="btn sm" data-act="read-link"><svg class="ico sm"><use href="#i-bell"/></svg>Nis sfidën: "Java e intervistave"</button>
+          <div class="steps" data-steps style="gap:6px"><div class="stp"><span class="dot"><svg class="ico"><use href="#i-check"/></svg></span>Po i njoftoj 312 studentët</div></div>
+          <div class="small hidden" data-after style="color:var(--ok);font-weight:600">Sfida u nis: 7 ditë, një intervistë praktike për student.</div>
+          <p class="xs muted">Qendra sheh grupe prej 10+ studentësh, kurrë emra. Kjo është RLS, jo premtim.</p>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s97"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab on" data-go="s98"><svg class="ico"><use href="#i-user"/></svg>Studentët</div><div class="tab" data-go="s99"><svg class="ico"><use href="#i-brief"/></svg>Praktikat</div><div class="tab" data-go="s100"><svg class="ico"><use href="#i-chart"/></svg>Raportet</div></div>
+      </div></div>
+      <p class="note">Çka i duhet një qendre karriere: ku janë studentët si grup dhe çka t'u ofrojë (punëtori, sfidë). Prek "Nis sfidën": një njoftim te studentët, jo feed.</p>
+    </section>
+
+    <section class="frame" id="s99">
+      <div class="frame-label">99 · Praktikat dhe thirrjet <em>tab 3 · posto</em></div>
+      <div class="phone"><div class="screen has-tabs" data-post>
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <div class="between"><h1 class="h-l">Praktikat</h1><span class="small" style="color:var(--accent);font-weight:600" data-act="post-toggle">+ Posto</span></div>
+          <div class="card hidden" data-post-form style="display:grid;gap:8px">
+            <div class="field"><input value="Praktikë 3-mujore · Dardania Soft · 2 vende" /></div>
+            <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="seg">Praktikë</span><span class="chip" data-act="seg">Thirrje</span><span class="chip" data-act="seg">Bursë</span><span class="chip" data-act="seg">Projekt</span></div>
+            <div class="row-x" style="gap:8px;flex-wrap:wrap"><span class="chip on" data-act="toggle-chip">FIMK</span><span class="chip" data-act="toggle-chip">Ekonomik</span><span class="chip on" data-act="toggle-chip">Viti III</span></div>
+            <div class="field"><svg class="ico sm"><use href="#i-clock"/></svg><input value="Afati: 20.11.2026" /></div>
+            <button class="btn sm" data-act="post-send">Posto te 312 studentët</button>
+            <div class="small hidden" data-posted style="color:var(--ok);font-weight:600">U postua. Studentët e FIMK-ut e shohin te Punët me shenjën "Nga universiteti yt".</div>
+          </div>
+          <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">PRAKTIKË</span><span class="saved-b">UMIB</span></div><div class="jc-title">Praktikë 3-mujore · Dardania Soft</div><div class="jc-meta">2 vende · me pagesë · afati 20.11</div><div class="jc-foot"><span>18 aplikime</span><span>gatishmëria mes. 63%</span></div></div><div class="jc-stub"><div class="rd" style="--v:63"><span class="rd-num">63<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">THIRRJE</span><span class="saved-b">UMIB</span></div><div class="jc-title">Projekti i diplomës me kompani partnere</div><div class="jc-meta">5 tema · afati 30.11</div><div class="jc-foot"><span>9 aplikime</span></div></div></div>
+          <div class="jc" data-role="pr"><div class="jc-main"><div class="jc-top"><span class="tag">BURSË</span><span class="saved-b">UMIB</span></div><div class="jc-title">Bursë për praktikë jashtë vendit</div><div class="jc-meta">3 vende · afati 15.12</div><div class="jc-foot"><span>31 aplikime</span></div></div></div>
+        </div>
+        <div class="tabbar"><div class="tab" data-go="s97"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s98"><svg class="ico"><use href="#i-user"/></svg>Studentët</div><div class="tab on" data-go="s99"><svg class="ico"><use href="#i-brief"/></svg>Praktikat</div><div class="tab" data-go="s100"><svg class="ico"><use href="#i-chart"/></svg>Raportet</div></div>
+      </div></div>
+      <p class="note">Qendra poston praktika, thirrje, bursa: hyjnë te Punët e studentëve të vet me shenjën "Nga universiteti yt". Prek "+ Posto". Aplikimi kalon nëpër Karriera, prandaj qendra sheh numrat.</p>
+    </section>
+
+    <section class="frame" id="s100">
+      <div class="frame-label">100 · Raporti i semestrit <em>tab 4 · PDF</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <h1 class="h-l">Raportet</h1>
+          <div class="paper" style="gap:6px">
+            <div class="between"><div class="p-name" style="font-size:15px">Punësueshmëria · FIMK · dimër 2026/27</div><span class="ai-tag">Karriera</span></div>
+            <div class="p-meta">UMIB · Qendra e Karrierës · 01.10–31.01 · të dhëna të grumbulluara</div>
+            <div class="p-h">Pjesëmarrja</div><p>312 studentë të verifikuar · 198 aktivë (63%) · 1.240 seanca stërvitjeje · 41 simulime · 388 intervista praktike</p>
+            <div class="p-h">Gatishmëria</div><p>Mesatarja 58% → 66% gjatë semestrit · 71 studentë mbi 75% ("gati") · rolet më të fortë: IT support, Junior Developer</p>
+            <div class="p-h">Tregu</div><p>14 ftesa nga 6 kompani partnere · 9 intervista reale · 3 punësime përmes Karrierës · koha mes. e përgjigjes së kompanive: 3 ditë</p>
+            <div class="p-h">Boshllëqet</div><p>Testimi (82% e studentëve SWE) · Anglisht C1 (64%) · Komunikimi me shkrim (51%). Rekomandim: 2 punëtori + kurs anglishte për punë.</p>
+            <div class="xs" style="color:#666;margin-top:4px">Metodologjia dhe privatësia: faqja 2. Asnjë e dhënë individuale.</div>
+          </div>
+          <div class="card plan"><div class="between"><b>Licenca</b><span class="small muted">faturë vjetore</span></div><div class="small">Pilot falas deri më 30.06.2027 · pastaj sipas madhësisë: deri 500 studentë · deri 2.000 · mbi 2.000. Pro për të gjithë studentët e verifikuar.</div></div>
+        </div>
+        <div class="cta" style="grid-template-columns:1fr 1fr"><button class="btn"><svg class="ico sm"><use href="#i-download"/></svg>Shkarko PDF</button><button class="btn soft"><svg class="ico sm"><use href="#i-send"/></svg>Dërgo rektoratit</button></div>
+        <div class="tabbar"><div class="tab" data-go="s97"><svg class="ico"><use href="#i-home"/></svg>Kreu</div><div class="tab" data-go="s98"><svg class="ico"><use href="#i-user"/></svg>Studentët</div><div class="tab" data-go="s99"><svg class="ico"><use href="#i-brief"/></svg>Praktikat</div><div class="tab on" data-go="s100"><svg class="ico"><use href="#i-chart"/></svg>Raportet</div></div>
+      </div></div>
+      <p class="note">Produkti që e paguan universiteti: raporti i punësueshmërisë me numra që sot nuk i ka askush (akreditim, rektorat, donatorë). Pilot falas → licencë.</p>
+    </section>
+
+    <section class="frame" id="s101">
+      <div class="frame-label">101 · Punëdhënësit partnerë <em>të qendrës</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <span class="back" data-go="s97"><svg class="ico"><use href="#i-back"/></svg>Kreu</span>
+          <div class="between"><h1 class="h-l">Partnerët</h1><button class="btn sm" data-act="link-ext">+ Fto kompani</button></div>
+          <p class="small muted">Kompanitë që punësojnë nga UMIB. Ato shohin shenjën "Student i verifikuar UMIB" dhe mund të dërgojnë ftesa e para-teste te studentët tanë të dukshëm.</p>
+          <div class="list">
+            <div class="li"><div class="av" style="background:var(--text);color:var(--bg)">DS</div><div class="grow"><b>Dardania Soft ✓</b><div class="small muted">6 ftesa · 2 punësime · përgjigjet në 2 ditë</div></div><span class="chip" style="color:var(--ok)">★ 4,6</span></div>
+            <div class="li"><div class="av" style="background:var(--text);color:var(--bg)">IT</div><div class="grow"><b>Ibri Tech ✓</b><div class="small muted">4 ftesa · 1 punësim · 3 ditë</div></div><span class="chip" style="color:var(--ok)">★ 4,4</span></div>
+            <div class="li"><div class="av" style="background:var(--text);color:var(--bg)">KS</div><div class="grow"><b>Kodi Studio ✓</b><div class="small muted">2 ftesa · remote · 1 ditë</div></div><span class="chip" style="color:var(--ok)">★ 4,8</span></div>
+            <div class="li"><div class="av" style="background:var(--text);color:var(--bg)">RC</div><div class="grow"><b>regiocom Prishtinë ✓</b><div class="small muted">2 ftesa · call center · 5 ditë</div></div><span class="chip">★ 4,1</span></div>
+          </div>
+          <div class="card row-x"><svg class="ico" style="color:var(--accent)"><use href="#i-spark"/></svg><div class="grow small">Kompanitë që qendra i fton hyjnë si partnere: dalin te Fast-track i studentëve të UMIB-it.</div></div>
+        </div>
+      </div></div>
+      <p class="note">Lidhja universitet–punëdhënës që sot mungon (studimi i 2026-s): qendra fton kompani, sheh si sillen me studentët e saj, dhe partnerët hyjnë te Fast-track.</p>
+    </section>
+
+    <section class="frame" id="s102">
+      <div class="frame-label">102 · Universiteti im <em>ana e studentit</em></div>
+      <div class="phone"><div class="screen">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span>
+          <div class="row-x" style="gap:12px"><div class="av" style="width:48px;height:48px;background:var(--text);color:var(--bg)">U</div><div><h1 class="h-m">Nga universiteti yt</h1><div class="small muted">UMIB · Qendra e Karrierës · ti je student i verifikuar ✓</div></div></div>
+          <div class="jc" data-role="swe" data-go="s11"><div class="jc-main"><div class="jc-top"><span class="tag">PRAKTIKË</span><span class="saved-b">UMIB</span></div><div class="jc-title">Praktikë 3-mujore · Dardania Soft</div><div class="jc-meta">2 vende · me pagesë · afati 20.11</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">THIRRJE</span><span class="saved-b">UMIB</span></div><div class="jc-title">Projekti i diplomës me kompani partnere</div><div class="jc-meta">5 tema · afati 30.11</div></div></div>
+          <div class="jc" data-role="pr"><div class="jc-main"><div class="jc-top"><span class="tag">BURSË</span><span class="saved-b">UMIB</span></div><div class="jc-title">Bursë për praktikë jashtë vendit</div><div class="jc-meta">3 vende · afati 15.12</div></div></div>
+          <div class="card" style="display:grid;gap:6px"><b>Sfida e javës nga qendra</b><div class="small">"Java e intervistave": një intervistë praktike → +20 pikë te renditja "Universiteti". 112 shokë marrin pjesë.</div><button class="btn sm" data-go="s34">Bëje tani</button></div>
+          <div class="list"><div class="li"><svg class="ico"><use href="#i-mail"/></svg><div class="grow"><b>Kontakto qendrën e karrierës</b><div class="small muted">karriera@umib.net · orari: e mërkurë 10–12</div></div></div></div>
+        </div>
+      </div></div>
+      <p class="note">Studenti e sheh universitetin e vet brenda app-it: praktikat, thirrjet, bursat dhe sfidat e qendrës. Pa feed: vetëm lista me afate.</p>
+    </section>
+
+  </div>
+</div>
+
 </div></div>
 
 <div id="proto" hidden>
@@ -3594,7 +3771,8 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   const setAcct = (a, jump) => {
     S.acct = a; save();
     document.querySelectorAll('[data-acct-set]').forEach(x => x.classList.toggle('on', x.dataset.acctSet === a));
-    if (jump) { if (!proto.hidden) { hist = []; protoShow(a === 'employer' ? 's59' : 's41'); } else flyTo(document.getElementById(a === 'employer' ? 's59' : 's41')); }
+    const home = { seeker: 's41', employer: 's59', center: 's97' }[a] || 's41';
+    if (jump) { if (!proto.hidden) { hist = []; protoShow(home); } else flyTo(document.getElementById(home)); }
   };
 
   /* ---------------- animacionet ---------------- */
@@ -3801,6 +3979,8 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
       case 'rate': { const n = +v; scr.querySelectorAll('.stars span').forEach(s => s.classList.toggle('on', +s.dataset.val <= n)); break; }
       case 'rate-send': scr.querySelector('[data-rated]').classList.remove('hidden'); a.textContent = '✓ U dërgua'; a.removeAttribute('data-act'); break;
       case 'toggle-chip': a.classList.toggle('on'); break;
+      case 'post-toggle': scr.querySelector('[data-post-form]').classList.toggle('hidden'); break;
+      case 'post-send': scr.querySelector('[data-posted]').classList.remove('hidden'); a.textContent = '✓ U postua'; a.removeAttribute('data-act'); break;
       case 'link-ext': a.textContent = '✓ Lidhur'; a.classList.add('on'); a.removeAttribute('data-act'); break;
       case 'perm-allow': a.textContent = '✓ Lejuar'; a.classList.add('soft'); a.removeAttribute('data-act'); break;
       case 'rp-next': {
