@@ -80,7 +80,7 @@ export default function ShtoPunen() {
           maxLength={1000}
         />
 
-        {gabimi && <Text style={styles.gabimi}>S'u ruajt: {gabimi}</Text>}
+        {gabimi && <Text style={styles.gabimi}>S&apos;u ruajt: {gabimi}</Text>}
 
         <Pressable onPress={ruaj} disabled={!valide || duke_ruajtur} style={[styles.butoni, (!valide || duke_ruajtur) && styles.joAktiv]}>
           {duke_ruajtur ? <ActivityIndicator color="#fff" /> : <Text style={styles.butoniTekst}>Ruaj në Supabase</Text>}

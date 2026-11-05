@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 
+import { useTema } from "@/lib/tema";
+
 type Props = {
   titulli: string;
   kompania: string;
@@ -14,6 +16,7 @@ export default function KartaPunes({
   style,
   ...pressableProps
 }: Props) {
+  const t = useTema();
   const [ruajtur, setRuajtur] = useState(false);
 
   return (
@@ -26,8 +29,8 @@ export default function KartaPunes({
     >
       <View style={styles.rreshti}>
         <View style={styles.info}>
-          <Text style={styles.titulli}>{titulli}</Text>
-          <Text style={styles.detajet}>
+          <Text style={[styles.titulli, { color: t.teksti }]}>{titulli}</Text>
+          <Text style={[styles.detajet, { color: t.zbehur }]}>
             {kompania} · {qyteti}
           </Text>
         </View>
@@ -38,7 +41,7 @@ export default function KartaPunes({
             setRuajtur(!ruajtur);
           }}
         >
-          <Text style={styles.ylli}>{ruajtur ? "⭐" : "☆"}</Text>
+          <Text style={[styles.ylli, { color: t.teksti }]}>{ruajtur ? "⭐" : "☆"}</Text>
         </Pressable>
       </View>
     </Pressable>

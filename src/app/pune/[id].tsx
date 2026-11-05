@@ -19,7 +19,7 @@ export default function DetajetEPunes() {
   if (gabimi) {
     return (
       <View style={styles.qendra}>
-        <Text>S'u lexua puna: {gabimi}</Text>
+        <Text>S&apos;u lexua puna: {gabimi}</Text>
       </View>
     );
   }
