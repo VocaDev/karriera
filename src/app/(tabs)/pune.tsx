@@ -1,11 +1,13 @@
 import { Link, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from "react-native";
 
 import KartaPunes from "@/components/KartaPunes";
+import { Faqja, IKONAT, Ikona, T, Titulli } from "@/components/ui";
 import { listoPunet, type Puna } from "@/lib/punet";
 import { useTema } from "@/lib/tema";
 
+// Punët (bordi, ekrani 09). Kërkimi dhe chip-at e filtrave i shton Edoniku këtu.
 export default function Punet() {
   const t = useTema();
   const [punet, setPunet] = useState<Puna[]>([]);
@@ -30,62 +32,65 @@ export default function Punet() {
     }, [ngarko]),
   );
 
-  // Koka e listës: në tab-a s'ka header, prandaj titulli dhe "+ Shto" janë këtu.
+  // Koka: në tab-a s'ka header, prandaj titulli dhe butoni "shto" janë këtu (si në bord).
   const koka = (
     <View style={styles.koka}>
-      <Text style={[styles.titulli, { color: t.teksti }]}>Punët</Text>
+      <Titulli>Punët</Titulli>
       <Link href="/pune/shto" asChild>
-        <Pressable hitSlop={10} accessibilityRole="button">
-          <Text style={[styles.shto, { color: t.theksi }]}>+ Shto</Text>
+        <Pressable
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Shto një punë"
+          style={({ pressed }) => [styles.butoniIkone, { backgroundColor: t.theksiButë, opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Ikona emri={IKONAT.plus} madhesia={18} ngjyra={t.theksi} />
         </Pressable>
       </Link>
     </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: t.sfondi }]}>
+    <Faqja pa_scroll>
       {duke_ngarkuar ? (
         <ActivityIndicator style={styles.qendra} />
       ) : gabimi ? (
         <View style={styles.qendra}>
-          <Text style={{ color: t.teksti }}>S&apos;u lexuan punët: {gabimi}</Text>
+          <T>S&apos;u lexuan punët: {gabimi}</T>
           <Pressable onPress={ngarko} accessibilityRole="button">
-            <Text style={[styles.shto, { color: t.theksi }]}>Provo përsëri</Text>
+            <T pesha="trashe" ngjyra={t.theksi}>
+              Provo përsëri
+            </T>
           </Pressable>
         </View>
       ) : (
         <FlatList
           contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={styles.lista}
           data={punet}
           keyExtractor={(item) => item.id}
           refreshing={false}
           onRefresh={ngarko}
           ListHeaderComponent={koka}
           ListEmptyComponent={
-            <Text style={[styles.bosh, { color: t.zbehur }]}>Ende s&apos;ka shpallje.</Text>
+            <T zbehur style={styles.bosh}>
+              Ende s&apos;ka shpallje.
+            </T>
           }
           renderItem={({ item }) => (
             <Link href={`/pune/${item.id}`} asChild>
-              <KartaPunes titulli={item.titulli} kompania={item.kompania} qyteti={item.qyteti} />
+              <KartaPunes puna={item} />
             </Link>
           )}
         />
       )}
-    </View>
+    </Faqja>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  koka: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  titulli: { fontSize: 34, fontWeight: "800" },
+  koka: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  butoniIkone: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  lista: { padding: 18, gap: 10, paddingBottom: 120 },
   qendra: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
-  shto: { fontSize: 17, fontWeight: "600" },
   bosh: { textAlign: "center", marginTop: 40 },
 });
