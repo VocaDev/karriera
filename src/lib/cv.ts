@@ -1,7 +1,6 @@
-// KONTRATA E CV-SË · pronar: Genti (databaza, Storage, thirrjet e funksioneve).
-// Edoniku: ekranet e CV-së thërrasin VETËM këto funksione. Mos e ndrysho këtë fajll;
-// nëse të duhet diçka tjetër, kërkoje te Genti.
-// Tani funksionet kthejnë të dhëna të rreme (MOCK). Genti i zëvendëson me Supabase
+// KONTRATA E CV-SË · pronar: Edoniku (ekranet, AI, tabelat cvs/cv_reviews, Storage, ky fajll).
+// Ekranet e CV-së thërrasin VETËM funksionet e këtij fajlli.
+// Tani kthejnë të dhëna të rreme (MOCK); Edoniku i zëvendëson me Supabase dhe Edge Functions
 // pa i ndryshuar emrat apo tipet, kështu që ekranet nuk ndryshojnë.
 
 // ---------- Tipet ----------
