@@ -1,37 +1,50 @@
 import { Link } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
+import { IKONAT, Ikona, T } from "@/components/ui";
 import { useTema } from "@/lib/tema";
 import { tekstiIGjendjes, type Vecoria } from "@/lib/vecorite";
 
-type Props = { vecoria: Vecoria; numri?: number };
+type Props = { vecoria: Vecoria; iFundit?: boolean };
 
-// Një hap i rrjedhës: nëse është gati hapet, përndryshe tregon kush e ndërton ose kur vjen.
-export default function RreshtiVecorise({ vecoria, numri }: Props) {
+// Rresht në listën e bordit (ekrani 41): kutia (e gjelbër kur hapi është gati), titulli,
+// përshkrimi + gjendja, dhe shigjeta kur hapi hapet. Hapat që s'janë gati nuk hapen.
+export default function RreshtiVecorise({ vecoria, iFundit = false }: Props) {
   const t = useTema();
   const gati = vecoria.gjendja.lloji === "gati" && vecoria.href !== null;
 
   const permbajtja = (
-    <View style={styles.rreshti}>
-      {numri !== undefined && (
-        <View style={[styles.numri, { backgroundColor: gati ? t.theksi : t.vija }]}>
-          <Text style={[styles.numriTekst, { color: gati ? "#fff" : t.zbehur }]}>{numri}</Text>
-        </View>
-      )}
+    <View style={[styles.rreshti, !iFundit && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.vija }]}>
+      <View
+        style={[
+          styles.kutia,
+          gati ? { backgroundColor: t.ok, borderColor: t.ok } : { borderColor: t.vija },
+        ]}
+      >
+        {gati && <Ikona emri={IKONAT.check} madhesia={13} ngjyra="#fff" />}
+      </View>
       <View style={styles.info}>
-        <Text style={[styles.titulli, { color: t.teksti }]}>{vecoria.titulli}</Text>
-        <Text style={[styles.pershkrimi, { color: t.zbehur }]}>{vecoria.pershkrimi}</Text>
+        <T pesha="trashe" madhesia={15.5}>
+          {vecoria.titulli}
+        </T>
+        <T zbehur madhesia={13}>
+          {vecoria.pershkrimi} · {tekstiIGjendjes(vecoria.gjendja)}
+        </T>
       </View>
-      <View style={[styles.chip, { backgroundColor: gati ? t.theksiButë : t.vija }]}>
-        <Text style={[styles.chipTekst, { color: gati ? t.theksi : t.zbehur }]}>
-          {tekstiIGjendjes(vecoria.gjendja)}
-        </Text>
-      </View>
+      {gati ? (
+        <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
+      ) : (
+        <Ikona emri={IKONAT.kycja} madhesia={13} ngjyra={t.vija} />
+      )}
     </View>
   );
 
   if (!gati || vecoria.href === null) {
-    return <View accessibilityLabel={`${vecoria.titulli}, ${tekstiIGjendjes(vecoria.gjendja)}`}>{permbajtja}</View>;
+    return (
+      <View accessible accessibilityLabel={`${vecoria.titulli}, ${tekstiIGjendjes(vecoria.gjendja)}`}>
+        {permbajtja}
+      </View>
+    );
   }
   return (
     <Link href={vecoria.href} asChild>
@@ -43,12 +56,14 @@ export default function RreshtiVecorise({ vecoria, numri }: Props) {
 }
 
 const styles = StyleSheet.create({
-  rreshti: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  numri: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  numriTekst: { fontSize: 13, fontWeight: "700" },
+  rreshti: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16 },
+  kutia: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   info: { flex: 1, gap: 2 },
-  titulli: { fontSize: 16, fontWeight: "600" },
-  pershkrimi: { fontSize: 13 },
-  chip: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 },
-  chipTekst: { fontSize: 12, fontWeight: "600" },
 });

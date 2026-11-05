@@ -10,9 +10,10 @@ export type Puna = {
   pershkrimi: string;
   aftesite: string[];
   burimi: "seed" | "perdoruesi";
+  krijuar_me: string; // ISO, për shiritin "E RE"
 };
 
-const FUSHAT = "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi";
+const FUSHAT = "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me";
 
 // M1: lexon listën nga tabela "punet" (më të rejat lart).
 export async function listoPunet(): Promise<Puna[]> {

@@ -1,4 +1,4 @@
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -7,16 +7,35 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
+  type TextInputProps,
 } from "react-native";
 
+import { T } from "@/components/ui";
 import { shtoPunen, type Puna } from "@/lib/punet";
+import { SHKRONJAT, useTema } from "@/lib/tema";
 
 const ROLET: Puna["roli"][] = ["SWE", "Asistent/PR", "Tjetër"];
 
+// Fushë teksti në stilin D: e bardhë, pa kornizë, me qoshe të rrumbullakëta.
+function Fusha(props: TextInputProps) {
+  const t = useTema();
+  return (
+    <TextInput
+      placeholderTextColor={t.zbehur}
+      {...props}
+      style={[
+        styles.fusha,
+        { backgroundColor: t.karta, color: t.teksti, shadowColor: t.hija, fontFamily: SHKRONJAT.normal },
+        props.style,
+      ]}
+    />
+  );
+}
+
 export default function ShtoPunen() {
+  const t = useTema();
   const [titulli, setTitulli] = useState("");
   const [kompania, setKompania] = useState("");
   const [qyteti, setQyteti] = useState("");
@@ -49,30 +68,57 @@ export default function ShtoPunen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: "Shto një punë" }} />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.faqja} keyboardShouldPersistTaps="handled">
-        <Text style={styles.etiketa}>Titulli i pozitës *</Text>
-        <TextInput style={styles.fusha} value={titulli} onChangeText={setTitulli} placeholder="p.sh. Junior Developer" maxLength={120} />
+    <KeyboardAvoidingView
+      style={[styles.flex, { backgroundColor: t.sfondi }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.faqja}
+        keyboardShouldPersistTaps="handled"
+      >
+        <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
+          Titulli i pozitës *
+        </T>
+        <Fusha value={titulli} onChangeText={setTitulli} placeholder="p.sh. Junior Developer" maxLength={120} />
 
-        <Text style={styles.etiketa}>Kompania *</Text>
-        <TextInput style={styles.fusha} value={kompania} onChangeText={setKompania} placeholder="p.sh. Kodi Studio" maxLength={80} />
+        <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
+          Kompania *
+        </T>
+        <Fusha value={kompania} onChangeText={setKompania} placeholder="p.sh. Kodi Studio" maxLength={80} />
 
-        <Text style={styles.etiketa}>Qyteti *</Text>
-        <TextInput style={styles.fusha} value={qyteti} onChangeText={setQyteti} placeholder="p.sh. Mitrovicë ose Remote" maxLength={60} />
+        <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
+          Qyteti *
+        </T>
+        <Fusha value={qyteti} onChangeText={setQyteti} placeholder="p.sh. Mitrovicë ose Remote" maxLength={60} />
 
-        <Text style={styles.etiketa}>Roli</Text>
+        <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
+          Roli
+        </T>
         <View style={styles.rolet}>
-          {ROLET.map((r) => (
-            <Pressable key={r} onPress={() => setRoli(r)} style={[styles.chip, roli === r && styles.chipZgjedhur]}>
-              <Text style={roli === r ? styles.chipTekstZgjedhur : undefined}>{r}</Text>
-            </Pressable>
-          ))}
+          {ROLET.map((r) => {
+            const zgjedhur = roli === r;
+            return (
+              <Pressable
+                key={r}
+                onPress={() => setRoli(r)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: zgjedhur }}
+                style={[styles.chip, { backgroundColor: zgjedhur ? t.teksti : t.karta, shadowColor: t.hija }]}
+              >
+                <T pesha="gjysme" madhesia={14} ngjyra={zgjedhur ? t.sfondi : t.teksti}>
+                  {r}
+                </T>
+              </Pressable>
+            );
+          })}
         </View>
 
-        <Text style={styles.etiketa}>Përshkrimi</Text>
-        <TextInput
-          style={[styles.fusha, styles.shumeRreshta]}
+        <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
+          Përshkrimi
+        </T>
+        <Fusha
+          style={styles.shumeRreshta}
           value={pershkrimi}
           onChangeText={setPershkrimi}
           placeholder="Çka bën kjo punë?"
@@ -80,10 +126,25 @@ export default function ShtoPunen() {
           maxLength={1000}
         />
 
-        {gabimi && <Text style={styles.gabimi}>S&apos;u ruajt: {gabimi}</Text>}
+        {gabimi && (
+          <T ngjyra={t.keq} style={styles.etiketa}>
+            S&apos;u ruajt: {gabimi}
+          </T>
+        )}
 
-        <Pressable onPress={ruaj} disabled={!valide || duke_ruajtur} style={[styles.butoni, (!valide || duke_ruajtur) && styles.joAktiv]}>
-          {duke_ruajtur ? <ActivityIndicator color="#fff" /> : <Text style={styles.butoniTekst}>Ruaj në Supabase</Text>}
+        <Pressable
+          onPress={ruaj}
+          disabled={!valide || duke_ruajtur}
+          accessibilityRole="button"
+          style={[styles.butoni, { backgroundColor: t.teksti }, (!valide || duke_ruajtur) && styles.joAktiv]}
+        >
+          {duke_ruajtur ? (
+            <ActivityIndicator color={t.sfondi} />
+          ) : (
+            <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
+              Ruaj në Supabase
+            </T>
+          )}
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -93,15 +154,28 @@ export default function ShtoPunen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   faqja: { padding: 20, gap: 6 },
-  etiketa: { fontSize: 14, fontWeight: "600", marginTop: 10 },
-  fusha: { borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 12, fontSize: 16 },
-  shumeRreshta: { minHeight: 90, textAlignVertical: "top" },
+  etiketa: { marginTop: 10 },
+  fusha: {
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 16,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  shumeRreshta: { minHeight: 100, textAlignVertical: "top" },
   rolet: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: { borderWidth: 1, borderColor: "#ccc", borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
-  chipZgjedhur: { backgroundColor: "#141414", borderColor: "#141414" },
-  chipTekstZgjedhur: { color: "#fff" },
-  gabimi: { color: "#C92A2A", marginTop: 10 },
-  butoni: { marginTop: 20, backgroundColor: "#141414", borderRadius: 999, padding: 16, alignItems: "center" },
-  joAktiv: { opacity: 0.4 },
-  butoniTekst: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  chip: {
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  butoni: { marginTop: 22, borderRadius: 999, padding: 16, alignItems: "center" },
+  joAktiv: { opacity: 0.35 },
 });

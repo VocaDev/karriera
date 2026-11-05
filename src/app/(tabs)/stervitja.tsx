@@ -1,32 +1,43 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import RreshtiVecorise from "@/components/RreshtiVecorise";
+import { Faqja, IKONAT, Ikona, Karta, T, Titulli } from "@/components/ui";
 import { useTema } from "@/lib/tema";
 import { VECORITE } from "@/lib/vecorite";
 
-// Stërvitja: CV-ja (Edoniku) dhe intervista me AI (Genti). Hapen sapo të jenë gati.
+// Stërvitja (bordi, ekrani 44): kompetencat dalin pas intervistës së parë; poshtë mënyrat e stërvitjes.
 export default function Stervitja() {
   const t = useTema();
-  const stervitja = VECORITE.filter((v) => v.celesi === "cv" || v.celesi === "intervista");
+  const stervitja = VECORITE.filter((v) => v.celesi === "intervista" || v.celesi === "cv");
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: t.sfondi }}
-      contentContainerStyle={styles.faqja}
-    >
-      <Text style={[styles.titulli, { color: t.teksti }]}>Stërvitja</Text>
-      <View style={[styles.karta, { backgroundColor: t.karta }]}>
-        {stervitja.map((v) => (
-          <RreshtiVecorise key={v.celesi} vecoria={v} />
+    <Faqja>
+      <Titulli>Stërvitja</Titulli>
+
+      <Karta style={styles.kompetencat}>
+        <View style={styles.rresht}>
+          <Ikona emri={IKONAT.grafiku} madhesia={18} ngjyra={t.theksi} />
+          <T pesha="trashe" madhesia={16}>
+            Kompetencat e tua
+          </T>
+        </View>
+        <T zbehur madhesia={13.5}>
+          Bëj intervistën e parë dhe këtu shfaqen: zgjidhja e problemeve, komunikimi, njohuritë teknike,
+          anglishtja.
+        </T>
+      </Karta>
+
+      <Karta style={styles.lista}>
+        {stervitja.map((v, i) => (
+          <RreshtiVecorise key={v.celesi} vecoria={v} iFundit={i === stervitja.length - 1} />
         ))}
-      </View>
-    </ScrollView>
+      </Karta>
+    </Faqja>
   );
 }
 
 const styles = StyleSheet.create({
-  faqja: { padding: 20, gap: 16 },
-  titulli: { fontSize: 34, fontWeight: "800" },
-  karta: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 4 },
+  kompetencat: { gap: 8 },
+  rresht: { flexDirection: "row", alignItems: "center", gap: 8 },
+  lista: { padding: 0, overflow: "hidden" },
 });
