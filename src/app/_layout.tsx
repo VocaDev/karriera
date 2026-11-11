@@ -91,11 +91,12 @@ function Navigimi({ t }: { t: Tema }) {
             {/* CV-ja: vetëm kërkuesi. Titulli i madh është në ekran, prandaj koka mbetet pa tekst. */}
             <Stack.Screen name="cv/index" options={{ title: "" }} />
             <Stack.Screen name="cv/analiza" options={{ title: "" }} />
-          </Stack.Protected>
-          {/* Pas Demo Day-t (HARTA): ndërtuesi i CV-së, formatet dhe karta "Ndaje". Kodi mbetet, ekranet s'hapen. */}
-          <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
+            {/* Ndërtuesi i CV-së del tani (vendimi i Gentit, 11.11). */}
             <Stack.Screen name="cv/ndertoje" options={{ title: "" }} />
             <Stack.Screen name="cv/dokumenti" options={{ title: "" }} />
+          </Stack.Protected>
+          {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
+          <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
             <Stack.Screen name="cv/ndaje" options={{ title: "" }} />
           </Stack.Protected>
           <Stack.Protected guard={organizate} redirectTo={kreu}>

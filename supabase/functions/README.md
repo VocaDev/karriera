@@ -22,9 +22,9 @@ Analizon një CV të ngarkuar. App-i: `analizoCV(cvId)` në `src/lib/cv.ts`.
 
 **Response:** `{ "review_id": "<uuid>", "analiza": AnalizaCV }` · kufiri: 5 analiza në 24 orë.
 
-## 2. cv-create (PAS Demo Day-t)
+## 2. cv-create (del tani: vendimi i Gentit, 11.11)
 
-Ndërtuesi i CV-së dhe formatet. HARTA i lë pas Demo Day-t: app-i s'e hap (`CV_PAS_DEMO_DAY_HAPUR = false`). **Mos e deploy-o pa vendimin e ekipit.**
+Ndërtuesi i CV-së nga 5 përgjigje (format Kosovë, shqip). App-i: `krijoCV` në `src/lib/cv.ts`, ekrani `cv/ndertoje`. Rishkrimi në 5 formatet e tjera dhe në anglisht punon këtu, por app-i s'e hap para Demo Day-t (`CV_PAS_DEMO_DAY_HAPUR = false`).
 
 **Request:** `POST /functions/v1/cv-create` · `{ "formati": "ks", "gjuha": "sq", "burimi": { "pergjigjet": [5 tekste] } }` ose `"burimi": { "cv": CvStrukturuar }` për rishkrim. Formatet: `ks`, `europass`, `eu`, `us`, `uk`, `ats`; gjuhët `sq`, `en`. Kufiri: 10 në 24 orë.
 
@@ -37,7 +37,7 @@ Ndërtuesi i CV-së dhe formatet. HARTA i lë pas Demo Day-t: app-i s'e hap (`CV
 2. **Sekreti:** `supabase secrets set ANTHROPIC_API_KEY=<çelësi>` (ose Dashboard → Edge Functions → Secrets). `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS` dhe `SUPABASE_SECRET_KEYS` i jep platforma vetë.
 3. **Deploy**, pa verifikimin e gateway-it (çelësat e rinj s'janë JWT; funksioni e verifikon vetë përdoruesin):
    `supabase functions deploy cv-review --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
-   (`cv-create` vetëm pas Demo Day-t, me të njëjtën flag.)
+   `supabase functions deploy cv-create --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
 4. **Prova** me dy llogari demo (`.env.demo`): kërkuesi ngarkon PDF dhe merr analizë; punëdhënësi merr 403; kërkuesi s'e sheh CV-në e tjetrit; analiza e 6-të brenda 24 orëve merr 429.
 5. **Pastaj** te `src/lib/vecorite.ts`: CV-ja bëhet `{ lloji: "gati" }` vetëm pasi kjo rrjedhë punon në telefon.
 

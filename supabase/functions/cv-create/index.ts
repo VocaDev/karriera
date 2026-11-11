@@ -1,6 +1,6 @@
 // cv-create: krijon CV nga 5 përgjigje, ose rishkruan një CV për format/gjuhë tjetër.
-// HARTA: "Ndërto CV-në me AI (pa CV)" vjen PAS Demo Day-t. Funksioni është gati, por app-i
-// s'e hap ende (CV_PAS_DEMO_DAY_HAPUR = false). Mos e deploy-o pa vendimin e ekipit.
+// "Ndërto CV-në me AI (pa CV)" del tani (vendimi i Gentit, 11.11). Rishkrimi në formate të tjera
+// dhe në anglisht ekziston këtu, por app-i s'e hap para Demo Day-t (CV_PAS_DEMO_DAY_HAPUR).
 //
 // Thirrësi: sesion i vërtetë, llogari "kerkues", maksimumi KUFIRI_DITOR thirrje në 24 orë.
 import {

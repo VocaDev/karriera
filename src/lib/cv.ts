@@ -254,22 +254,21 @@ export async function listoVersionet(): Promise<CvRresht[]> {
   return ((cvs.data ?? []) as RreshtiCV[]).map((cv) => ({ ...cv, nota: notat.get(cv.id) ?? null }));
 }
 
-// ---------- Pas Demo Day-t (HARTA): ndërtuesi i CV-së dhe formatet ----------
-// Ekranet që i thërrasin janë të mbyllura (CV_PAS_DEMO_DAY_HAPUR në vecorite.ts).
-// Funksionet janë të vërteta: s'kthejnë kurrë të dhëna shembull si CV të përdoruesit.
+// ---------- Ndërtuesi i CV-së (del tani, vendimi i Gentit 11.11) ----------
+// Formatet e tjera dhe rishkrimi në anglisht mbeten pas Demo Day-t (CV_PAS_DEMO_DAY_HAPUR).
+// Funksionet s'kthejnë kurrë të dhëna shembull si CV të përdoruesit.
 
-/** CV-ja e fundit e krijuar me AI, ose null nëse s'ka. */
-export async function merrCVTeFundit(): Promise<CvStrukturuar | null> {
-  const { data, error } = await supabase
-    .from("cvs")
-    .select("permbajtja")
-    .eq("burimi", "krijuar")
-    .order("versioni", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+/** Një CV e krijuar me AI (versioni `cvId`, ose i fundit nëse s'jepet), ose null nëse s'ka. */
+export async function merrCVTeFundit(
+  cvId?: string,
+): Promise<{ cv: CvStrukturuar; formati: FormatiCV; gjuha: GjuhaCV } | null> {
+  let pyetja = supabase.from("cvs").select("permbajtja, formati, gjuha").eq("burimi", "krijuar");
+  if (cvId) pyetja = pyetja.eq("id", cvId);
+  const { data, error } = await pyetja.order("versioni", { ascending: false }).limit(1).maybeSingle();
   if (error) throw new Error(mesazhiIGabimit(error));
-  const permbajtja: unknown = data ? (data as { permbajtja: unknown }).permbajtja : null;
-  return eshteCvStrukturuar(permbajtja) ? permbajtja : null;
+  if (!data) return null;
+  const r = data as { permbajtja: unknown; formati: FormatiCV; gjuha: GjuhaCV };
+  return eshteCvStrukturuar(r.permbajtja) ? { cv: r.permbajtja, formati: r.formati, gjuha: r.gjuha } : null;
 }
 
 /** Thërret `cv-create`: nga 5 përgjigjet, ose rishkruan një CV ekzistuese për një format/gjuhë tjetër. */
