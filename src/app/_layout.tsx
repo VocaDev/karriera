@@ -6,13 +6,18 @@ import {
   PlusJakartaSans_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
-import { Stack } from "expo-router";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useState } from "react";
 
-import { SHKRONJAT, useTema } from "@/lib/tema";
+import Ngarkimi from "@/components/Ngarkimi";
+import { NjoftimetProvider } from "@/components/Njoftimet";
+import { SesioniProvider, useSesioni } from "@/lib/sesioni";
+import { SHKRONJAT, useTema, type Tema } from "@/lib/tema";
+import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
 
-// Splash-i mbetet derisa të ngarkohen fontet, që teksti të mos "kërcejë" nga fonti i sistemit.
+// Splash-i i telefonit mbetet derisa të ngarkohen fontet dhe ekrani i hapjes (Ngarkimi) të vizatohet
+// mbi app: atëherë fshihet, dhe kalimi nga splash-i te app-i bëhet pa kërcim.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -25,42 +30,95 @@ export default function RootLayout() {
     PlusJakartaSans_800ExtraBold,
   });
 
-  useEffect(() => {
-    if (fontet_gati || gabimi_fonteve) SplashScreen.hideAsync();
-  }, [fontet_gati, gabimi_fonteve]);
-
   // Nëse fontet dështojnë, app-i vazhdon me fontin e sistemit.
   if (!fontet_gati && !gabimi_fonteve) return null;
 
+  // Ngjyrat e navigimit = ngjyrat e temës: kalimet mes ekraneve (sidomos në dark mode) pa blic të bardhë.
+  const baza = t.errët ? DarkTheme : DefaultTheme;
+  const temaENavigimit = {
+    ...baza,
+    colors: {
+      ...baza.colors,
+      primary: t.theksi,
+      background: t.sfondi,
+      card: t.karta,
+      text: t.teksti,
+      border: t.vija,
+      notification: t.keq,
+    },
+  };
+
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: t.theksiButë },
-        headerShadowVisible: false,
-        headerTintColor: t.teksti,
-        headerTitleStyle: { fontFamily: SHKRONJAT.trashe },
-        headerBackTitle: "Mbrapa",
-        contentStyle: { backgroundColor: t.sfondi },
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="pune/[id]" options={{ title: "" }} />
-      <Stack.Screen name="cv/index" options={{ title: "CV-ja ime" }} />
-      <Stack.Screen name="cv/ndertoje" options={{ title: "Ndërto CV-në" }} />
-      <Stack.Screen name="cv/analiza" options={{ title: "Analiza e CV-së" }} />
-      <Stack.Screen
-        name="cv/dokumenti"
-        options={{ title: "Dokumenti i CV-së" }}
-      />
-      <Stack.Screen name="cv/ndaje" options={{ title: "Ndaje CV-në" }} />
-      <Stack.Screen
-        name="pune/shto"
-        options={{
-          presentation: "modal",
-          title: "Shto një punë",
-          headerStyle: { backgroundColor: t.karta },
-        }}
-      />
-    </Stack>
+    <ThemeProvider value={temaENavigimit}>
+      <NjoftimetProvider>
+        <SesioniProvider>
+          <Navigimi t={t} />
+        </SesioniProvider>
+      </NjoftimetProvider>
+    </ThemeProvider>
+  );
+}
+
+// Rojet (J6): dera mbyllet para hyrjes. Kush s'ka hyrë sheh vetëm "hyrja"; pastaj secili lloj llogarie
+// sheh vetëm grupin e vet të ekraneve. Roja fsheh ekranet; të dhënat i mbron RLS-i në server.
+function Navigimi({ t }: { t: Tema }) {
+  const { sesioni, profili, duke_ngarkuar } = useSesioni();
+  const [hapja_mbaroi, setHapjaMbaroi] = useState(false);
+  const lloji = profili?.lloji;
+  const organizate = lloji === "punedhenes" || lloji === "qender";
+  // Ku shkon secili kur një ekran i mbyllet: kush s'ka hyrë → hyrja; kërkuesi → tab-at; organizata → Punët e mia.
+  const kreu = !sesioni || !profili ? "/hyrja" : organizate ? "/organizata" : "/";
+
+  return (
+    <>
+      {(!duke_ngarkuar || hapja_mbaroi) && (
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: t.theksiButë },
+            headerShadowVisible: false,
+            headerTintColor: t.teksti,
+            headerTitleStyle: { fontFamily: SHKRONJAT.trashe },
+            headerBackTitle: "Mbrapa",
+            contentStyle: { backgroundColor: t.sfondi },
+          }}
+        >
+          {/* Hyrja mbetet e hapur edhe derisa të lexohet profili pas hyrjes. */}
+          <Stack.Protected guard={!sesioni || !profili} redirectTo={kreu}>
+            <Stack.Screen name="hyrja" options={{ headerShown: false }} />
+          </Stack.Protected>
+          <Stack.Protected guard={lloji === "kerkues"} redirectTo={kreu}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            {/* CV-ja: vetëm kërkuesi. Titulli i madh është në ekran, prandaj koka mbetet pa tekst. */}
+            <Stack.Screen name="cv/index" options={{ title: "" }} />
+            <Stack.Screen name="cv/analiza" options={{ title: "" }} />
+          </Stack.Protected>
+          {/* Pas Demo Day-t (HARTA): ndërtuesi i CV-së, formatet dhe karta "Ndaje". Kodi mbetet, ekranet s'hapen. */}
+          <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
+            <Stack.Screen name="cv/ndertoje" options={{ title: "" }} />
+            <Stack.Screen name="cv/dokumenti" options={{ title: "" }} />
+            <Stack.Screen name="cv/ndaje" options={{ title: "" }} />
+          </Stack.Protected>
+          <Stack.Protected guard={organizate} redirectTo={kreu}>
+            <Stack.Screen name="organizata" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="pune/shto"
+              options={{ presentation: "modal", title: "Shto një punë", headerStyle: { backgroundColor: t.karta } }}
+            />
+          </Stack.Protected>
+          <Stack.Protected guard={!!profili} redirectTo={kreu}>
+            <Stack.Screen name="pune/[id]" options={{ title: "" }} />
+          </Stack.Protected>
+        </Stack>
+      )}
+      {!hapja_mbaroi && (
+        <Ngarkimi
+          gati={!duke_ngarkuar}
+          kurShfaqet={() => {
+            SplashScreen.hideAsync().catch(() => {});
+          }}
+          kurMbaron={() => setHapjaMbaroi(true)}
+        />
+      )}
+    </>
   );
 }

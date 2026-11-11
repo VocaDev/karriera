@@ -222,6 +222,49 @@ Account for different mobile screen sizes.
 - Ensure buttons and interactive elements are comfortably touchable.
 - Consider keyboard visibility when building forms.
 
+### Native feel (build checklist)
+
+Karriera must feel like an iPhone and Android app, not a web page. The rule: **system chrome, brand content.** The tab bar, navigation bar, large titles, sheets, long-press menus, segmented controls, switches, alerts and the share sheet are the platform's own components. Our font, colours and cards live inside the content. The design board shows this since 06.11 (screens 09, 09b, 10, 11, 18, 23, 24, 53).
+
+Names below were checked against the installed SDK 58 packages and the v58 docs on 06.11.2026. Everything must run in Expo Go unless marked otherwise.
+
+1.  **Large titles.** Each tab gets its own Stack (`src/app/(tabs)/<tab>/_layout.tsx`), so tab roots use `headerLargeTitleEnabled` (`headerLargeTitle` is deprecated), no header shadow, colours from `useTema`, the brand font through `headerLargeTitleStyle`, and `headerBackButtonDisplayMode: "minimal"`. The screen's root view is the `ScrollView` or `FlatList` with `contentInsetAdjustmentBehavior="automatic"`, so the title collapses and content runs under the glass tab bar. Bar buttons (add, filters, saved, settings) go in the header, not in the content.
+2.  **Sheets.** Create and confirm flows open as form sheets: `presentation: "formSheet"`, `sheetGrabberVisible: true`, `sheetAllowedDetents: "fitToContents"` for short content (e.g. "Sill linkun tënd" once it is one field), fixed detents such as `[0.5, 1]` for long forms. Close with a round X.
+3.  **Haptics** (`expo-haptics`, one small helper in `src/lib`): selection for chips and segments, success for a saved job, an uploaded CV and a finished interview, error for failed validation. Never on every button.
+4.  **Press feedback.** Pressable cards scale to 0.97 on iOS and use `android_ripple` on Android. Touch targets are at least 44 pt.
+5.  **Tab badges** (`NativeTabs.Trigger.Badge`) only with a real count, e.g. new jobs since the last visit to Punët. No fake numbers. Clear the badge when the tab is opened.
+6.  **Segmented control** from `@expo/ui/community/segmented-control` for 2 to 4 exclusive options: the role filter (Të gjitha / SWE / Zyrë), the interview language (SQ / EN / DE), settings. Extra filters such as Afër meje and Remote stay chips.
+7.  **Long-press on a job card** opens the system menu: `Link.Menu` with `Link.MenuAction` (optionally `Link.Preview`) from expo-router on iOS. Check that it runs in Expo Go before relying on it; the fallback is `ActionSheetIOS`, and Android uses a menu or `Alert`. Actions: Ruaje, Ndaje, Hape në shfletues. Every action must also exist as a visible button on the job detail screen.
+8.  **Platform hand-offs.** Share with React Native's `Share` API. Open the original posting with `expo-web-browser` (in-app browser). A calendar reminder for a real interview needs `expo-calendar`, which is **not supported in Expo Go** (SDK 58 docs), so it waits for a development build. Do not fake it.
+9.  **Loading.** Pull-to-refresh does a real refetch through `src/lib/punet.ts`, and `refreshing` reflects the request (never a hard-coded `false`). Skeleton cards have the shape of the real cards and the screen keeps the same header, so nothing jumps when data arrives. Empty, error and offline states are in Albanian.
+10. **Dark mode.** `userInterfaceStyle: "automatic"` in `app.json`. Wrap navigation in expo-router's `ThemeProvider` with colours from `useTema`, so there is no white flash on push or when a sheet opens. Check every screen in light and dark.
+11. **Dynamic Type.** Test at 130 %. Only giant display numbers (the readiness %) get `maxFontSizeMultiplier`.
+12. **Icon and splash.** The icon is Unaza: 1024 px, no transparency; the Android adaptive foreground stays inside the central 66 %, plus a monochrome layer. The splash is the background colour plus a small Unaza mark, with a dark variant (board screen 23): no text, no animation. Remove the Expo defaults (`#208AEF`, `#E6F4FE`) from `app.json`.
+13. **Switches** stay system green. Orange is only for progress.
+
+Ownership: search and the role filter on Punët are Edonik's, and he follows items 6 and 9 there. "Hape në shfletues" needs a link column on `punet`, which arrives with "Sill linkun tënd" (MVP 18.11, Genti).
+
+### Motion and feedback (decided 07.11)
+
+Motion has three jobs only: **feedback** (answer a tap), **orientation** (show where something came from) and **one planned moment** (opening the app). No fade-up on every card, no bounce. Everything respects iOS Reduce Motion (`useReducedMotion()`): movement becomes a fade or nothing, the meaning stays.
+
+| Moment | Trigger | Motion | Time | Reduce Motion |
+|---|---|---|---|---|
+| Opening (`Ngarkimi`) | cold start | same tile as the splash, Unaza arc 78% → 100% ("gati"), ✓ lifts 1.06, fade to the app | ~0.6 s | fade only |
+| Press (`Prekshme`) | every card and button | scale 0.97 (iOS) · ripple (Android) | 120 / 220 ms | dim instead |
+| List rows | press | background `karta2` (iOS list style), no scale | instant | same |
+| Locked feature | tap | short shake (`useDridhja`) + light haptic; the visible status says when it comes | 240 ms | haptic only |
+| Loading content | fetch | skeletons in the real layout (`Skeleti`), slow pulse 1 ↔ 0.55 | 900 ms loop | static |
+| Success | e.g. job added | success haptic + top toast with the action's verb ("Puna u shtua"), new card fades in, others slide | 220 ms | no slide |
+| Form not valid | press "Shto" | error haptic + button shake + a hint under each missing field (only after the first try) | 240 ms | haptic + hints |
+| Progress bar | appears | fills with translateX (not width) | 420 ms | static |
+
+- Tokens live in `src/lib/levizja.ts` (`KOHA`, `LEHTESIMI`, `useDridhja`): enter = ease-out `bezier(0.16, 1, 0.3, 1)`, exit = ease-in and ~70% of the entrance. Haptics only through `src/lib/prekja.ts` (`zgjedhje`, `lehte`, `sukses`, `gabim`).
+- Toasts (`useNjoftim()`) confirm successes and background failures; form errors stay next to the field.
+- Animate `transform` and `opacity`, never width or height. With React Compiler, use shared values through `.get()` / `.set()`; from a worklet back to React use `scheduleOnRN` (`react-native-worklets`), not `runOnJS`.
+- `Link asChild` (Slot) throws on array styles: pass `StyleSheet.flatten([...])` to its child.
+- Icon and splash: the Unaza tile (`assets/images/icon.png`, `splash-icon.png` + `-dark`), splash background `#F5F5F4` / `#0E0E0F`, `imageWidth` 104 = `PLLAKA` in `Ngarkimi.tsx`. Expo Go shows the app icon on that colour while loading; the real splash appears only in a build.
+
 ---
 
 ## 5\. Core Product Features
