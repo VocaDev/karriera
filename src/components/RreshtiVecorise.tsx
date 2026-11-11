@@ -17,6 +17,9 @@ export default function RreshtiVecorise({ vecoria, iFundit = false }: Props) {
   const t = useTema();
   const { stili, dridhu } = useDridhja();
   const gati = vecoria.gjendja.lloji === "gati" && vecoria.href !== null;
+  // Në zhvillim (__DEV__) hapet edhe një hap "në ndërtim" që ka ekran, që ta provojmë në telefon.
+  // Në build-in e vërtetë mbetet i kyçur derisa të jetë gati.
+  const hapet = vecoria.href !== null && (gati || (__DEV__ && vecoria.gjendja.lloji === "ndertim"));
   const gjendja = tekstiIGjendjes(vecoria.gjendja);
 
   const permbajtja = (
@@ -37,7 +40,7 @@ export default function RreshtiVecorise({ vecoria, iFundit = false }: Props) {
           {vecoria.pershkrimi} · {gjendja}
         </T>
       </View>
-      {gati ? (
+      {hapet ? (
         <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
       ) : (
         <Ikona emri={IKONAT.kycja} madhesia={13} ngjyra={t.vija} />
@@ -50,7 +53,7 @@ export default function RreshtiVecorise({ vecoria, iFundit = false }: Props) {
     pressed && { backgroundColor: t.karta2 },
   ];
 
-  if (!gati || vecoria.href === null) {
+  if (!hapet || vecoria.href === null) {
     return (
       <Pressable
         onPress={() => {

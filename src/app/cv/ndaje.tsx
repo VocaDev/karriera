@@ -1,58 +1,45 @@
-
+// Karta "Ndaje" (roast-i i CV-së për shokët). HARTA: ndarja në rrjete sociale vjen PAS Demo Day-t.
+// Ekrani është i mbyllur në _layout.tsx (CV_PAS_DEMO_DAY_HAPUR = false); kodi mbetet gati për atëherë.
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  Share,
-  StyleSheet,
-  View,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { ActivityIndicator, Share, StyleSheet, View } from "react-native";
 
-import { Faqja, Karta, T, Titulli } from "@/components/ui";
-import { useTema } from "@/lib/tema";
+import { useNjoftim } from "@/components/Njoftimet";
+import Prekshme from "@/components/Prekshme";
+import { Karta, Faqja, T, Titulli } from "@/components/ui";
 import { analizaEFundit, type AnalizaCV } from "@/lib/cv";
+import { prekja } from "@/lib/prekja";
+import { useTema } from "@/lib/tema";
+
+// Karta është "poster" i errët në të dy temat (si në bord): ngjyrat e saj janë fikse,
+// përveç portokallisë që vjen nga tema.
+const KARTA = { sfondi: "#141414", teksti: "#FFFFFF", zbehur: "#D6D3D1", vija: "#44403C", fundi: "#A8A29E" };
+
+type Gjendja = { lloji: "duke" } | { lloji: "gati"; analiza: AnalizaCV | null } | { lloji: "gabim"; mesazhi: string };
 
 export default function NdajeCV() {
   const t = useTema();
-  const router = useRouter();
-
-  const [analiza, setAnaliza] = useState<AnalizaCV | null>(null);
-  const [dukeNgarkuar, setDukeNgarkuar] = useState(true);
-  const [dukeNdarë, setDukeNdarë] = useState(false);
+  const njofto = useNjoftim();
+  const [gjendja, setGjendja] = useState<Gjendja>({ lloji: "duke" });
+  const [dukeNdare, setDukeNdare] = useState(false);
 
   useEffect(() => {
     let aktiv = true;
-
-    async function ngarkoAnalizen() {
-      try {
-        const rezultati = await analizaEFundit();
-
-        if (aktiv && rezultati) {
-          setAnaliza(rezultati.analiza);
-        }
-      } catch {
-        Alert.alert("Gabim", "Nuk mundëm ta ngarkojmë analizën.");
-      } finally {
-        if (aktiv) setDukeNgarkuar(false);
-      }
-    }
-
-    void ngarkoAnalizen();
-
+    analizaEFundit()
+      .then((r) => {
+        if (aktiv) setGjendja({ lloji: "gati", analiza: r?.analiza ?? null });
+      })
+      .catch((e: unknown) => {
+        if (aktiv) setGjendja({ lloji: "gabim", mesazhi: e instanceof Error ? e.message : "S'u lexua analiza." });
+      });
     return () => {
       aktiv = false;
     };
   }, []);
 
-  async function ndaj() {
-    if (!analiza) return;
-
-    setDukeNdarë(true);
-
+  async function ndaj(analiza: AnalizaCV) {
+    setDukeNdare(true);
     try {
-      await Share.share({
+      const rezultati = await Share.share({
         title: "Roast i CV-së sime",
         message:
           `Karriera i bëri roast CV-së sime 🔥\n\n` +
@@ -60,106 +47,94 @@ export default function NdajeCV() {
           `${analiza.fjalia_roast}\n\n` +
           `Sa e bën CV-ja jote?`,
       });
+      if (rezultati.action === Share.sharedAction) prekja.sukses();
     } catch {
-      Alert.alert("Gabim", "Nuk mundëm ta ndajmë kartën.");
+      prekja.gabim();
+      njofto("S'u nda karta. Provo përsëri.", "gabim");
     } finally {
-      setDukeNdarë(false);
+      setDukeNdare(false);
     }
   }
 
-  if (dukeNgarkuar) {
+  if (gjendja.lloji === "duke") {
     return (
       <Faqja>
         <View style={styles.qender}>
-          <ActivityIndicator size="large" color={t.theksi} />
-          <T zbehur>Po përgatitet karta...</T>
+          <ActivityIndicator size="large" color={t.zbehur} />
+          <T zbehur>Po përgatitet karta…</T>
         </View>
       </Faqja>
     );
   }
 
-  if (!analiza) {
+  if (gjendja.lloji === "gabim" || gjendja.analiza === null) {
     return (
       <Faqja>
-        <Titulli>Ndaje CV-në</Titulli>
-        <Karta>
-          <T>Nuk u gjet analiza e CV-së.</T>
-          <Pressable onPress={() => router.replace("/cv")}>
-            <T pesha="trashe">Kthehu te CV-ja</T>
-          </Pressable>
+        <Titulli>Ndaje roast-in</Titulli>
+        <Karta style={styles.bosh}>
+          <T>{gjendja.lloji === "gabim" ? gjendja.mesazhi : "Ende s'ke asnjë analizë. Ngarko CV-në dhe analizoje."}</T>
         </Karta>
       </Faqja>
     );
   }
 
+  const { analiza } = gjendja;
+
   return (
     <Faqja>
-      <View style={styles.krye}>
-        <Pressable onPress={() => router.back()} style={styles.kthim}>
-          <T madhesia={20}>←</T>
-        </Pressable>
-        <T zbehur madhesia={12}>KARTA JOTE</T>
-      </View>
-
       <Titulli>Ndaje roast-in</Titulli>
-      <T zbehur>
-        Tregoja shokëve çfarë mendon AI-ja për CV-në tënde.
-      </T>
+      <T zbehur>Tregoja shokëve çfarë mendon AI-ja për CV-në tënde.</T>
 
       <View style={styles.kartaJashtme}>
-        <View style={styles.karta}>
+        <View style={[styles.karta, { backgroundColor: KARTA.sfondi }]}>
           <View style={styles.kryeKartes}>
-            <T ngjyra="#FFFFFF" pesha="trashe" madhesia={12}>
+            <T ngjyra={KARTA.teksti} pesha="trashe" madhesia={12}>
               KARRIERA
             </T>
-            <T ngjyra="#E8590C" pesha="trashe" madhesia={12}>
+            <T ngjyra={t.theksi} pesha="trashe" madhesia={12}>
               CV ROAST 🔥
             </T>
           </View>
 
           <View style={styles.nota}>
-            <T ngjyra="#E8590C" pesha="shumeTrashe" madhesia={64}>
+            <T ngjyra={t.theksi} pesha="shumeTrashe" madhesia={64} maxFontSizeMultiplier={1.2}>
               {analiza.nota}
             </T>
-            <T ngjyra="#FFFFFF" pesha="mesme" madhesia={13}>
+            <T ngjyra={KARTA.teksti} pesha="mesme" madhesia={13}>
               / 100
             </T>
           </View>
 
-          <View style={styles.vija} />
+          <View style={[styles.vija, { backgroundColor: KARTA.vija }]} />
 
-          <T ngjyra="#FFFFFF" pesha="trashe" madhesia={23}>
+          <T ngjyra={KARTA.teksti} pesha="trashe" madhesia={23}>
             Karriera i bëri roast CV-së sime.
           </T>
 
-          <T ngjyra="#D6D3D1" madhesia={15} style={styles.roast}>
+          <T ngjyra={KARTA.zbehur} madhesia={15} style={styles.roast}>
             “{analiza.fjalia_roast}”
           </T>
 
-          <View style={styles.fundiKartes}>
-            <T ngjyra="#A8A29E" madhesia={11}>
-              Sa e bën CV-ja jote?
-            </T>
-            <T ngjyra="#E8590C" pesha="trashe" madhesia={12}>
-              KARRIERA.APP
-            </T>
-          </View>
+          <T ngjyra={KARTA.fundi} madhesia={11}>
+            Sa e bën CV-ja jote?
+          </T>
         </View>
       </View>
 
-      <Pressable
-        onPress={() => void ndaj()}
-        disabled={dukeNdarë}
+      <Prekshme
+        onPress={() => ndaj(analiza)}
+        disabled={dukeNdare}
+        accessibilityRole="button"
         style={[styles.buton, { backgroundColor: t.teksti }]}
       >
-        {dukeNdarë ? (
+        {dukeNdare ? (
           <ActivityIndicator color={t.sfondi} />
         ) : (
           <T ngjyra={t.sfondi} pesha="trashe">
             Ndaje kartën
           </T>
         )}
-      </Pressable>
+      </Prekshme>
 
       <T zbehur madhesia={12} style={styles.privatesia}>
         Karta përmban vetëm notën dhe roast-in, jo emrin ose përmbajtjen e CV-së.
@@ -169,67 +144,14 @@ export default function NdajeCV() {
 }
 
 const styles = StyleSheet.create({
-  qender: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  krye: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-  },
-  kthim: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  kartaJashtme: {
-    width: "100%",
-    aspectRatio: 9 / 16,
-    marginTop: 24,
-    marginBottom: 22,
-  },
-  karta: {
-    flex: 1,
-    backgroundColor: "#141414",
-    borderRadius: 28,
-    padding: 24,
-    justifyContent: "space-between",
-    overflow: "hidden",
-  },
-  kryeKartes: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  nota: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 0,
-  },
-  vija: {
-    height: 1,
-    backgroundColor: "#44403C",
-    width: "100%",
-  },
-  roast: {
-    lineHeight: 24,
-  },
-  fundiKartes: {
-    gap: 8,
-  },
-  buton: {
-    minHeight: 54,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  privatesia: {
-    textAlign: "center",
-    marginTop: 12,
-  },
+  qender: { alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 60 },
+  bosh: { marginTop: 16 },
+  kartaJashtme: { width: "100%", aspectRatio: 9 / 16, marginTop: 24, marginBottom: 22 },
+  karta: { flex: 1, borderRadius: 28, padding: 24, justifyContent: "space-between", overflow: "hidden" },
+  kryeKartes: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  nota: { alignItems: "center", justifyContent: "center" },
+  vija: { height: StyleSheet.hairlineWidth, width: "100%" },
+  roast: { lineHeight: 24 },
+  buton: { minHeight: 54, borderRadius: 30, alignItems: "center", justifyContent: "center" },
+  privatesia: { textAlign: "center", marginTop: 12 },
 });
