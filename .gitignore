@@ -46,3 +46,6 @@ example
 .env
 .env.*
 !.env.example
+
+# Deno (scripts/test-cv-ai.ts): lockfile lokal, jo në Git
+/deno.lock

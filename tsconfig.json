@@ -13,9 +13,9 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ],
- "exclude": [
-  "karriera",
-  "supabase/functions",
-  "scripts/test-cv-ai.ts"
-]
+  "exclude": [
+    "node_modules",
+    "supabase/functions",
+    "scripts/test-cv-ai.ts"
+  ]
 }

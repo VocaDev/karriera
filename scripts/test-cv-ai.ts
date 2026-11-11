@@ -1,4 +1,4 @@
-﻿// Prova lokale e AI-së së CV-së (Deno), pa app dhe pa Supabase: dërgon një PDF lokale te Claude
+// Prova lokale e AI-së së CV-së (Deno), pa app dhe pa Supabase: dërgon një PDF lokale te Claude
 // dhe kontrollon që përgjigjja ndjek skemën. Shtyp analizën e plotë.
 //
 //   $env:ANTHROPIC_API_KEY = "..."   (vetëm në terminal; kurrë në Git)
