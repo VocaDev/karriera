@@ -1,5 +1,5 @@
 import { Link, useFocusEffect } from "expo-router";
-import SegmentedControl from "@expo/ui/community/segmented-control";
+import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeIn, LinearTransition, useReducedMotion } from "react-native-reanimated";

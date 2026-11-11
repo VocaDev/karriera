@@ -1,13 +1,22 @@
 // KONTRATA E CV-SË · pronar: Edoniku (ekranet, AI, tabelat cvs/cv_reviews, Storage, ky fajll).
 // Ekranet e CV-së thërrasin VETËM funksionet e këtij fajlli.
-// Tani kthejnë të dhëna të rreme (MOCK); Edoniku i zëvendëson me Supabase dhe Edge Functions
-// pa i ndryshuar emrat apo tipet, kështu që ekranet nuk ndryshojnë.
+//
+// Ku jetojnë të dhënat (supabase/migrations/20261111000000_cv.sql):
+//   PDF-ja       Storage, bucket privat "cv", dosja {user_id}/
+//   CV-të        tabela cvs (RLS: vetëm të miat; versioni dhe pronari i vendos serveri)
+//   analizat     tabela cv_reviews (i shkruan vetëm Edge Function cv-review; app-i vetëm lexon)
+//   AI-ja        Edge Functions cv-review dhe cv-create (çelësi i AI-së s'del kurrë në telefon)
+// Pa filtër për përdoruesin në kod: RLS-i kthen vetëm rreshtat e mi.
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
+
+import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { supabase } from "@/lib/supabase";
 
 // ---------- Tipet ----------
 
 /** Rezultati i Edge Function `cv-review` (AI-ja e lexon PDF-në). */
 export type AnalizaCV = {
-  nota: number; // 0–100
+  nota: number; // 0–100, vlerësim i AI-së për CV-në (jo parashikim punësimi)
   permbledhja: string; // 1 fjali, p.sh. "2 gjëra e ngrenë mbi 75"
   seksionet: {
     emri: string; // "Profili", "Përvoja", "Projektet", "Formati", "Aftësitë", "Arsimi"
@@ -52,46 +61,215 @@ export type CvRresht = {
 /** Skedari që kthen expo-document-picker (vetëm fushat që na duhen). */
 export type SkedariPDF = { uri: string; name: string; size: number | null; mimeType: string | null };
 
+export const MADHESIA_MAKS_CV = 5 * 1024 * 1024; // e njëjta si bucket-i "cv"
+
+// ---------- Kontrolli i përgjigjeve (AI-ja dhe JSON-i nga serveri s'merren të mirëqena) ----------
+
+const eshteTekst = (v: unknown): v is string => typeof v === "string";
+const eshteObjekt = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+const listeMe = (v: unknown, kontrollo: (x: unknown) => boolean) => Array.isArray(v) && v.every(kontrollo);
+const tekstOseNull = (v: unknown) => v === null || eshteTekst(v);
+
+export function eshteAnalizeCV(v: unknown): v is AnalizaCV {
+  if (!eshteObjekt(v)) return false;
+  return (
+    typeof v.nota === "number" &&
+    Number.isInteger(v.nota) &&
+    v.nota >= 0 &&
+    v.nota <= 100 &&
+    eshteTekst(v.permbledhja) &&
+    eshteTekst(v.fjalia_roast) &&
+    listeMe(v.pikat_e_forta, eshteTekst) &&
+    listeMe(v.rishkrimet, (r) => eshteObjekt(r) && eshteTekst(r.para) && eshteTekst(r.pas)) &&
+    listeMe(
+      v.seksionet,
+      (s) =>
+        eshteObjekt(s) &&
+        eshteTekst(s.emri) &&
+        (s.gjendja === "mire" || s.gjendja === "permiresim") &&
+        eshteTekst(s.komenti) &&
+        eshteTekst(s.roast),
+    )
+  );
+}
+
+export function eshteCvStrukturuar(v: unknown): v is CvStrukturuar {
+  if (!eshteObjekt(v)) return false;
+  return (
+    eshteTekst(v.emri) &&
+    eshteTekst(v.titulli) &&
+    eshteTekst(v.qyteti) &&
+    eshteTekst(v.email) &&
+    tekstOseNull(v.telefoni) &&
+    tekstOseNull(v.datelindja) &&
+    eshteTekst(v.profili) &&
+    listeMe(v.aftesite, eshteTekst) &&
+    listeMe(v.arsimi, (a) => eshteObjekt(a) && eshteTekst(a.programi) && eshteTekst(a.institucioni) && eshteTekst(a.periudha)) &&
+    listeMe(
+      v.pervoja,
+      (p) =>
+        eshteObjekt(p) &&
+        eshteTekst(p.roli) &&
+        eshteTekst(p.vendi) &&
+        eshteTekst(p.periudha) &&
+        eshteTekst(p.pershkrimi) &&
+        typeof p.nga_ai === "boolean",
+    ) &&
+    listeMe(
+      v.projektet,
+      (p) =>
+        eshteObjekt(p) &&
+        eshteTekst(p.titulli) &&
+        eshteTekst(p.pershkrimi) &&
+        tekstOseNull(p.linku) &&
+        typeof p.nga_ai === "boolean",
+    ) &&
+    listeMe(v.gjuhet, (g) => eshteObjekt(g) && eshteTekst(g.gjuha) && eshteTekst(g.niveli))
+  );
+}
+
+// Mesazhi i Edge Function-it (shqip) kur kthen 4xx/5xx; përndryshe një fjali e përgjithshme.
+async function mesazhiIFunksionit(gabimi: unknown, rezerva: string): Promise<string> {
+  if (gabimi instanceof FunctionsHttpError) {
+    try {
+      const trupi: unknown = await (gabimi.context as Response).json();
+      if (eshteObjekt(trupi) && eshteTekst(trupi.error)) return trupi.error;
+    } catch {
+      // përgjigje pa JSON
+    }
+    return rezerva;
+  }
+  if (gabimi instanceof FunctionsFetchError || gabimi instanceof FunctionsRelayError) {
+    return "Pa internet ose serveri s'u përgjigj. Provo përsëri.";
+  }
+  return rezerva;
+}
+
+const FUSHAT_CV = "id, burimi, emri_skedarit, versioni, krijuar_me";
+type RreshtiCV = Omit<CvRresht, "nota">;
+
 // ---------- Funksionet ----------
 
-const prit = (ms: number) => new Promise((r) => setTimeout(r, ms));
-let versionet: CvRresht[] = [];
-let cvAktuale: CvStrukturuar | null = null;
-
-export async function merrCVTeFundit(): Promise<CvStrukturuar> {
-  await prit(100);
-  return cvAktuale ?? SHEMBULL_CV;
-}
 /** Ruan PDF-në në Storage (privat) dhe krijon rreshtin. Hedh Error me mesazh në shqip nëse dështon. */
 export async function ngarkoCV(skedari: SkedariPDF): Promise<CvRresht> {
-  if (skedari.size !== null && skedari.size > 5 * 1024 * 1024) {
+  if (skedari.size !== null && skedari.size > MADHESIA_MAKS_CV) {
     throw new Error("CV-ja duhet të jetë deri në 5 MB.");
   }
-  await prit(600); // MOCK
-  const cv: CvRresht = {
-    id: `mock-${versionet.length + 1}`,
-    burimi: "ngarkuar",
-    emri_skedarit: skedari.name,
-    versioni: versionet.length + 1,
-    nota: null,
-    krijuar_me: new Date().toISOString(),
-  };
-  versionet = [cv, ...versionet];
-  return cv;
+  if (skedari.mimeType && skedari.mimeType !== "application/pdf") {
+    throw new Error("Zgjidh një dokument PDF.");
+  }
+
+  const { data: sesioni } = await supabase.auth.getSession();
+  const uid = sesioni.session?.user.id;
+  if (!uid) throw new Error("Hyr në llogari për ta ngarkuar CV-në.");
+
+  let bajtet: ArrayBuffer;
+  try {
+    bajtet = await fetch(skedari.uri).then((r) => r.arrayBuffer());
+  } catch {
+    throw new Error("S'u lexua skedari. Provo përsëri.");
+  }
+  if (bajtet.byteLength > MADHESIA_MAKS_CV) throw new Error("CV-ja duhet të jetë deri në 5 MB.");
+  const koka = String.fromCharCode(...new Uint8Array(bajtet, 0, Math.min(5, bajtet.byteLength)));
+  if (koka !== "%PDF-") throw new Error("Skedari nuk është PDF i vlefshëm.");
+
+  // Dosja e parë = id-ja ime: policy-ja e Storage-it lejon vetëm këtë.
+  const rruga = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.pdf`;
+  const { error: gabimiNgarkimit } = await supabase.storage
+    .from("cv")
+    .upload(rruga, bajtet, { contentType: "application/pdf", upsert: false });
+  if (gabimiNgarkimit) throw new Error(mesazhiIGabimit(gabimiNgarkimit));
+
+  const { data, error } = await supabase
+    .from("cvs")
+    .insert({ burimi: "ngarkuar", emri_skedarit: skedari.name.slice(0, 150), storage_path: rruga })
+    .select(FUSHAT_CV)
+    .single();
+  if (error) {
+    // Rreshti s'u krijua: fshij PDF-në që të mos mbetet skedar pa pronar në listë.
+    await supabase.storage.from("cv").remove([rruga]);
+    throw new Error(mesazhiIGabimit(error));
+  }
+  return { ...(data as RreshtiCV), nota: null };
 }
 
-/** Thërret `cv-review` me PDF-në dhe e ruan analizën. Zgjat 10–20 sekonda në realitet. */
+/** Thërret `cv-review` (AI-ja lexon PDF-në nga Storage dhe e ruan analizën). Zgjat 10–40 sekonda. */
 export async function analizoCV(cvId: string): Promise<AnalizaCV> {
-  await prit(2500); // MOCK
-  versionet = versionet.map((v) => (v.id === cvId ? { ...v, nota: SHEMBULL_ANALIZE.nota } : v));
-  return SHEMBULL_ANALIZE;
+  const { data, error } = await supabase.functions.invoke("cv-review", { body: { cv_id: cvId } });
+  if (error) throw new Error(await mesazhiIFunksionit(error, "Analiza e CV-së dështoi. Provo përsëri."));
+  const analiza: unknown = eshteObjekt(data) ? data.analiza : null;
+  if (!eshteAnalizeCV(analiza)) throw new Error("AI-ja ktheu një përgjigje të paplotë. Provo përsëri.");
+  return analiza;
+}
+
+/** Analiza e fundit e kësaj CV-je, ose null nëse s'është analizuar ende (pa thirrur AI-në). */
+export async function analizaPerCV(cvId: string): Promise<AnalizaCV | null> {
+  const { data, error } = await supabase
+    .from("cv_reviews")
+    .select("analiza")
+    .eq("cv_id", cvId)
+    .order("krijuar_me", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  if (!data) return null;
+  const analiza: unknown = (data as { analiza: unknown }).analiza;
+  return eshteAnalizeCV(analiza) ? analiza : null;
 }
 
 /** Analiza e fundit e përdoruesit, ose null nëse s'ka ende. */
 export async function analizaEFundit(): Promise<{ cv: CvRresht; analiza: AnalizaCV } | null> {
-  await prit(300); // MOCK
-  const cv = versionet.find((v) => v.nota !== null);
-  return cv ? { cv, analiza: SHEMBULL_ANALIZE } : null;
+  const { data: review, error } = await supabase
+    .from("cv_reviews")
+    .select("cv_id, nota, analiza")
+    .order("krijuar_me", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  if (!review) return null;
+
+  const r = review as { cv_id: string; nota: number; analiza: unknown };
+  if (!eshteAnalizeCV(r.analiza)) return null;
+
+  const { data: cv, error: gabimiCV } = await supabase.from("cvs").select(FUSHAT_CV).eq("id", r.cv_id).maybeSingle();
+  if (gabimiCV) throw new Error(mesazhiIGabimit(gabimiCV));
+  if (!cv) return null;
+
+  return { cv: { ...(cv as RreshtiCV), nota: r.nota }, analiza: r.analiza };
+}
+
+/** Të gjitha versionet e CV-së, më e reja e para, me notën e analizës së fundit të secilës. */
+export async function listoVersionet(): Promise<CvRresht[]> {
+  const [cvs, reviews] = await Promise.all([
+    supabase.from("cvs").select(FUSHAT_CV).order("versioni", { ascending: false }),
+    supabase.from("cv_reviews").select("cv_id, nota").order("krijuar_me", { ascending: false }),
+  ]);
+  if (cvs.error) throw new Error(mesazhiIGabimit(cvs.error));
+  if (reviews.error) throw new Error(mesazhiIGabimit(reviews.error));
+
+  const notat = new Map<string, number>();
+  for (const r of (reviews.data ?? []) as { cv_id: string; nota: number }[]) {
+    if (!notat.has(r.cv_id)) notat.set(r.cv_id, r.nota); // e para = më e reja
+  }
+  return ((cvs.data ?? []) as RreshtiCV[]).map((cv) => ({ ...cv, nota: notat.get(cv.id) ?? null }));
+}
+
+// ---------- Pas Demo Day-t (HARTA): ndërtuesi i CV-së dhe formatet ----------
+// Ekranet që i thërrasin janë të mbyllura (CV_PAS_DEMO_DAY_HAPUR në vecorite.ts).
+// Funksionet janë të vërteta: s'kthejnë kurrë të dhëna shembull si CV të përdoruesit.
+
+/** CV-ja e fundit e krijuar me AI, ose null nëse s'ka. */
+export async function merrCVTeFundit(): Promise<CvStrukturuar | null> {
+  const { data, error } = await supabase
+    .from("cvs")
+    .select("permbajtja")
+    .eq("burimi", "krijuar")
+    .order("versioni", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  const permbajtja: unknown = data ? (data as { permbajtja: unknown }).permbajtja : null;
+  return eshteCvStrukturuar(permbajtja) ? permbajtja : null;
 }
 
 /** Thërret `cv-create`: nga 5 përgjigjet, ose rishkruan një CV ekzistuese për një format/gjuhë tjetër. */
@@ -100,79 +278,19 @@ export async function krijoCV(
   formati: FormatiCV,
   gjuha: GjuhaCV,
 ): Promise<CvStrukturuar> {
-  await prit(2000);
-
-  const cvBurim =
-    "cv" in burimi ? burimi.cv : SHEMBULL_CV;
-
-  const skaTeDhenaPersonale =
-    formati === "us" || formati === "uk" || formati === "ats";
-
-  const cvRi: CvStrukturuar = {
-    ...cvBurim,
-    datelindja: skaTeDhenaPersonale ? null : cvBurim.datelindja,
-    titulli:
-      gjuha === "en"
-        ? "Computer Engineering student"
-        : cvBurim.titulli,
-  };
-
-  cvAktuale = cvRi;
-  return cvRi;
+  const { data, error } = await supabase.functions.invoke("cv-create", { body: { burimi, formati, gjuha } });
+  if (error) throw new Error(await mesazhiIFunksionit(error, "Krijimi i CV-së dështoi. Provo përsëri."));
+  if (!eshteCvStrukturuar(data)) throw new Error("AI-ja ktheu një CV të paplotë. Provo përsëri.");
+  return data;
 }
 
 /** Ruan një CV të krijuar si version i ri. */
-export async function ruajCV(cv: CvStrukturuar, formati: FormatiCV): Promise<CvRresht> {
-  await prit(400); // MOCK
-  cvAktuale = cv;
-  void cv; void formati;
-  const rresht: CvRresht = {
-    id: `mock-${versionet.length + 1}`,
-    burimi: "krijuar",
-    emri_skedarit: null,
-    versioni: versionet.length + 1,
-    nota: null,
-    krijuar_me: new Date().toISOString(),
-  };
-  versionet = [rresht, ...versionet];
-  return rresht;
+export async function ruajCV(cv: CvStrukturuar, formati: FormatiCV, gjuha: GjuhaCV = "sq"): Promise<CvRresht> {
+  const { data, error } = await supabase
+    .from("cvs")
+    .insert({ burimi: "krijuar", permbajtja: cv, formati, gjuha })
+    .select(FUSHAT_CV)
+    .single();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  return { ...(data as RreshtiCV), nota: null };
 }
-
-/** Të gjitha versionet e CV-së, më e reja e para. */
-export async function listoVersionet(): Promise<CvRresht[]> {
-  await prit(200); // MOCK
-  return versionet;
-}
-
-// ---------- Të dhëna të rreme (MOCK) ----------
-
-const SHEMBULL_ANALIZE: AnalizaCV = {
-  nota: 64,
-  permbledhja: "2 gjëra e ngrenë mbi 75: rezultate te përvoja dhe linqe te projektet.",
-  seksionet: [
-    { emri: "Profili", gjendja: "mire", komenti: "I qartë dhe i shkurtër.", roast: "Ok, të paktën dihet si quhesh." },
-    { emri: "Përvoja", gjendja: "permiresim", komenti: "Shkruaj rezultate, jo vetëm detyra.", roast: "\"Kam punuar me React.\" Edhe kalkulatori im ka punuar me React. Çka ndërtove?" },
-    { emri: "Projektet", gjendja: "permiresim", komenti: "Shto linkun e GitHub-it për çdo projekt.", roast: "Projekt pa link në GitHub = projekt imagjinar." },
-    { emri: "Formati", gjendja: "mire", komenti: "Një faqe, lexohet lehtë.", roast: "Tri fonte në një faqe. Zgjidh njërin, s'je në dasmë." },
-  ],
-  rishkrimet: [
-    { para: "Kam punuar me React.", pas: "Ndërtova 3 ekrane në React Native për aplikacionin e klasës, me navigim dhe të dhëna nga Supabase." },
-  ],
-  pikat_e_forta: ["Projekte reale me React Native", "Anglisht C1"],
-  fjalia_roast: "Projekt pa link në GitHub = projekt imagjinar.",
-};
-
-const SHEMBULL_CV: CvStrukturuar = {
-  emri: "Student Shembull",
-  titulli: "Student i Inxhinierisë Kompjuterike",
-  qyteti: "Mitrovicë",
-  email: "student@example.com",
-  telefoni: null,
-  datelindja: "2004",
-  profili: "Student në vitin e tretë në UMIB, ndërtoj aplikacione mobile me React Native dhe Supabase.",
-  arsimi: [{ programi: "Inxhinieri Kompjuterike", institucioni: "UMIB", periudha: "2023–sot" }],
-  pervoja: [{ roli: "Asistent për procese biznesi", vendi: "Kompani private", periudha: "2025–sot", pershkrimi: "Digjitalizim i proceseve të brendshme.", nga_ai: true }],
-  projektet: [{ titulli: "Karriera", pershkrimi: "App për përgatitjen për tregun e punës (React Native, Supabase, AI).", linku: "https://github.com/VocaDev/karriera", nga_ai: true }],
-  aftesite: ["React Native", "TypeScript", "Git", "SQL"],
-  gjuhet: [{ gjuha: "Shqip", niveli: "amtare" }, { gjuha: "Anglisht", niveli: "C1" }],
-};
