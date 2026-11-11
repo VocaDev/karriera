@@ -1,67 +1,78 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
-  type TextInputProps,
+  type TextInputInstance,
 } from "react-native";
+import Animated from "react-native-reanimated";
 
+import { Fusha, Udhezimi } from "@/components/Forma";
+import { useNjoftim } from "@/components/Njoftimet";
+import Prekshme from "@/components/Prekshme";
 import { T } from "@/components/ui";
-import { shtoPunen, type Puna } from "@/lib/punet";
-import { SHKRONJAT, useTema } from "@/lib/tema";
+import { useDridhja } from "@/lib/levizja";
+import { prekja } from "@/lib/prekja";
+import { shenoPunenERe, shtoPunen, type Puna } from "@/lib/punet";
+import { useSesioni } from "@/lib/sesioni";
+import { useTema } from "@/lib/tema";
 
 const ROLET: Puna["roli"][] = ["SWE", "Asistent/PR", "Tjetër"];
 
-// Fushë teksti në stilin D: e bardhë, pa kornizë, me qoshe të rrumbullakëta.
-function Fusha(props: TextInputProps) {
-  const t = useTema();
-  return (
-    <TextInput
-      placeholderTextColor={t.zbehur}
-      {...props}
-      style={[
-        styles.fusha,
-        { backgroundColor: t.karta, color: t.teksti, shadowColor: t.hija, fontFamily: SHKRONJAT.normal },
-        props.style,
-      ]}
-    />
-  );
-}
-
 export default function ShtoPunen() {
   const t = useTema();
+  const njofto = useNjoftim();
+  const { stili: stiliIButonit, dridhu } = useDridhja();
+  const kompaniaRef = useRef<TextInputInstance>(null);
+  const qytetiRef = useRef<TextInputInstance>(null);
+  const pershkrimiRef = useRef<TextInputInstance>(null);
   const [titulli, setTitulli] = useState("");
-  const [kompania, setKompania] = useState("");
+  const { profili } = useSesioni();
+  const [kompania, setKompania] = useState(profili?.organizata ?? ""); // punëdhënësi: kompania e tij
   const [qyteti, setQyteti] = useState("");
   const [roli, setRoli] = useState<Puna["roli"]>("SWE");
   const [pershkrimi, setPershkrimi] = useState("");
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
+  const [provoi, setProvoi] = useState(false);
 
   // Të njëjtat kufij si në bazë (check constraints), që gabimi të dalë para se të dërgohet.
-  const valide =
-    titulli.trim().length >= 3 && kompania.trim().length >= 2 && qyteti.trim().length >= 2;
+  const mungon = {
+    titulli: titulli.trim().length < 3,
+    kompania: kompania.trim().length < 2,
+    qyteti: qyteti.trim().length < 2,
+  };
+  const valide = !mungon.titulli && !mungon.kompania && !mungon.qyteti;
 
-  async function ruaj() {
-    if (!valide || duke_ruajtur) return; // pa dërgime të dyfishta
+  async function shto() {
+    if (duke_ruajtur) return; // pa dërgime të dyfishta
+    if (!valide) {
+      // Butoni s'është i fikur pa arsye: prekja tregon çka mungon.
+      setProvoi(true);
+      prekja.gabim();
+      dridhu();
+      return;
+    }
     setDukeRuajtur(true);
     setGabimi(null);
     try {
-      await shtoPunen({
+      const puna = await shtoPunen({
         titulli: titulli.trim(),
         kompania: kompania.trim(),
         qyteti: qyteti.trim(),
         roli,
         pershkrimi: pershkrimi.trim(),
       });
-      router.back(); // lista rilexohet vetë (useFocusEffect) dhe puna e re del e para
+      prekja.sukses();
+      shenoPunenERe(puna.id); // lista e shfaq me animacion hyrjeje
+      njofto("Puna u shtua", "sukses");
+      router.back();
     } catch (e) {
+      prekja.gabim();
       setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
       setDukeRuajtur(false);
     }
@@ -80,17 +91,52 @@ export default function ShtoPunen() {
         <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
           Titulli i pozitës *
         </T>
-        <Fusha value={titulli} onChangeText={setTitulli} placeholder="p.sh. Junior Developer" maxLength={120} />
+        <Fusha
+          value={titulli}
+          onChangeText={setTitulli}
+          placeholder="p.sh. Junior Developer"
+          maxLength={120}
+          editable={!duke_ruajtur}
+          gabim={provoi && mungon.titulli}
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => kompaniaRef.current?.focus()}
+        />
+        <Udhezimi shfaq={provoi && mungon.titulli}>Shkruaj titullin e pozitës, të paktën 3 shkronja.</Udhezimi>
 
         <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
           Kompania *
         </T>
-        <Fusha value={kompania} onChangeText={setKompania} placeholder="p.sh. Kodi Studio" maxLength={80} />
+        <Fusha
+          ref={kompaniaRef}
+          value={kompania}
+          onChangeText={setKompania}
+          placeholder="p.sh. Kodi Studio"
+          maxLength={80}
+          editable={!duke_ruajtur}
+          gabim={provoi && mungon.kompania}
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => qytetiRef.current?.focus()}
+        />
+        <Udhezimi shfaq={provoi && mungon.kompania}>Shkruaj emrin e kompanisë, të paktën 2 shkronja.</Udhezimi>
 
         <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
           Qyteti *
         </T>
-        <Fusha value={qyteti} onChangeText={setQyteti} placeholder="p.sh. Mitrovicë ose Remote" maxLength={60} />
+        <Fusha
+          ref={qytetiRef}
+          value={qyteti}
+          onChangeText={setQyteti}
+          placeholder="p.sh. Mitrovicë ose Remote"
+          maxLength={60}
+          editable={!duke_ruajtur}
+          gabim={provoi && mungon.qyteti}
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => pershkrimiRef.current?.focus()}
+        />
+        <Udhezimi shfaq={provoi && mungon.qyteti}>Shkruaj qytetin ose “Remote”, të paktën 2 shkronja.</Udhezimi>
 
         <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
           Roli
@@ -99,9 +145,13 @@ export default function ShtoPunen() {
           {ROLET.map((r) => {
             const zgjedhur = roli === r;
             return (
-              <Pressable
+              <Prekshme
                 key={r}
-                onPress={() => setRoli(r)}
+                onPress={() => {
+                  if (zgjedhur) return;
+                  prekja.zgjedhje();
+                  setRoli(r);
+                }}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: zgjedhur }}
                 style={[styles.chip, { backgroundColor: zgjedhur ? t.teksti : t.karta, shadowColor: t.hija }]}
@@ -109,7 +159,7 @@ export default function ShtoPunen() {
                 <T pesha="gjysme" madhesia={14} ngjyra={zgjedhur ? t.sfondi : t.teksti}>
                   {r}
                 </T>
-              </Pressable>
+              </Prekshme>
             );
           })}
         </View>
@@ -118,34 +168,39 @@ export default function ShtoPunen() {
           Përshkrimi
         </T>
         <Fusha
+          ref={pershkrimiRef}
           style={styles.shumeRreshta}
           value={pershkrimi}
           onChangeText={setPershkrimi}
           placeholder="Çka bën kjo punë?"
           multiline
           maxLength={1000}
+          editable={!duke_ruajtur}
         />
 
         {gabimi && (
           <T ngjyra={t.keq} style={styles.etiketa}>
-            S&apos;u ruajt: {gabimi}
+            S&apos;u shtua: {gabimi}
           </T>
         )}
 
-        <Pressable
-          onPress={ruaj}
-          disabled={!valide || duke_ruajtur}
-          accessibilityRole="button"
-          style={[styles.butoni, { backgroundColor: t.teksti }, (!valide || duke_ruajtur) && styles.joAktiv]}
-        >
-          {duke_ruajtur ? (
-            <ActivityIndicator color={t.sfondi} />
-          ) : (
-            <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
-              Ruaj në Supabase
-            </T>
-          )}
-        </Pressable>
+        <Animated.View style={stiliIButonit}>
+          <Prekshme
+            onPress={shto}
+            disabled={duke_ruajtur}
+            accessibilityRole="button"
+            accessibilityHint={valide ? undefined : "Plotëso titullin, kompaninë dhe qytetin"}
+            style={[styles.butoni, { backgroundColor: t.teksti }, !valide && styles.joAktiv]}
+          >
+            {duke_ruajtur ? (
+              <ActivityIndicator color={t.sfondi} />
+            ) : (
+              <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
+                Shto punën
+              </T>
+            )}
+          </Prekshme>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -155,27 +210,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   faqja: { padding: 20, gap: 6 },
   etiketa: { marginTop: 10 },
-  fusha: {
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    fontSize: 16,
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
   shumeRreshta: { minHeight: 100, textAlignVertical: "top" },
   rolet: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   chip: {
     borderRadius: 999,
-    paddingVertical: 9,
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 16,
     shadowOpacity: 0.06,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  butoni: { marginTop: 22, borderRadius: 999, padding: 16, alignItems: "center" },
-  joAktiv: { opacity: 0.35 },
+  butoni: { marginTop: 22, borderRadius: 999, padding: 16, minHeight: 52, alignItems: "center", justifyContent: "center" },
+  joAktiv: { opacity: 0.45 },
 });

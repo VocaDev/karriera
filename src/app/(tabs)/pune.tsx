@@ -1,236 +1,245 @@
-
 import { Link, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import SegmentedControl from "@expo/ui/community/segmented-control";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { StyleSheet, TextInput, View } from "react-native";
+import Animated, { FadeIn, LinearTransition, useReducedMotion } from "react-native-reanimated";
 
 import KartaPunes from "@/components/KartaPunes";
-import { Faqja, Ikona, IKONAT, T, Titulli } from "@/components/ui";
-import { listoPunet, type Puna } from "@/lib/punet";
-import { useTema } from "@/lib/tema";
+import { useNjoftim } from "@/components/Njoftimet";
+import Prekshme from "@/components/Prekshme";
+import { KartaSkelet } from "@/components/Skeleti";
+import { Faqja, IKONAT, Ikona, T, Titulli } from "@/components/ui";
+import { KOHA, LEHTESIMI } from "@/lib/levizja";
+import { prekja } from "@/lib/prekja";
+import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
+import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
+import { SHKRONJAT, useTema } from "@/lib/tema";
 
-type FiltriRolit = "Të gjitha" | Puna["roli"];
+// Kur lista ndryshon (p.sh. erdhi një punë e re lart), kartat e tjera rrëshqasin poshtë në vend që të kërcejnë.
+const LEVIZJA_E_LISTES = LinearTransition.duration(KOHA.mesme).easing(LEHTESIMI.levizje);
+const HYRJA_E_PUNES_SE_RE = FadeIn.duration(320).easing(LEHTESIMI.hyrje);
 
-const FILTRAT: FiltriRolit[] = [
-  "Të gjitha",
-  "SWE",
-  "Asistent/PR",
-  "Tjetër",
-];
+// Filtri i rolit (AGENTS.md, "Native feel" #6): kontrolli i segmentuar i sistemit, 3 zgjedhje.
+// "Zyrë" = Asistent/PR. Punët "Tjetër" dalin vetëm te "Të gjitha".
+const ROLET = [
+  { emri: "Të gjitha", roli: null },
+  { emri: "SWE", roli: "SWE" },
+  { emri: "Zyrë", roli: "Asistent/PR" },
+] as const satisfies readonly { emri: string; roli: Puna["roli"] | null }[];
 
+// Kërkimi pa shenja: "prishtine" gjen "Prishtinë", "zyre" gjen "Zyrë".
 function normalizo(teksti: string): string {
   return teksti
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim();
 }
 
+// Punët (bordi, ekrani 09), vetëm për kërkuesin: lexon, ruan me ⭐, s'poston (këtë e bën punëdhënësi).
+// Kërkimi dhe filtri i rolit: Edoniku.
 export default function Punet() {
   const t = useTema();
-
-  const [punet, setPunet] = useState<Puna[]>([]);
-  const [duke_ngarkuar, setDukeNgarkuar] = useState(true);
+  const qetesi = useReducedMotion();
+  const njofto = useNjoftim();
+  const [punet, setPunet] = useState<Puna[] | null>(null); // null = ende pa ardhur
   const [gabimi, setGabimi] = useState<string | null>(null);
+  const [rifreskim, setRifreskim] = useState(false);
+  const [ePunesSeRe, setEPunesSeRe] = useState<string | null>(null);
+  const [teRuajturat, setTeRuajturat] = useState<Set<string>>(() => new Set());
   const [kerkimi, setKerkimi] = useState("");
-  const [filtri, setFiltri] = useState<FiltriRolit>("Të gjitha");
+  const [iRolit, setIRolit] = useState(0); // indeksi te ROLET
 
-  const ngarko = useCallback(async () => {
-    setGabimi(null);
+  const punetEFiltruara = useMemo(() => {
+    if (punet === null) return null;
+    const fjala = normalizo(kerkimi);
+    const roli = ROLET[iRolit].roli;
+    return punet.filter(
+      (p) =>
+        (roli === null || p.roli === roli) &&
+        (fjala === "" || normalizo(`${p.titulli} ${p.kompania} ${p.qyteti}`).includes(fjala)),
+    );
+  }, [punet, kerkimi, iRolit]);
+  const kaFiltra = kerkimi.trim() !== "" || iRolit !== 0;
 
+  function pastroFiltrat() {
+    prekja.zgjedhje();
+    setKerkimi("");
+    setIRolit(0);
+  }
+
+  const ngarko = useCallback(async (ngaPerdoruesi: boolean) => {
     try {
-      setPunet(await listoPunet());
+      const [teReja, yjet] = await Promise.all([listoPunet(), listoTeRuajturat()]);
+      const iRi = merrPunenERe();
+      setPunet(teReja);
+      setTeRuajturat(yjet);
+      setGabimi(null);
+      if (iRi) setEPunesSeRe(iRi);
+      return true;
     } catch (e) {
       setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
-    } finally {
-      setDukeNgarkuar(false);
+      if (ngaPerdoruesi) prekja.gabim();
+      return false;
     }
   }, []);
 
+  // Rilexon sa herë që ekrani shfaqet (p.sh. pasi kthehesh nga "Shto punë").
   useFocusEffect(
     useCallback(() => {
-      ngarko();
+      ngarko(false);
     }, [ngarko]),
   );
 
-  const numrat = useMemo(() => {
-    return {
-      "Të gjitha": punet.length,
-      SWE: punet.filter((p) => p.roli === "SWE").length,
-      "Asistent/PR": punet.filter((p) => p.roli === "Asistent/PR").length,
-      Tjetër: punet.filter((p) => p.roli === "Tjetër").length,
-    };
-  }, [punet]);
+  // Një punëdhënës sapo postoi: puna hyn lart në listë, pa rifreskim (Supabase Realtime).
+  useEffect(
+    () =>
+      degjoPunetERe("lista-e-puneve", (puna) => {
+        setPunet((lista) => (lista === null || lista.some((p) => p.id === puna.id) ? lista : [puna, ...lista]));
+        setEPunesSeRe(puna.id);
+      }),
+    [],
+  );
 
-  const punetEFiltuara = useMemo(() => {
-    const kerkimiNormal = normalizo(kerkimi);
+  // ⭐ ndryshon menjëherë në ekran; nëse serveri refuzon, kthehet si ishte dhe del njoftimi.
+  async function ndryshoRuajtjen(id: string, ruaje: boolean) {
+    const ndrysho = (vendos: boolean) =>
+      setTeRuajturat((yjet) => {
+        const tjetra = new Set(yjet);
+        if (vendos) tjetra.add(id);
+        else tjetra.delete(id);
+        return tjetra;
+      });
+    ndrysho(ruaje);
+    try {
+      if (ruaje) await ruajPunen(id);
+      else await hiqeNgaTeRuajturat(id);
+    } catch (e) {
+      ndrysho(!ruaje);
+      prekja.gabim();
+      njofto(e instanceof Error ? e.message : "S'u ruajt.", "gabim");
+    }
+  }
 
-    return punet.filter((puna) => {
-      const perputhetRoli =
-        filtri === "Të gjitha" || puna.roli === filtri;
+  // Tërheqja poshtë: rrotullimi i sistemit qëndron sa zgjat leximi i vërtetë nga Supabase.
+  async function rifresko() {
+    setRifreskim(true);
+    const ok = await ngarko(true);
+    setRifreskim(false);
+    if (!ok && punet !== null) njofto("S'u rifreskuan punët. Provo përsëri.", "gabim");
+  }
 
-      const fusha =
-        `${puna.titulli} ${puna.kompania} ${puna.qyteti}`;
+  async function provoPerseri() {
+    setGabimi(null); // shfaqen sërish skeletet gjatë leximit
+    await ngarko(true);
+  }
 
-      const perputhetKerkimi =
-        kerkimiNormal === "" ||
-        normalizo(fusha).includes(kerkimiNormal);
-
-      return perputhetRoli && perputhetKerkimi;
-    });
-  }, [punet, filtri, kerkimi]);
-
-  const pastroFiltrat = () => {
-    setKerkimi("");
-    setFiltri("Të gjitha");
-  };
-
+  // Koka: në tab-a s'ka header, prandaj titulli është këtu (si në bord). Pa "+": kërkuesi s'poston punë.
   const koka = (
-    <View>
+    <View style={styles.kokaEPlote}>
       <View style={styles.koka}>
         <Titulli>Punët</Titulli>
-
-        <Link href="/pune/shto" asChild>
-          <Pressable
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Shto një punë"
-            style={[
-              styles.butoniIkone,
-              {
-                backgroundColor: t.theksiButë,
-              },
-            ]}
-          >
-            <Ikona emri={IKONAT.plus} madhesia={18} ngjyra={t.theksi} />
-          </Pressable>
-        </Link>
       </View>
-
-      <View style={[styles.kutiaKerkuese, {
-        backgroundColor: t.karta,
-        borderColor: t.vija,
-      }]}>
-        <Ikona emri={IKONAT.linku} madhesia={18} ngjyra={t.zbehur} />
+      <View style={[styles.kerkimi, { backgroundColor: t.karta, borderColor: t.vija }]}>
+        <Ikona emri={IKONAT.kerko} madhesia={17} ngjyra={t.zbehur} />
         <TextInput
           value={kerkimi}
           onChangeText={setKerkimi}
-          placeholder="Kërko punë, kompani ose qytet..."
+          placeholder="Kërko punë, kompani ose qytet"
           placeholderTextColor={t.zbehur}
-          style={[styles.input, { color: t.teksti }]}
+          style={[styles.fusha, { color: t.teksti }]}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
-          accessibilityLabel="Kërko shpallje pune"
+          clearButtonMode="while-editing"
+          accessibilityLabel="Kërko punë"
         />
-        {kerkimi.length > 0 ? (
-          <Pressable onPress={() => setKerkimi("")} hitSlop={8}>
-            <T ngjyra={t.zbehur}>✕</T>
-          </Pressable>
-        ) : null}
       </View>
-
-      <View style={styles.filtrat}>
-        {FILTRAT.map((kategori) => {
-          const aktiv = filtri === kategori;
-
-          return (
-            <Pressable
-              key={kategori}
-              onPress={() => setFiltri(kategori)}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: aktiv ? t.teksti : t.karta,
-                  borderColor: aktiv ? t.teksti : t.vija,
-                },
-              ]}
-            >
-              <T
-                madhesia={12}
-                pesha="mesme"
-                ngjyra={aktiv ? t.sfondi : t.teksti}
-              >
-                {kategori} · {numrat[kategori]}
-              </T>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.rezultatet}>
-        <T zbehur madhesia={12}>
-          {punetEFiltuara.length} shpallje
-        </T>
-      </View>
+      <SegmentedControl
+        values={ROLET.map((r) => r.emri)}
+        selectedIndex={iRolit}
+        onChange={(e) => {
+          prekja.zgjedhje();
+          setIRolit(e.nativeEvent.selectedSegmentIndex);
+        }}
+        appearance={t.errët ? "dark" : "light"}
+        accessibilityLabel="Filtri i rolit"
+      />
     </View>
   );
 
-  if (duke_ngarkuar) {
-    return (
-      <Faqja>
-        <View style={styles.qendra}>
-          <ActivityIndicator size="large" color={t.theksi} />
-        </View>
-      </Faqja>
-    );
-  }
-
-  if (gabimi) {
-    return (
-      <Faqja>
-        <View style={styles.qendra}>
-          <T>S&apos;u lexuan punët: {gabimi}</T>
-          <Pressable onPress={ngarko} accessibilityRole="button">
-            <T pesha="trashe" ngjyra={t.theksi}>
+  const kurSkaPune =
+    punet === null ? (
+      gabimi ? (
+        <View style={styles.gabimi}>
+          <T pesha="trashe" madhesia={16}>
+            S&apos;u lexuan punët
+          </T>
+          <T zbehur madhesia={14} style={styles.qendroj}>
+            {gabimi}
+          </T>
+          <Prekshme onPress={provoPerseri} accessibilityRole="button" style={[styles.butoni, { backgroundColor: t.teksti }]}>
+            <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
               Provo përsëri
             </T>
-          </Pressable>
+          </Prekshme>
         </View>
-      </Faqja>
+      ) : (
+        <View style={styles.skeletet} accessibilityLabel="Po ngarkohen punët">
+          {[0, 1, 2, 3].map((i) => (
+            <KartaSkelet key={i} />
+          ))}
+        </View>
+      )
+    ) : kaFiltra && punet.length > 0 ? (
+      <View style={styles.bosh}>
+        <T pesha="trashe" madhesia={16}>
+          Asnjë punë s&apos;përputhet
+        </T>
+        <T zbehur madhesia={14} style={styles.qendroj}>
+          Provo një fjalë tjetër ose një rol tjetër.
+        </T>
+        <Prekshme onPress={pastroFiltrat} accessibilityRole="button" style={[styles.butoni, { backgroundColor: t.teksti }]}>
+          <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
+            Pastro filtrat
+          </T>
+        </Prekshme>
+      </View>
+    ) : (
+      <View style={styles.bosh}>
+        <T pesha="trashe" madhesia={16}>
+          Ende s&apos;ka shpallje
+        </T>
+        <T zbehur madhesia={14} style={styles.qendroj}>
+          Kur një punëdhënës poston, puna del këtu menjëherë.
+        </T>
+      </View>
     );
-  }
 
   return (
     <Faqja pa_scroll>
-      <FlatList
+      <Animated.FlatList
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.lista}
-        data={punetEFiltuara}
-        keyExtractor={(item) => item.id}
+        data={punetEFiltruara ?? []}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        refreshing={false}
-        onRefresh={ngarko}
+        keyExtractor={(item) => item.id}
+        refreshing={rifreskim}
+        onRefresh={rifresko}
+        itemLayoutAnimation={qetesi ? undefined : LEVIZJA_E_LISTES}
         ListHeaderComponent={koka}
-        ListEmptyComponent={
-          <View style={styles.bosh}>
-            {punet.length === 0 ? (
-              <T zbehur>Ende s&apos;ka shpallje.</T>
-            ) : (
-              <>
-                <T pesha="trashe">Asnjë punë s&apos;përputhet me filtrin</T>
-                <Pressable
-                  onPress={pastroFiltrat}
-                  style={[styles.pastro, { backgroundColor: t.teksti }]}
-                >
-                  <T ngjyra={t.sfondi} pesha="trashe">
-                    Pastro filtrat
-                  </T>
-                </Pressable>
-              </>
-            )}
-          </View>
-        }
+        ListEmptyComponent={kurSkaPune}
         renderItem={({ item }) => (
-          <Link href={`/pune/${item.id}`} asChild>
-            <KartaPunes puna={item} />
-          </Link>
+          <Animated.View entering={item.id === ePunesSeRe && !qetesi ? HYRJA_E_PUNES_SE_RE : undefined}>
+            <Link href={`/pune/${item.id}`} asChild>
+              <KartaPunes
+                puna={item}
+                ruajtur={teRuajturat.has(item.id)}
+                kurNdryshonRuajtja={(ruaje) => ndryshoRuajtjen(item.id, ruaje)}
+              />
+            </Link>
+          </Animated.View>
         )}
       />
     </Faqja>
@@ -238,70 +247,22 @@ export default function Punet() {
 }
 
 const styles = StyleSheet.create({
-  koka: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  butoniIkone: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  lista: {
-    padding: 18,
-    gap: 10,
-    paddingBottom: 120,
-  },
-  qendra: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    padding: 24,
-  },
-  kutiaKerkuese: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 13,
+  kokaEPlote: { gap: 12, marginBottom: 4 },
+  koka: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  kerkimi: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    minHeight: 44,
   },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    paddingVertical: 10,
-  },
-  filtrat: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 7,
-    marginTop: 14,
-  },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 24,
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-  },
-  rezultatet: {
-    marginTop: 15,
-    marginBottom: 5,
-  },
-  bosh: {
-    alignItems: "center",
-    gap: 15,
-    marginTop: 40,
-    paddingHorizontal: 15,
-  },
-  pastro: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
-  },
+  fusha: { flex: 1, fontFamily: SHKRONJAT.normal, fontSize: 15, paddingVertical: 10 },
+  lista: { padding: 18, gap: 10, paddingBottom: 120 },
+  skeletet: { gap: 10 },
+  gabimi: { alignItems: "center", gap: 8, paddingTop: 40, paddingHorizontal: 12 },
+  bosh: { alignItems: "center", gap: 6, paddingTop: 48 },
+  qendroj: { textAlign: "center" },
+  butoni: { marginTop: 8, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 26, minHeight: 44, justifyContent: "center" },
 });

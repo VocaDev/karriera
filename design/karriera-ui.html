@@ -894,6 +894,178 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
 .ev { display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:var(--r-sm); padding:10px 12px; box-shadow:var(--card-shadow); border:var(--card-border); font-size:13.5px; }
 .ev-t { font-size:10.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; width:62px; flex:none; }
 .ev .chip { height:28px; padding:0 10px; font-size:12px; }
+
+/* =========================================================
+   NATIVE (06.11): kromi i sistemit, si në iOS 26
+   Në app këto janë komponentët e vërtetë të sistemit: NativeTabs, Stack me tituj
+   të mëdhenj, formSheet, Link.Menu, segmented control, Switch, Share.
+   Prandaj këtu duken si sistemi në çdo drejtim; marka jeton te përmbajtja.
+   ========================================================= */
+.screen { --glass:color-mix(in oklab, var(--surface) 64%, transparent);
+  --glass-edge:inset 0 .5px 0 rgba(255,255,255,.75), 0 0 0 .5px color-mix(in oklab, var(--text) 10%, transparent), 0 8px 22px -10px rgba(0,0,0,.28);
+  --sys-fill:rgba(118,118,128,.12); --sys-red:#FF3B30; --sys-green:#34C759; }
+body.dark .screen { --glass:color-mix(in oklab, var(--surface) 60%, transparent);
+  --glass-edge:inset 0 .5px 0 rgba(255,255,255,.16), 0 0 0 .5px rgba(255,255,255,.08), 0 8px 22px -10px rgba(0,0,0,.7);
+  --sys-fill:rgba(118,118,128,.24); --sys-red:#FF453A; --sys-green:#30D158; }
+
+/* tab bar-i: kapsulë qelqi që noton mbi përmbajtjen (NativeTabs) */
+.screen .tabbar { position:absolute; left:20px; right:20px; bottom:22px; height:62px; padding:4px; gap:0; justify-content:space-between; border:0; border-radius:31px; z-index:4;
+  background:var(--glass); backdrop-filter:blur(16px) saturate(1.8); -webkit-backdrop-filter:blur(16px) saturate(1.8); box-shadow:var(--glass-edge); }
+.screen .tab { position:relative; flex:1; width:auto; justify-content:center; gap:1px; border-radius:27px; font-size:10px; font-weight:600; color:var(--text); font-family:-apple-system,"SF Pro Text",system-ui,sans-serif; }
+.screen .tab .ico { width:25px; height:25px; }
+.screen .tab.on { color:var(--accent); background:color-mix(in oklab, var(--text) 7%, transparent); }
+.screen .tab.on .ico { width:25px; height:25px; padding:0; border:0; border-radius:0; background:none; color:var(--accent); fill:currentColor; fill-opacity:.18; }
+.screen.has-tabs .content { padding-bottom:100px; }
+/* numri mbi tab vetëm kur ka numër të vërtetë, p.sh. 2 punë të reja që s'i ke parë */
+.screen .tab[data-badge]::after { content:attr(data-badge); position:absolute; top:3px; left:calc(50% + 5px); min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px;
+  background:var(--sys-red); color:#fff; font:700 11px/18px -apple-system,system-ui,sans-serif; text-align:center; }
+
+/* shiriti i navigimit (Stack): butonat janë rrathë qelqi; "mbrapa" është vetëm shigjeta */
+.screen .back { width:44px; height:44px; padding:0; gap:0; flex:none; justify-content:center; font-size:0; border-radius:50%; color:var(--text);
+  background:var(--glass); backdrop-filter:blur(16px) saturate(1.8); -webkit-backdrop-filter:blur(16px) saturate(1.8); box-shadow:var(--glass-edge); }
+.screen .back .ico { width:22px; height:22px; padding:0; border-radius:0; background:none; box-shadow:none; }
+.screen.interview .back { background:rgba(255,255,255,.14); color:#fff; box-shadow:none; }
+.screen .content > .between:first-child:has(> .back) { min-height:44px; }
+.screen .content > .between:first-child:has(> .back) > :is([data-act], .row-x, .streak, .small),
+.screen.has-tabs > .content > .between:first-child > :not(:first-child):is([data-act], [data-go], .row-x, .streak, .iconbtn, .small) {
+  height:44px; min-width:44px; padding:0 11px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center; gap:6px; flex:none; border-radius:22px;
+  background:var(--glass); backdrop-filter:blur(16px) saturate(1.8); -webkit-backdrop-filter:blur(16px) saturate(1.8); box-shadow:var(--glass-edge); }
+.screen .content > .between:first-child .row-x:has(> .iconbtn) { padding:0 2px; gap:0 !important; }
+.screen .content > .between:first-child .row-x > .iconbtn { width:40px; height:40px; background:transparent !important; }
+.screen .content > .between:first-child .iconbtn:not([style*="color"]) { color:var(--text); }
+
+/* tituj të mëdhenj në rrënjët e tab-ave (headerLargeTitleEnabled): butonat sipër, titulli poshtë tyre */
+.screen.has-tabs > .content > .h-l:first-child, .screen.has-tabs > .content > .between:first-child .h-l { font-size:34px; line-height:1.15; letter-spacing:-.022em; }
+.screen.has-tabs > .content > .h-l:first-child { margin-top:44px; }
+.screen.has-tabs > .content > .between:first-child { flex-wrap:wrap; align-items:flex-end; row-gap:0; }
+.screen.has-tabs > .content > .between:first-child > :first-child { order:2; flex:1 1 100%; }
+.screen.has-tabs > .content > .between:first-child > :not(:first-child) { order:1; margin-left:auto; }
+
+/* kërkimi si shiriti i kërkimit të sistemit (headerSearchBarOptions) */
+.screen .field:has(use[href="#i-search"]) { height:40px; padding:0 12px; gap:6px; border:0; border-radius:20px; background:var(--sys-fill); box-shadow:none; color:var(--muted); font-size:17px; }
+.screen .field:has(use[href="#i-search"]) input { font-size:17px; }
+.screen .field:has(use[href="#i-search"]):focus-within { box-shadow:none; }
+
+/* segmented control i sistemit (@expo/ui) */
+.screen .segm { height:36px; padding:2px; gap:0; border:0; border-radius:18px; background:var(--sys-fill); }
+.screen .segm span { display:flex; align-items:center; justify-content:center; padding:0 6px; border-radius:16px; font-size:14px; font-weight:500; color:var(--text); font-family:-apple-system,"SF Pro Text",system-ui,sans-serif; }
+.screen .segm span.on { background:var(--surface); color:var(--text); font-weight:600; box-shadow:0 3px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+body.dark .screen .segm span.on { background:#636366; color:#fff; }
+
+/* fletët (formSheet): notojnë, qoshe të mëdha, dorezë, madhësia sipas përmbajtjes */
+.screen .dimtop { flex:1; height:auto; min-height:80px; background:rgba(0,0,0,.25); }
+body.dark .screen .dimtop { background:rgba(0,0,0,.55); }
+.screen .sheet { flex:none; margin:0 8px 8px; border-radius:38px; max-height:calc(100% - 110px); overflow:hidden; background:var(--bg); box-shadow:0 18px 50px -12px rgba(0,0,0,.4); }
+.screen .sheet > .content { flex:none; padding-bottom:26px; }
+.screen .grab { width:36px; height:5px; border-radius:3px; margin:6px auto 0; background:color-mix(in oklab, var(--text) 22%, transparent); }
+.screen .sheet [data-after].hidden { display:none; }
+.screen .sheet .iconbtn { width:36px; height:36px; color:var(--text) !important; background:var(--sys-fill) !important; }
+.screen.in-f > .sheet { animation:sheetUp .45s cubic-bezier(.2,.9,.25,1); }
+.screen.in-f > .dimtop { animation:fadeIn .3s ease; }
+@keyframes sheetUp { from { transform:translateY(110%); } }
+@keyframes fadeIn { from { opacity:0; } }
+
+/* menyja kur e mban gishtin mbi një kartë (Link.Menu / context menu) */
+.ctx { position:absolute; inset:0; z-index:8; display:flex; flex-direction:column; justify-content:center; gap:12px; padding:0 18px 60px;
+  background:color-mix(in oklab, var(--bg) 30%, transparent); backdrop-filter:blur(14px) saturate(1.3); -webkit-backdrop-filter:blur(14px) saturate(1.3); animation:fadeIn .2s ease; }
+body.dark .ctx { background:rgba(0,0,0,.4); }
+.ctx > .jc { transform:scale(1.02); box-shadow:0 26px 50px -18px rgba(0,0,0,.45); animation:ctxLift .28s cubic-bezier(.2,.9,.3,1.3); }
+.ctx-menu { width:254px; border-radius:22px; overflow:hidden; transform-origin:top left; animation:ctxIn .3s cubic-bezier(.2,.9,.3,1.15);
+  background:color-mix(in oklab, var(--surface) 80%, transparent); backdrop-filter:blur(30px) saturate(1.8); -webkit-backdrop-filter:blur(30px) saturate(1.8); box-shadow:var(--glass-edge), 0 24px 44px -16px rgba(0,0,0,.4); }
+.ctx-i { display:flex; align-items:center; justify-content:space-between; gap:12px; height:46px; padding:0 16px; font-size:17px; color:var(--text); font-family:-apple-system,"SF Pro Text",system-ui,sans-serif; }
+.ctx-i + .ctx-i { border-top:.5px solid color-mix(in oklab, var(--text) 14%, transparent); }
+.ctx-i .ico { width:21px; height:21px; }
+.ctx-i:active { background:color-mix(in oklab, var(--text) 8%, transparent); }
+@keyframes ctxLift { from { transform:scale(.96); } }
+@keyframes ctxIn { from { opacity:0; transform:scale(.6); } }
+
+/* shënimi i prototipit për veprimet e sistemit (fleta e ndarjes, shfletuesi, kalendari) */
+.ntoast { position:absolute; left:50%; top:58px; z-index:9; width:max-content; max-width:320px; padding:10px 16px; border-radius:22px; font-size:14px; font-weight:600; line-height:1.3; text-align:center; color:var(--text);
+  background:var(--glass); backdrop-filter:blur(20px) saturate(1.8); -webkit-backdrop-filter:blur(20px) saturate(1.8); box-shadow:var(--glass-edge);
+  opacity:0; transform:translate(-50%,-8px); transition:opacity .25s, transform .25s; pointer-events:none; }
+.ntoast.show { opacity:1; transform:translate(-50%,0); }
+
+/* çelësi i sistemit: jeshil, sepse portokallia mbetet vetëm për progresin */
+.screen .on > .switch, .screen .switch.on { background:var(--sys-green); }
+
+/* splash-i nativ: vetëm ngjyra e sfondit + logoja e vogël, me variant të errët (expo-splash-screen) */
+.screen.splash { background:var(--bg); color:var(--text); }
+.screen.splash .sb { color:var(--text); }
+.screen.splash .splash-c { margin-top:0; }
+.screen.splash .splash-mark { --ic-fg:var(--text); --ic-acc:var(--accent); --ic-trk:var(--line); filter:none; }
+
+/* =========================================================
+   KANAVACA SI CLAUDE DESIGN (06.11): e errët, çdo ekran tërhiqet,
+   mjetet notojnë në qoshe, cilësimet janë në panelin djathtas
+   ========================================================= */
+html, body { background:#161616; }
+.topbar { position:fixed; top:0; left:0; right:0; height:44px; z-index:20; display:flex; align-items:center; gap:10px; padding:0 12px;
+  background:#161616; border-bottom:1px solid #262626; color:#ECECEC; font:13px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+.topbar .home { width:28px; height:28px; display:grid; place-items:center; border-radius:7px; color:#BDBDBD; }
+.topbar .home:hover { background:#262626; }
+.topbar b { font-size:14px; font-weight:600; }
+.topbar .sub { color:#8E8E8E; }
+.topbar .grow { flex:1; }
+.kbtn { height:30px; padding:0 11px; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:0; border-radius:8px; background:#262626; color:#ECECEC; font:500 13px system-ui,-apple-system,"Segoe UI",sans-serif; cursor:pointer; }
+.kbtn:hover { background:#303030; }
+.kbtn svg, .pill svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.pill { position:fixed; top:56px; z-index:20; display:flex; align-items:center; gap:2px; height:40px; padding:0 5px; border-radius:12px;
+  background:#1F1F1F; border:1px solid #2C2C2C; box-shadow:0 8px 24px rgba(0,0,0,.35); color:#ECECEC; font:13px system-ui,-apple-system,"Segoe UI",sans-serif; }
+.pill.l { left:12px; }
+.pill.r { right:12px; }
+.pill .ib { width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:8px; background:transparent; color:#D6D6D6; cursor:pointer; }
+.pill .ib:hover { background:#2A2A2A; }
+.pill .ib.on { background:#1E3A5F; color:#6AA8FF; }
+.pill .sep { width:1px; height:20px; background:#2E2E2E; margin:0 4px; }
+.dd { position:relative; }
+.dd-btn { height:30px; padding:0 8px 0 10px; display:inline-flex; align-items:center; gap:8px; border:0; border-radius:8px; background:transparent; color:#ECECEC; font:500 13px system-ui,-apple-system,"Segoe UI",sans-serif; cursor:pointer; font-variant-numeric:tabular-nums; }
+.dd-btn:hover, .dd.open .dd-btn { background:#2A2A2A; }
+.dd-btn::after { content:""; width:5px; height:5px; border-right:1.5px solid #9A9A9A; border-bottom:1.5px solid #9A9A9A; transform:translateY(-2px) rotate(45deg); }
+.dd-menu { display:none; position:absolute; top:38px; min-width:210px; padding:5px; border-radius:10px; background:#232323; border:1px solid #333; box-shadow:0 12px 32px rgba(0,0,0,.45); z-index:30; }
+.pill.l .dd-menu { left:-5px; }
+.pill.r .dd-menu { right:-5px; }
+.dd.open .dd-menu { display:grid; gap:1px; }
+.dd-menu button { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:7px 10px; border:0; border-radius:7px; background:transparent; color:#E6E6E6; font:13px system-ui,-apple-system,"Segoe UI",sans-serif; text-align:left; cursor:pointer; }
+.dd-menu button:hover { background:#2F2F2F; }
+.dd-menu button.on { color:#6AA8FF; }
+.dd-menu kbd { color:#8A8A8A; font:12px system-ui,sans-serif; }
+.panel { position:fixed; top:104px; right:12px; width:264px; max-height:calc(100vh - 116px); overflow:auto; z-index:19; padding:14px; border-radius:12px; display:none;
+  background:#1F1F1F; border:1px solid #2C2C2C; box-shadow:0 8px 24px rgba(0,0,0,.35); color:#ECECEC; font:13px system-ui,-apple-system,"Segoe UI",sans-serif; }
+body.panel-open .panel { display:block; }
+.panel h4 { font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#8E8E8E; margin:16px 0 7px; }
+.panel h4:first-child { margin-top:0; }
+.kseg { display:flex; flex-wrap:wrap; gap:2px; padding:3px; border-radius:9px; background:#2A2A2A; }
+.kseg button { flex:1 1 auto; padding:6px 8px; border:0; border-radius:7px; background:transparent; color:#CFCFCF; font:500 12.5px system-ui,-apple-system,"Segoe UI",sans-serif; cursor:pointer; white-space:nowrap; }
+.kseg button:hover { color:#fff; }
+.kseg button.on { background:#3E3E3E; color:#fff; }
+.panel .keys { display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; color:#A8A8A8; font-size:12.5px; }
+.panel .keys kbd { justify-self:start; padding:1px 6px; border-radius:5px; background:#2A2A2A; color:#ECECEC; font:600 12px system-ui,sans-serif; }
+.panel .kbtn { width:100%; }
+#viewport, body.dark #viewport { inset:44px 0 0 0; cursor:default; background:#161616; background-image:none; }
+#viewport.hand { cursor:grab; }
+#viewport.panning, #viewport.moving { cursor:grabbing; }
+#viewport.moving * { cursor:grabbing !important; }
+.row-title { color:#EDEDED; font-size:24px; font-weight:600; }
+.row-sub { color:#9B9B9B; opacity:1; }
+.frame, .info { position:relative; }
+.frame-label { display:block; margin-bottom:10px; color:#A3A3A3; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; user-select:none; }
+.frame-label em { margin-left:6px; color:#6E6E6E; opacity:1; }
+.frame.sel .frame-label { color:#6AA8FF; }
+.frame.sel .phone, .info.sel { outline:2px solid #4B9BFF; outline-offset:4px; }
+#world .phone { box-shadow:0 0 0 1px #333, 0 30px 60px -24px rgba(0,0,0,.7); }
+.note { color:#9A9A9A; opacity:1; }
+.frame-tools button, body.dark .frame-tools button { background:#262626; color:#E6E6E6; border-color:#3A3A3A; }
+#proto { background:#121212; }
+.proto-bar { gap:8px; font:13px system-ui,-apple-system,"Segoe UI",sans-serif; color:#ECECEC; }
+.proto-bar button { border:0; background:#262626; color:#ECECEC; border-radius:8px; padding:6px 12px; }
+.proto-bar button:hover { background:#303030; }
+/* hapja (07.11): pllaka e ikonës + harku që mbyllet në 100% ("gati") + emri */
+.screen.splash .splash-mark { --ic-bg:var(--surface); --ic-trk:#EDEDED; }
+body.dark .screen.splash .splash-mark { --ic-trk:#2A2A2D; }
+.screen.splash .splash-c { gap:22px; }
+.screen.splash .splash-name { color:var(--text); font-size:28px; }
+.ringclose { animation:ringclose 2.6s ease-in-out infinite; }
+@keyframes ringclose { 0%, 25% { stroke-dasharray:78 100; } 50%, 100% { stroke-dasharray:100 100; } }
 </style>
 </head>
 <body class="dir-d">
@@ -915,7 +1087,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H19"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
-  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v5M9.5 15.5h5"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></symbol>
   <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></symbol>
@@ -938,27 +1110,43 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/></symbol>
 </svg>
-<div class="toolbar">
-  <div class="brand">Karriera<span>Bordi UI/UX · v0.9</span></div>
-  <div class="seg" id="dirSeg">
-    <button data-dir="a">A · Qartë</button>
-    <button data-dir="b">B · Leja</button>
-    <button data-dir="c">C · Ritëm</button>
-    <button data-dir="d">D · Gjurmimi</button>
-  </div>
-  <button class="tb-btn" id="darkBtn">Dark</button>
-  <span class="lbl">Llogaria</span>
-  <div class="seg" id="acctSeg"><button data-acct-set="seeker">Kërkoj punë</button><button data-acct-set="employer" class="emp">Punëdhënës</button><button data-acct-set="center" class="emp">Qendra e karrierës</button></div>
-  <span class="lbl">Roli</span>
-  <div class="seg" id="roleSeg"><button data-role-set="swe">SWE</button><button data-role-set="pr">Kontabilist/e</button><button data-role-set="ws">Kamarier/e</button></div>
-  <span class="lbl">Intervista</span>
-  <div class="seg" id="langSeg"><button data-lang-set="sq">SQ</button><button data-lang-set="en">EN</button><button data-lang-set="de">DE</button></div>
-  <button class="tb-btn play" id="playBtn">▶ Prototipi</button>
-  <div class="spacer"></div>
-  <span class="hint">Tërhiq = lëviz · Ctrl + rrota = zoom · F = gjithçka</span>
-  <button class="tb-btn" id="zOut">−</button><span class="zoom-val" id="zVal">100%</span><button class="tb-btn" id="zIn">+</button>
-  <button class="tb-btn" id="fitBtn">Gjithçka</button>
+<header class="topbar">
+  <a class="home" href="https://github.com/VocaDev/karriera" target="_blank" rel="noopener" title="Repo-ja në GitHub"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></a>
+  <b>Karriera</b><span class="sub">Bordi UI/UX · v1.0</span>
+  <div class="grow"></div>
+  <button class="kbtn" id="shareBtn" title="Kopjo linkun e bordit"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Ndaje</button>
+</header>
+
+<div class="pill l">
+  <div class="dd"><button class="dd-btn" title="Llogaria"><span id="pageName">Kërkoj punë</span></button>
+    <div class="dd-menu" id="acctSeg"><button data-acct-set="seeker">Kërkoj punë</button><button data-acct-set="employer">Punëdhënësi</button><button data-acct-set="center">Qendra e karrierës</button></div></div>
+  <span class="sep"></span>
+  <button class="ib on" data-tool="select" title="Zgjidh dhe tërhiq ekranet (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.6L10 18z"/></svg></button>
+  <button class="ib" data-tool="hand" title="Lëviz kanavacën (H, ose mbaj Space)"><svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-6.5V4a1.5 1.5 0 0 1 3 0v7m0-5.5a1.5 1.5 0 0 1 3 0V12m0-4a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L4.4 15a1.6 1.6 0 0 1 2.6-1.8L8 14"/></svg></button>
 </div>
+
+<div class="pill r">
+  <button class="ib" id="playBtn" title="Luaj prototipin (P)"><svg viewBox="0 0 24 24"><path d="M7 5v14l11-7z"/></svg></button>
+  <button class="ib" id="panelBtn" title="Paneli i cilësimeve"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M15 4v16"/></svg></button>
+  <span class="sep"></span>
+  <div class="dd"><button class="dd-btn" title="Zoom"><span id="zVal">100%</span></button>
+    <div class="dd-menu"><button id="zIn">Zmadho <kbd>Ctrl + rrota</kbd></button><button id="zOut">Zvogëlo</button><button id="z100">100%</button><button id="fitBtn">Gjithçka <kbd>F</kbd></button></div></div>
+</div>
+
+<aside class="panel" id="panel">
+  <h4>Drejtimi</h4>
+  <div class="kseg" id="dirSeg"><button data-dir="a">A · Qartë</button><button data-dir="b">B · Leja</button><button data-dir="c">C · Ritëm</button><button data-dir="d">D · Gjurmimi</button></div>
+  <h4>Pamja e app-it</h4>
+  <div class="kseg"><button data-theme-set="light">E çelët</button><button data-theme-set="dark">E errët</button></div>
+  <h4>Roli</h4>
+  <div class="kseg" id="roleSeg"><button data-role-set="swe">SWE</button><button data-role-set="pr">Kontabilist/e</button><button data-role-set="ws">Kamarier/e</button></div>
+  <h4>Gjuha e intervistës</h4>
+  <div class="kseg" id="langSeg"><button data-lang-set="sq">SQ</button><button data-lang-set="en">EN</button><button data-lang-set="de">DE</button></div>
+  <h4>Shkurtesat</h4>
+  <div class="keys"><kbd>V</kbd><span>zgjidh dhe tërhiq një ekran</span><kbd>H</kbd><span>lëviz kanavacën (ose mbaj Space)</span><kbd>Ctrl</kbd><span>+ rrota: zoom</span><kbd>F</kbd><span>shih gjithçka</span><kbd>P</kbd><span>luaj prototipin</span><kbd>D</kbd><span>pamja e çelët ose e errët</span><kbd>1–4</kbd><span>drejtimi A–D</span></div>
+  <h4>Vendet e ekraneve</h4>
+  <button class="kbtn" id="resetPos">Kthe ekranet në vend</button>
+</aside>
 
 <div id="viewport"><div id="world">
 
@@ -1077,7 +1265,8 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         <li><b>Ton trajneri, jo gjykatësi.</b> Sinjalet e integritetit kanë gjithmonë arsye dhe i sheh vetëm përdoruesi.</li>
         <li><b>AI-ja tregon hapat</b> ("Po e lexoj CV-në…"), jo spinner të zbrazët.</li>
         <li><b>Gjuha e app-it ≠ gjuha e intervistës:</b> app-i në shqip, intervista edhe në anglisht ose gjermanisht.</li>
-        <li>Prekje ≥ 44 pt, Dynamic Type, light + dark, shqip i natyrshëm.</li>
+        <li><b>Si app i vërtetë i telefonit:</b> tab bar-i, titujt e mëdhenj, fletët, menyja kur e mban gishtin mbi një kartë, segmentet, çelësat dhe ndarja janë ato të sistemit. Marka jeton te përmbajtja.</li>
+        <li>Prekje ≥ 44 pt, Dynamic Type, light + dark, dridhje të lehta vetëm për zgjedhje, sukses dhe gabim, shqip i natyrshëm.</li>
       </ol>
     </div>
     <div class="info" style="width:560px">
@@ -1344,7 +1533,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
             <div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div>
           </div>
         </div>
-        <div class="tabbar"><div class="tab on" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab on" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9" data-badge="2"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Gjithmonë një <b>hap i radhës</b>, i zgjedhur nga AI-ja sipas punës ku je më afër. Streak-u lart djathtas. Ndërro rolin lart dhe ndryshon edhe kjo kartë.</p>
     </section>
@@ -1356,8 +1545,9 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         <div class="content" style="gap:10px">
           <div class="between"><h1 class="h-l">Punët</h1><span class="row-x" style="gap:8px"><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s54"><svg class="ico"><use href="#i-settings"/></svg></span><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s36"><svg class="ico"><use href="#i-bookmark"/></svg></span><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></span></div>
           <div class="field"><svg class="ico sm"><use href="#i-search"/></svg><input data-search placeholder="Kërko punë, kompani, qytet" /></div>
+          <div class="segm"><span class="on" data-act="rolef" data-val="all">Të gjitha</span><span data-act="rolef" data-val="swe">SWE</span><span data-act="rolef" data-val="pr">Zyrë</span></div>
           <div class="row-x" style="gap:8px;flex-wrap:wrap">
-            <span class="chip on" data-act="filter" data-val="all">Të gjitha<span class="cnt">6</span></span><span class="chip" data-act="filter" data-val="swe">SWE<span class="cnt">4</span></span><span class="chip" data-act="filter" data-val="pr">Zyrë<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="near"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="remote">Remote<span class="cnt">1</span></span><span class="chip" data-act="filter" data-val="de">Jashtë vendit<span class="cnt">1</span></span>
+            <span class="chip" data-act="filter" data-val="near"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje<span class="cnt">2</span></span><span class="chip" data-act="filter" data-val="remote">Remote<span class="cnt">1</span></span><span class="chip" data-act="filter" data-val="de">Jashtë vendit<span class="cnt">1</span></span>
           </div>
           <div class="xs muted" data-near-note style="display:none">Sipas lokacionit tënd: Mitrovicë (deri në 10 km)</div>
           <div class="jc" data-role="swe" data-tags="swe" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 05.11</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
@@ -1373,7 +1563,34 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         </div>
         <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab on" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
-      <p class="note">Filtrat dhe kërkimi punojnë: prek "Afër meje" (lokacioni i telefonit), "Jashtë vendit" ose shkruaj "Mitrovicë". Butoni me link lart hap ekranin 10.</p>
+      <p class="note">Filtrat dhe kërkimi punojnë: prek "Afër meje" (lokacioni i telefonit), "Jashtë vendit" ose shkruaj "Mitrovicë". Roli zgjidhet me segmentet e sistemit. Butoni me link lart hap fletën 10. Mbaje gishtin mbi një kartë për menynë e sistemit (09b).</p>
+    </section>
+
+    <section class="frame" id="s9m">
+      <div class="frame-label">09b · Punët <em>mban gishtin mbi kartë</em></div>
+      <div class="phone"><div class="screen has-tabs">
+        <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
+        <div class="content" style="gap:10px">
+          <div class="between"><h1 class="h-l">Punët</h1><span class="row-x" style="gap:8px"><span class="iconbtn" style="background:var(--surface);color:var(--text)"><svg class="ico"><use href="#i-settings"/></svg></span><span class="iconbtn" style="background:var(--surface);color:var(--text)"><svg class="ico"><use href="#i-bookmark"/></svg></span><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)"><svg class="ico"><use href="#i-link"/></svg></span></span></div>
+          <div class="field"><svg class="ico sm"><use href="#i-search"/></svg><input placeholder="Kërko punë, kompani, qytet" /></div>
+          <div class="segm"><span class="on">Të gjitha</span><span>SWE</span><span>Zyrë</span></div>
+          <div class="row-x" style="gap:8px;flex-wrap:wrap">
+            <span class="chip"><svg class="ico sm"><use href="#i-pin"/></svg>Afër meje<span class="cnt">2</span></span><span class="chip">Remote<span class="cnt">1</span></span><span class="chip">Jashtë vendit<span class="cnt">1</span></span>
+          </div>
+          <div class="jc" data-role="swe"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 05.11</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div><div class="jc-foot"><span>Portalpune</span><span>Afati 30.10</span></div><div class="trk d-only" data-s="3"></div><div class="trk-lbl d-only">Tani: <b>Mëso</b> · 1 hap deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="pr"><span class="ribbon d-only">E RE</span><div class="jc-main"><div class="jc-top"><span class="tag">ZYRË</span><span class="code">OP-1180</span></div><div class="jc-title">Asistent/e Kontabiliteti</div><div class="jc-meta">Alfa Consulting, Prishtinë</div><div class="jc-foot"><span>Ofertapune</span><span>Afati 12.11</span></div><div class="trk d-only" data-s="1"></div><div class="trk-lbl d-only">Tani: <b>Përputhja</b> · 3 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:38"><span class="rd-num">38<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="pr"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">ZYRË</span><span class="code">KJ-2620</span></div><div class="jc-title">Asistent/e administrative</div><div class="jc-meta">Studio Mitrovica, Mitrovicë</div><div class="jc-foot"><span>KosovaJob</span><span>Afati 08.11</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:55"><span class="rd-num">55<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">RO-7741</span></div><div class="jc-title">Frontend Developer</div><div class="jc-meta">Kodi Studio, remote</div><div class="jc-foot"><span>RemoteOK</span><span>Pa afat</span></div><div class="trk d-only" data-s="2"></div><div class="trk-lbl d-only">Tani: <b>Intervista</b> · 2 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:54"><span class="rd-num">54<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="jc" data-role="swe"><span class="ribbon d-only">E RE</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">AN-5521</span></div><div class="jc-title">Junior Frontend Developer</div><div class="jc-meta">Nordlicht, remote · BE</div><div class="jc-foot"><span>Arbeitnow</span><span>Afati 20.11</span></div><div class="trk d-only" data-s="1"></div><div class="trk-lbl d-only">Tani: <b>Përputhja</b> · 3 hapa deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:41"><span class="rd-num">41<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+        </div>
+        <div class="tabbar"><div class="tab"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab on"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="ctx" data-go="s9">
+          <div class="jc" data-role="swe" data-go="s11"><span class="ribbon p d-only">NË PROCES</span><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="code">PP-0311</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div><div class="jc-foot"><span>Portalpune</span><span>Afati 30.10</span></div><div class="trk d-only" data-s="3"></div><div class="trk-lbl d-only">Tani: <b>Mëso</b> · 1 hap deri te gati</div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
+          <div class="ctx-menu"><div class="ctx-i" data-act="native" data-val="U ruajt ✓ (telefoni dridhet lehtë)">Ruaje<svg class="ico"><use href="#i-bookmark"/></svg></div><div class="ctx-i" data-act="native" data-val="Hapet fleta e ndarjes e iPhone-it">Ndaje<svg class="ico"><use href="#i-share"/></svg></div><div class="ctx-i" data-act="native" data-val="Hapet shfletuesi brenda app-it">Hape në shfletues<svg class="ico"><use href="#i-globe"/></svg></div></div>
+        </div>
+      </div></div>
+      <p class="note">Mbaje gishtin mbi një kartë: karta ngrihet dhe del menyja e sistemit (Link.Menu në iOS). Prek kartën për detajet ose jashtë menysë për ta mbyllur. Çdo veprim ekziston edhe si buton i dukshëm te detajet (11).</p>
     </section>
 
     <section class="frame" id="s10">
@@ -1405,14 +1622,14 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
       <div class="phone"><div class="screen">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" data-role="swe">
-          <div class="between"><span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span><span data-act="save" style="color:var(--muted)"><svg class="ico"><use href="#i-bookmark"/></svg></span></div>
+          <div class="between"><span class="back" data-go="s9"><svg class="ico"><use href="#i-back"/></svg>Punët</span><span class="row-x"><span class="iconbtn" data-act="native" data-val="Hapet fleta e ndarjes e iPhone-it" style="color:var(--text)" aria-label="Ndaje"><svg class="ico"><use href="#i-share"/></svg></span><span class="iconbtn" data-act="save" style="color:var(--text)" aria-label="Ruaje"><svg class="ico"><use href="#i-bookmark"/></svg></span></span></div>
           <div class="jc-top"><span class="tag">SWE</span><span class="code">KJ-2604</span></div>
           <h1 class="h-l">Junior React Native Developer</h1>
           <div class="pill-live d-only"><span class="pulse"></span><span class="grow">Tani: intervista praktike</span><span class="xs muted">2 hapa deri te gati</span></div>
           <div class="list">
             <div class="li" data-go="s81"><svg class="ico sm muted"><use href="#i-brief"/></svg><div class="grow">Dardania Soft, Prishtinë · ★ 4,6 · përgjigjet në 2 ditë</div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
             <div class="li"><svg class="ico sm muted"><use href="#i-clock"/></svg><div class="grow">Afati: 05.11.2026</div></div>
-            <div class="li"><svg class="ico sm muted"><use href="#i-link"/></svg><div class="grow">Hape në KosovaJob</div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
+            <div class="li" data-act="native" data-val="Hapet shfletuesi brenda app-it (KosovaJob)"><svg class="ico sm muted"><use href="#i-link"/></svg><div class="grow">Hape në KosovaJob</div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
           </div>
           <p>Zhvillim i aplikacioneve mobile për klientë jashtë vendit. Mentorim nga një zhvillues senior gjatë 6 muajve të parë.</p>
           <h2 class="h-s">Aftësitë që kërkohen</h2>
@@ -1420,7 +1637,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
         </div>
         <div class="cta"><button class="btn" data-go="s12">A jam gati për këtë?</button><button class="btn ghost" data-go="s52">Përgatit dokumentet</button></div>
       </div></div>
-      <p class="note">Ruaje me shenjën lart (prek). Ruajmë vetëm titullin, përmbledhjen dhe linkun: teksti i plotë mbetet te portali.</p>
+      <p class="note">Lart djathtas: Ndaje (fleta e ndarjes e sistemit) dhe Ruaje. "Hape në KosovaJob" e hap shpalljen në shfletuesin brenda app-it. Ruajmë vetëm titullin, përmbledhjen dhe linkun: teksti i plotë mbetet te portali.</p>
     </section>
 
     <section class="frame" id="s12">
@@ -1620,6 +1837,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
       <div class="phone"><div class="screen has-tabs">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" style="gap:12px">
+          <div class="between"><h1 class="h-l">Profili</h1><span class="iconbtn" data-go="s40" style="color:var(--text)" aria-label="Cilësimet"><svg class="ico"><use href="#i-settings"/></svg></span></div>
           <div class="row-x" style="gap:14px"><div class="av" style="width:56px;height:56px;font-size:20px;background:var(--accent-soft);color:var(--accent)">GV</div><div><h1 class="h-m">Genti</h1><div class="small muted"><span data-bind="role">Zhvillues/e softueri</span>, intervista në <span data-bind="lang">Shqip</span></div></div></div>
           <div class="card" style="display:grid;gap:12px">
             <div class="between"><b>Kjo javë</b><span class="streak"><svg class="ico sm"><use href="#i-flame"/></svg>5 ditë</span></div>
@@ -1642,7 +1860,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
             <div class="li" data-go="s40"><svg class="ico"><use href="#i-settings"/></svg><div class="grow"><b>Cilësimet</b></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
           </div>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab on" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9" data-badge="2"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab on" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Gatishmëria për çdo punë të ruajtur + streak-u. Roli dhe gjuha ndjekin zgjedhjet nga ekrani 02.</p>
     </section>
@@ -1747,13 +1965,11 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
       <div class="phone"><div class="screen splash">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="splash-c">
-          <svg class="appicon ic-c3 v-light" viewBox="0 0 100 100" width="132" height="132" style="width:132px;height:132px" aria-label="Ikona Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s fillring" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><g class="popend"><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+          <svg class="appicon ic-c3 splash-mark" viewBox="0 0 100 100" width="104" height="104" style="width:104px;height:104px" aria-label="Karriera"><rect class="ibg" width="100" height="100" rx="23"/><circle class="itrk" cx="50" cy="50" r="27" stroke-width="10"/><circle class="iacc-s ringclose" cx="50" cy="50" r="27" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="78 100" transform="rotate(-90 50 50)"/><path class="ifg-s" d="M39 51 l7 7 L62 42" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <div class="splash-name">Karriera</div>
-          <div class="splash-sub">Dije sa je gati për punën që do</div>
         </div>
-        <div class="splash-dots"><i></i><i></i><i></i></div>
       </div></div>
-      <p class="note">Unaza e gatishmërisë mbushet, pastaj shfaqet ✓. Zgjat sa ngarkohet sesioni nga Supabase (zakonisht nën 1 sekondë), pastaj hapet Kreu ose Mirësevjen.</p>
+      <p class="note">Hapja: splash-i i telefonit është statik (pllaka e ikonës mbi ngjyrën e sfondit, light + dark). Në app vazhdon e njëjta pllakë: harku mbyllet nga 78% në 100% (“gati”), ✓ ngrihet lehtë dhe ekrani zbehet te Kreu. Rreth 0,6 sekonda; me “Reduce Motion” vetëm zbehet. Në Expo Go, telefoni tregon ikonën e app-it mbi këtë ngjyrë.</p>
     </section>
 
     <section class="frame" id="s24">
@@ -1761,8 +1977,9 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
       <div class="phone"><div class="screen has-tabs">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" style="gap:12px">
-          <h1 class="h-l">Punët</h1>
+          <div class="between"><h1 class="h-l">Punët</h1><span class="row-x" style="gap:8px"><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s54"><svg class="ico"><use href="#i-settings"/></svg></span><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s36"><svg class="ico"><use href="#i-bookmark"/></svg></span><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></span></div>
           <div class="field"><svg class="ico sm"><use href="#i-search"/></svg>Kërko punë, kompani, qytet</div>
+          <div class="segm"><span class="on">Të gjitha</span><span>SWE</span><span>Zyrë</span></div>
           <div class="srcs"><span class="src done"><svg class="ico sm"><use href="#i-check"/></svg>KosovaJob</span><span class="src done"><svg class="ico sm"><use href="#i-check"/></svg>Ofertapune</span><span class="src busy">Portalpune</span><span class="src">RemoteOK</span><span class="src">Arbeitnow</span></div>
           <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:85%;height:16px"></div><div class="sk" style="width:55%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
           <div class="sk-card"><div class="grow" style="display:grid;gap:9px"><div class="sk" style="width:44px;height:18px"></div><div class="sk" style="width:70%;height:16px"></div><div class="sk" style="width:48%;height:13px"></div></div><div class="sk" style="width:58px;height:34px"></div></div>
@@ -1822,7 +2039,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
       <div class="phone"><div class="screen has-tabs">
         <div class="sb"><span>9:41</span><svg viewBox="0 0 70 13" width="70"><use href="#i-sb"/></svg></div>
         <div class="content" style="gap:12px">
-          <h1 class="h-l">Punët</h1>
+          <div class="between"><h1 class="h-l">Punët</h1><span class="row-x" style="gap:8px"><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s54"><svg class="ico"><use href="#i-settings"/></svg></span><span class="iconbtn" style="background:var(--surface);color:var(--text)" data-go="s36"><svg class="ico"><use href="#i-bookmark"/></svg></span><span class="iconbtn" style="background:var(--accent-soft);color:var(--accent)" data-go="s10"><svg class="ico"><use href="#i-link"/></svg></span></span></div>
           <div class="offline-bar"><svg class="ico sm"><use href="#i-wifioff"/></svg><span class="grow">Pa internet. Po i shfaq punët e ruajtura.</span></div>
           <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="saved-b">ruajtur</span></div><div class="jc-title">Junior React Native Developer</div><div class="jc-meta">Dardania Soft, Prishtinë</div></div><div class="jc-stub"><div class="rd" style="--v:62"><span class="rd-num">62<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
           <div class="jc" data-role="swe"><div class="jc-main"><div class="jc-top"><span class="tag">SWE</span><span class="saved-b">ruajtur</span></div><div class="jc-title">Praktikant Backend (Node.js)</div><div class="jc-meta">Ibri Tech, Mitrovicë</div></div><div class="jc-stub"><div class="rd" style="--v:71"><span class="rd-num">71<small>%</small></span><span class="rd-lbl">gati</span><span class="rd-bar"><i></i></span></div></div></div>
@@ -2028,7 +2245,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
           <div class="segm"><span data-act="pick-lang" data-val="sq">Shqip</span><span data-act="pick-lang" data-val="en">English</span><span data-act="pick-lang" data-val="de">Deutsch</span></div>
           <button class="btn" data-go="s38"><svg class="ico sm"><use href="#i-mic"/></svg>Vazhdo</button>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9" data-badge="2"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Tab-i Intervista hapet këtu: për një punë konkrete ose praktikë e lirë për rolin, e shpejtë (~5 min) ose e plotë (~15 min), në gjuhën që do.</p>
     </section>
@@ -2188,7 +2405,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
           <div class="card row-x" data-go="s9"><svg class="ico" style="color:var(--accent)"><use href="#i-pin"/></svg><div class="grow"><b>3 punë të reja afër teje</b><div class="small muted">Mitrovicë, Prishtinë · sot</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
           <div class="card row-x" data-go="s45"><svg class="ico" style="color:var(--accent)"><use href="#i-brief"/></svg><div class="grow"><b>Sfida e javës: përfundo një simulim</b><div class="small muted">+50 pikë · 2 ditë të mbetura</div></div><svg class="ico sm muted"><use href="#i-chev"/></svg></div>
         </div>
-        <div class="tabbar"><div class="tab on" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab on" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9" data-badge="2"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Ekrani i parë i çdo dite. Prek rreshtat: shiriti mbushet, XP rritet dhe në fund del streak-u. Katër gjëra, 10 minuta, të zgjedhura nga boshllëku ndaj punës që ke si qëllim.</p>
     </section>
@@ -2268,7 +2485,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
             <div class="li" style="opacity:.55"><svg class="ico"><use href="#i-file"/></svg><div class="grow"><b>Testet e rolit</b><div class="small muted">Shpejtësia e shkrimit, logjika, kuiz kodi</div></div><span class="badge-later">pas MVP-së</span></div>
           </div>
         </div>
-        <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab on" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
+        <div class="tabbar"><div class="tab" data-go="s41"><svg class="ico"><use href="#i-home"/></svg>Sot</div><div class="tab" data-go="s9" data-badge="2"><svg class="ico"><use href="#i-brief"/></svg>Punët</div><div class="tab on" data-go="s44"><svg class="ico"><use href="#i-mic"/></svg>Stërvitja</div><div class="tab" data-go="s18"><svg class="ico"><use href="#i-user"/></svg>Profili</div></div>
       </div></div>
       <p class="note">Qendra e stërvitjes: kompetencat e tua (nga intervistat, simulimet, testet) dhe katër mënyra për t'i rritur. Kompetencat ndryshojnë me rolin.</p>
     </section>
@@ -2509,7 +2726,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
           <h1 class="h-l">Aplikimet e mia</h1>
           <div class="offline-bar"><svg class="ico sm"><use href="#i-bell"/></svg><span class="grow">Nesër: follow-up për Ibri Tech (7 ditë pa përgjigje)</span></div>
           <div class="kgroup"><div class="kh"><span>Intervistë</span><b>1</b></div>
-            <div class="kcard"><div class="grow"><b>Praktikant Backend (Node.js)</b><div class="small muted">Ibri Tech · intervista e enjte 10:00</div></div><span class="chip" style="color:var(--ok)">Përgatitu</span></div></div>
+            <div class="kcard"><div class="grow"><b>Praktikant Backend (Node.js)</b><div class="small muted">Ibri Tech · intervista e enjte 10:00</div></div><span class="row-x" style="gap:6px"><span class="chip" data-act="native" data-val="U shtua në Kalendar: e enjte 10:00, Ibri Tech" aria-label="Shto kujtues në Kalendar"><svg class="ico sm"><use href="#i-cal"/></svg></span><span class="chip" style="color:var(--ok)">Përgatitu</span></span></div></div>
           <div class="kgroup"><div class="kh"><span>U krye</span><b>1</b></div><div class="kcard"><div class="grow"><b>QA Engineer (junior)</b><div class="small muted">Dardania Soft · intervista u krye dje</div></div><span class="chip" style="color:var(--accent)" data-go="s80">Vlerëso</span></div></div>
           <div class="kgroup"><div class="kh"><span>Dërguar</span><b>2</b></div>
             <div class="kcard"><div class="grow"><b>Junior React Native Developer</b><div class="small muted">Dardania Soft · dërguar sot · pako ✓</div></div></div>
@@ -2520,7 +2737,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
             <div class="kcard" style="opacity:.6"><div class="grow"><b>QA Engineer</b><div class="small muted">Arbëria Labs · "kërkonin 2 vjet përvojë"</div></div></div></div>
         </div>
       </div></div>
-      <p class="note">Çdo aplikim me statusin, pakon e dërguar dhe hapin e radhës. Kujtesa për follow-up vjen vetë pas 7 ditësh pa përgjigje.</p>
+      <p class="note">Ikona e kalendarit e shton intervistën në Kalendarin e telefonit (në app kërkon development build, jo Expo Go). Çdo aplikim me statusin, pakon e dërguar dhe hapin e radhës. Kujtesa për follow-up vjen vetë pas 7 ditësh pa përgjigje.</p>
     </section>
 
     <section class="frame" id="s54">
@@ -3886,6 +4103,13 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
 (() => {
   const body = document.body, vp = document.getElementById('viewport'), world = document.getElementById('world');
   const zVal = document.getElementById('zVal');
+  // Vendet e ekraneve që i ke tërhequr (si në Claude Design): ruhen në këtë shfletues.
+  const POS_KEY = 'karriera-board-pos';
+  let pos = {}; try { pos = JSON.parse(localStorage.getItem(POS_KEY) || '{}'); } catch (e) {}
+  const keyOf = el => el.id || el.dataset.k;
+  const place = el => { const p = pos[keyOf(el)]; el.style.translate = p ? `${p[0]}px ${p[1]}px` : ''; };
+  document.querySelectorAll('#world .info').forEach((el, i) => { if (!el.id) el.dataset.k = 'i' + i; });
+  document.querySelectorAll('#world .frame, #world .info').forEach(place);
   const proto = document.getElementById('proto'), protoPhone = document.getElementById('protoPhone');
 
   let st = {};
@@ -3968,6 +4192,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   const setAcct = (a, jump) => {
     S.acct = a; save();
     document.querySelectorAll('[data-acct-set]').forEach(x => x.classList.toggle('on', x.dataset.acctSet === a));
+    document.getElementById('pageName').textContent = ({ seeker: 'Kërkoj punë', employer: 'Punëdhënësi', center: 'Qendra e karrierës' })[a] || 'Kërkoj punë';
     const home = { seeker: 's41', employer: 's59', center: 's97' }[a] || 's41';
     if (jump) { if (!proto.hidden) { hist = []; protoShow(home); } else flyTo(document.getElementById(home)); }
   };
@@ -4101,16 +4326,25 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   /* ---------------- filtrat e punëve ---------------- */
   const filterJobs = (scr) => {
     const chip = scr.querySelector('[data-act="filter"].on'), val = chip ? chip.dataset.val : 'all';
+    const seg = scr.querySelector('[data-act="rolef"].on'), role = seg ? seg.dataset.val : 'all';
     const q = (scr.querySelector('[data-search]').value || '').toLowerCase().trim();
     let n = 0;
     scr.querySelectorAll('.jc[data-tags]').forEach(j => {
-      const ok = (val === 'all' || j.dataset.tags.split(' ').includes(val)) && (!q || j.textContent.toLowerCase().includes(q));
+      const tags = j.dataset.tags.split(' ');
+      const ok = (role === 'all' || tags.includes(role)) && (val === 'all' || tags.includes(val)) && (!q || j.textContent.toLowerCase().includes(q));
       j.style.display = ok ? '' : 'none'; if (ok) n++;
     });
     scr.querySelector('[data-near-note]').style.display = val === 'near' ? '' : 'none';
     scr.querySelector('[data-empty]').style.display = n ? 'none' : '';
   };
   document.addEventListener('input', e => { if (e.target.matches('[data-search]')) filterJobs(e.target.closest('.screen')); });
+
+  // Veprimet e sistemit (fleta e ndarjes, shfletuesi, kalendari) në prototip tregohen me një shënim të shkurtër.
+  const ntoast = (scr, msg) => {
+    let t = scr.querySelector('.ntoast');
+    if (!t) { t = document.createElement('div'); t.className = 'ntoast'; scr.appendChild(t); }
+    t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200);
+  };
 
   /* ---------------- veprimet ---------------- */
   const doAct = (a) => {
@@ -4119,7 +4353,9 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
     switch (a.dataset.act) {
       case 'pick-role': setRole(v); break;
       case 'pick-lang': setLang(v); break;
-      case 'filter': scr.querySelectorAll('[data-act="filter"]').forEach(c => c.classList.toggle('on', c === a)); filterJobs(scr); break;
+      case 'filter': { const was = a.classList.contains('on'); scr.querySelectorAll('[data-act="filter"]').forEach(c => c.classList.remove('on')); if (!was) a.classList.add('on'); filterJobs(scr); break; }
+      case 'rolef': scr.querySelectorAll('[data-act="rolef"]').forEach(c => c.classList.toggle('on', c === a)); filterJobs(scr); break;
+      case 'native': { ntoast(scr, v); const c = a.closest('.ctx'); if (c && inProto(a)) setTimeout(() => protoShow(c.dataset.go, true, false, true), 900); break; }
       case 'save': a.classList.toggle('on'); break;
       case 'seg': [...a.parentElement.children].filter(c => c.dataset.act === 'seg').forEach(c => c.classList.toggle('on', c === a)); break;
       case 'toggle': a.classList.toggle('on'); break;
@@ -4253,13 +4489,14 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   };
   const setDir = d => { dir = d; body.classList.remove('dir-a', 'dir-b', 'dir-c', 'dir-d'); body.classList.add('dir-' + d); document.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('on', b.dataset.dir === d)); save(); };
   const syncTheme = () => document.querySelectorAll('[data-act="theme"]').forEach(t => t.classList.toggle('on', (t.dataset.val === 'dark') === dark));
-  const setDark = v => { dark = v; body.classList.toggle('dark', v); document.getElementById('darkBtn').textContent = v ? 'Light' : 'Dark'; save(); if (typeof syncTheme === 'function') syncTheme(); };
+  const setDark = v => { dark = v; body.classList.toggle('dark', v); document.querySelectorAll('[data-theme-set]').forEach(b => b.classList.toggle('on', (b.dataset.themeSet === 'dark') === v)); save(); if (typeof syncTheme === 'function') syncTheme(); };
   const fit = () => { const w = world.offsetWidth, h = world.offsetHeight, r = vp.getBoundingClientRect(); s = Math.min(r.width / w, r.height / h); x = (r.width - w * s) / 2; y = 0; apply(true); };
   const flyTo = (el) => {
     if (!el) return;
     const r = vp.getBoundingClientRect();
     let ox = 0, oy = 0, n = el;
     while (n && n !== world) { ox += n.offsetLeft; oy += n.offsetTop; n = n.offsetParent; }
+    const tp = pos[keyOf(el)]; if (tp) { ox += tp[0]; oy += tp[1]; }
     s = Math.min(1, (r.height - 40) / (el.offsetHeight + 40));
     x = r.width / 2 - (ox + el.offsetWidth / 2) * s; y = r.height / 2 - (oy + el.offsetHeight / 2) * s;
     apply(true);
@@ -4277,7 +4514,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   let hist = [], seenLoad = new Set(), protoTimer = null;
   const LOADER = { s9: ['s24', 1400], s12: ['s25', 2600], s15: ['s26', 2600] };
   const resetDaily = (c) => { c.classList.remove('rec', 'answered'); const n = c.querySelector('.streak-n'); if (n) n.textContent = '5'; };
-  const protoShow = (id, push = true, back = false) => {
+  const protoShow = (id, push = true, back = false, instant = false) => {
     clearTimeout(protoTimer);
     const frame = document.getElementById(id); if (!frame) return;
     const old = protoPhone.querySelector('.screen'); if (old && old._iv) old._iv.stop();
@@ -4287,7 +4524,7 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
     if (push) hist.push(id);
     document.getElementById('protoName').textContent = frame.querySelector('.frame-label').firstChild.textContent.trim();
     initScreen(clone);
-    clone.classList.add(back ? 'in-b' : 'in-f');
+    if (!instant) clone.classList.add(back ? 'in-b' : 'in-f');
     clone.querySelectorAll('[data-steps]:not([data-loop])').forEach(c => { c.querySelectorAll('.stp').forEach(i => i.classList.remove('busy', 'done')); clone.querySelectorAll('[data-after]').forEach(a => a.classList.add('hidden')); });
     if (clone.matches('[data-jobs]')) filterJobs(clone);
     fitProto();
@@ -4296,9 +4533,10 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   const closeProto = () => { const o = protoPhone.querySelector('.screen'); if (o && o._iv) o._iv.stop(); proto.hidden = true; };
   const navigate = (id, fromEl) => {
     if (!(fromEl && inProto(fromEl))) { flyTo(document.getElementById(id)); return; }
+    const tab = !!fromEl.closest('.tab, .ctx'); // tab-at dhe menyja ndërrohen pa rrëshqitje, si në iOS
     const ld = LOADER[id];
-    if (ld && !seenLoad.has(id)) { seenLoad.add(id); protoShow(ld[0], false); protoTimer = setTimeout(() => protoShow(id), ld[1]); }
-    else protoShow(id);
+    if (ld && !seenLoad.has(id)) { seenLoad.add(id); protoShow(ld[0], false, false, tab); protoTimer = setTimeout(() => protoShow(id, true, false, true), ld[1]); }
+    else protoShow(id, true, false, tab);
   };
 
   const handleTap = (t) => {
@@ -4311,15 +4549,31 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   };
 
   /* ---------------- ngjarjet ---------------- */
-  let drag = null;
-  vp.addEventListener('pointerdown', e => { if (e.target.closest('input,textarea')) return; drag = { sx: e.clientX, sy: e.clientY, x, y, moved: false }; });
+  // Mjeti "Zgjidh" (V): tërhiq një ekran për ta lëvizur, prek për ta përdorur. Mjeti "Dora" (H, ose Space): lëviz kanavacën.
+  let drag = null, tool = 'select', spaceDown = false, zTop = 10;
+  const setTool = t => { tool = t; vp.classList.toggle('hand', t === 'hand'); document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); };
+  document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+  const selectEl = el => { document.querySelectorAll('#world .sel').forEach(x => x.classList.remove('sel')); if (el) el.classList.add('sel'); };
+  vp.addEventListener('pointerdown', e => {
+    if (e.target.closest('input,textarea')) return;
+    const fr = tool === 'select' && !spaceDown ? e.target.closest('#world .frame, #world .info') : null;
+    selectEl(fr);
+    drag = { sx: e.clientX, sy: e.clientY, x, y, moved: false, fr, p: fr ? (pos[keyOf(fr)] || [0, 0]).slice() : null };
+  });
   window.addEventListener('pointermove', e => {
     if (!drag) return;
     const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-    if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; vp.classList.add('panning'); }
-    if (drag.moved) { x = drag.x + dx; y = drag.y + dy; apply(false); }
+    if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; vp.classList.add(drag.fr ? 'moving' : 'panning'); if (drag.fr) drag.fr.style.zIndex = ++zTop; }
+    if (!drag.moved) return;
+    if (drag.fr) { pos[keyOf(drag.fr)] = [Math.round(drag.p[0] + dx / s), Math.round(drag.p[1] + dy / s)]; place(drag.fr); }
+    else { x = drag.x + dx; y = drag.y + dy; apply(false); }
   });
-  window.addEventListener('pointerup', e => { if (drag && !drag.moved) handleTap(e.target); drag = null; vp.classList.remove('panning'); });
+  window.addEventListener('pointerup', e => {
+    if (drag && drag.fr && drag.moved) { try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch (er) {} }
+    if (drag && !drag.moved) handleTap(e.target);
+    drag = null; vp.classList.remove('panning', 'moving');
+  });
+  window.addEventListener('keyup', e => { if (e.key === ' ') { spaceDown = false; vp.classList.toggle('hand', tool === 'hand'); } });
   vp.addEventListener('wheel', e => {
     e.preventDefault();
     const r = vp.getBoundingClientRect();
@@ -4327,12 +4581,25 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
     else { x -= e.deltaX; y -= e.deltaY; apply(false); }
   }, { passive: false });
   protoPhone.addEventListener('click', e => handleTap(e.target));
+  // Kur e mban gishtin mbi një kartë pune, hapet menyja e sistemit (09b), si Link.Menu në iOS.
+  let lpT = null, lpDone = false;
+  protoPhone.addEventListener('pointerdown', e => { lpDone = false; clearTimeout(lpT); if (!e.target.closest('[data-jobs] .jc')) return; lpT = setTimeout(() => { lpDone = true; protoShow('s9m', true, false, true); }, 480); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(n => protoPhone.addEventListener(n, () => clearTimeout(lpT)));
+  protoPhone.addEventListener('click', e => { if (lpDone) { lpDone = false; e.stopImmediatePropagation(); } }, true);
 
   document.querySelectorAll('#dirSeg button').forEach(b => b.onclick = () => setDir(b.dataset.dir));
   document.querySelectorAll('[data-role-set]').forEach(b => b.onclick = () => setRole(b.dataset.roleSet));
   document.querySelectorAll('[data-acct-set]').forEach(b => b.onclick = () => setAcct(b.dataset.acctSet, true));
   document.querySelectorAll('[data-lang-set]').forEach(b => b.onclick = () => setLang(b.dataset.langSet));
-  document.getElementById('darkBtn').onclick = () => setDark(!dark);
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.onclick = () => setDark(b.dataset.themeSet === 'dark'));
+  // Menytë, paneli dhe "Ndaje", si te Claude Design.
+  document.querySelectorAll('.dd-btn').forEach(b => b.onclick = e => { e.stopPropagation(); const d = b.parentElement, was = d.classList.contains('open'); document.querySelectorAll('.dd.open').forEach(o => o.classList.remove('open')); if (!was) d.classList.add('open'); });
+  document.addEventListener('click', e => { if (!e.target.closest('.dd-btn')) document.querySelectorAll('.dd.open').forEach(o => o.classList.remove('open')); });
+  const setPanel = v => { body.classList.toggle('panel-open', v); document.getElementById('panelBtn').classList.toggle('on', v); try { localStorage.setItem('karriera-board-panel', v ? '1' : '0'); } catch (e) {} };
+  document.getElementById('panelBtn').onclick = () => setPanel(!body.classList.contains('panel-open'));
+  setPanel((() => { try { return localStorage.getItem('karriera-board-panel') !== '0'; } catch (e) { return true; } })());
+  document.getElementById('shareBtn').onclick = async e => { const t = e.currentTarget.lastChild, was = t.textContent; try { await navigator.clipboard.writeText(location.href.split('#')[0]); t.textContent = 'U kopjua'; } catch (er) { t.textContent = 'Kopjoje nga shiriti'; } setTimeout(() => { t.textContent = was; }, 1600); };
+  document.getElementById('resetPos').onclick = () => { pos = {}; try { localStorage.removeItem(POS_KEY); } catch (e) {} document.querySelectorAll('#world .frame, #world .info').forEach(el => { place(el); el.style.zIndex = ''; }); selectEl(null); };
   document.getElementById('fitBtn').onclick = fit;
   document.getElementById('playBtn').onclick = openProto;
   document.getElementById('protoClose').onclick = closeProto;
@@ -4341,11 +4608,15 @@ body:not([data-role="ws"]) .ws-only { display:none !important; }
   const center = () => { const r = vp.getBoundingClientRect(); return [r.width / 2, r.height / 2]; };
   document.getElementById('zIn').onclick = () => zoomAt(1.25, ...center());
   document.getElementById('zOut').onclick = () => zoomAt(0.8, ...center());
+  document.getElementById('z100').onclick = () => zoomAt(1 / s, ...center());
   window.addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('input,textarea')) return;
     if (e.key === 'Escape' && !proto.hidden) closeProto();
     else if ('1234'.includes(e.key) && e.key.length === 1) setDir('abcd'[+e.key - 1]);
     else if (e.key === 'd' || e.key === 'D') setDark(!dark);
+    else if (e.key === 'v' || e.key === 'V') setTool('select');
+    else if (e.key === 'h' || e.key === 'H') setTool('hand');
+    else if (e.key === ' ' && proto.hidden) { e.preventDefault(); if (!spaceDown) { spaceDown = true; vp.classList.add('hand'); } }
     else if (e.key === 'f' || e.key === 'F') fit();
     else if (e.key === 'p' || e.key === 'P') openProto();
   });

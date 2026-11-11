@@ -19,14 +19,14 @@ export const VECORITE: Vecoria[] = [
   {
     celesi: "cv",
     titulli: "CV-ja ime",
-    pershkrimi: "Ngarko ose ndërto CV-në; AI-ja e analizon",
-    href: "/cv",
-    gjendja: { lloji: "gati" },
+    pershkrimi: "Ngarko CV-në (PDF); AI-ja e analizon",
+    href: "/cv", // në ndërtim: hapet vetëm në zhvillim (__DEV__), që ta provojmë në telefon
+    gjendja: { lloji: "ndertim", kush: "Edoniku" },
   },
   {
     celesi: "punet",
     titulli: "Punët",
-    pershkrimi: "Shpallje nga Supabase; shto edhe vetë",
+    pershkrimi: "Shpallje nga punëdhënësit; ⭐ i ruan për vete",
     href: "/pune",
     gjendja: { lloji: "gati" },
   },
@@ -52,6 +52,12 @@ export const VECORITE: Vecoria[] = [
     gjendja: { lloji: "vjen", kur: "09.12" },
   },
 ];
+
+// Pjesët e CV-së që HARTA i lë pas Demo Day-t (13.01): "Ndërto CV-në me AI (pa CV)", 6 formatet,
+// rishkrimi në anglisht dhe karta "Ndaje" për rrjetet sociale. Kodi mbetet; ekranet s'hapen
+// (_layout.tsx, Stack.Protected) dhe butonat tregojnë "Pas Demo Day-t" derisa kjo të bëhet true.
+export const CV_PAS_DEMO_DAY_HAPUR = false;
+export const TEKSTI_PAS_DEMO_DAY = "Vjen pas Demo Day-t";
 
 export function tekstiIGjendjes(g: Gjendja): string {
   if (g.lloji === "gati") return "Gati";

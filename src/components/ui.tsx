@@ -1,7 +1,7 @@
 // Përbërësit e përbashkët të drejtimit D: faqja me gradient, karta, tekstet, chip-at, ikonat, rruga.
 import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   Platform,
   ScrollView,
@@ -14,6 +14,9 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
+
+import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 /** Faqja: sfondi me gradientin portokalli lart (si në bord) dhe ScrollView. */
@@ -122,6 +125,15 @@ export const IKONAT = {
   check: { ios: "checkmark", android: "check" },
   personi: { ios: "person.fill", android: "person" },
   kycja: { ios: "lock.fill", android: "lock" },
+  info: { ios: "info.circle.fill", android: "info" },
+  alarm: { ios: "exclamationmark.circle.fill", android: "error" },
+  dalja: { ios: "rectangle.portrait.and.arrow.right", android: "logout" },
+  ylli: { ios: "star.fill", android: "star" },
+  shkolla: { ios: "graduationcap.fill", android: "school" },
+  kosha: { ios: "trash", android: "delete" },
+  email: { ios: "envelope.fill", android: "mail" },
+  kerko: { ios: "magnifyingglass", android: "search" },
+  mbyll: { ios: "xmark.circle.fill", android: "cancel" },
 } satisfies Record<string, EmriIkones>;
 
 /** Chip (etiketë e vogël), p.sh. "SWE" ose "Gati". */
@@ -172,12 +184,32 @@ export function Rruga({ hapi }: { hapi: number }) {
   );
 }
 
-/** Shiriti i progresit (portokalli). */
+/** Shiriti i progresit (portokalli). Mbushet kur shfaqet: e tregon që numri është i gjallë, jo dekor. */
 export function Progresi({ vlera }: { vlera: number }) {
   const t = useTema();
+  const qetesi = useReducedMotion();
+  const v = Math.max(0, Math.min(1, vlera));
+  const gjeresia = useSharedValue(0);
+  const p = useSharedValue(qetesi ? v : 0);
+
+  useEffect(() => {
+    p.set(qetesi ? v : withTiming(v, { duration: KOHA.ngadale, easing: LEHTESIMI.hyrje }));
+  }, [v, qetesi, p]);
+
+  // Lëvizim shiritin me translateX (jo me width), që animacioni të mos rillogarisë faqen dhe fundi të mbetet i rrumbullakët.
+  const stili = useAnimatedStyle(() => ({
+    opacity: gjeresia.get() > 0 ? 1 : 0,
+    transform: [{ translateX: -(1 - p.get()) * gjeresia.get() }],
+  }));
+
   return (
-    <View style={[styles.progresi, { backgroundColor: t.karta2 }]}>
-      <View style={[styles.progresiMbushur, { backgroundColor: t.theksi, width: `${Math.max(0, Math.min(1, vlera)) * 100}%` }]} />
+    <View
+      style={[styles.progresi, { backgroundColor: t.karta2 }]}
+      onLayout={(e) => gjeresia.set(e.nativeEvent.layout.width)}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(v * 100) }}
+    >
+      <Animated.View style={[styles.progresiMbushur, { backgroundColor: t.theksi }, stili]} />
     </View>
   );
 }
@@ -202,5 +234,5 @@ const styles = StyleSheet.create({
   pika: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
   vija: { flex: 1, borderTopWidth: 2, marginHorizontal: 3 },
   progresi: { height: 6, borderRadius: 3, overflow: "hidden" },
-  progresiMbushur: { height: 6, borderRadius: 3 },
+  progresiMbushur: { height: 6, width: "100%", borderRadius: 3 },
 });
