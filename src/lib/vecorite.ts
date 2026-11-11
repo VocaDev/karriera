@@ -20,8 +20,8 @@ export const VECORITE: Vecoria[] = [
     celesi: "cv",
     titulli: "CV-ja ime",
     pershkrimi: "Ngarko ose ndërto CV-në; AI-ja e analizon",
-    href: null,
-    gjendja: { lloji: "ndertim", kush: "Edoniku" },
+    href: "/cv",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "punet",

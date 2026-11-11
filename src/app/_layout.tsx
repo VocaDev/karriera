@@ -45,9 +45,21 @@ export default function RootLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="pune/[id]" options={{ title: "" }} />
+      <Stack.Screen name="cv/index" options={{ title: "CV-ja ime" }} />
+      <Stack.Screen name="cv/ndertoje" options={{ title: "Ndërto CV-në" }} />
+      <Stack.Screen name="cv/analiza" options={{ title: "Analiza e CV-së" }} />
+      <Stack.Screen
+        name="cv/dokumenti"
+        options={{ title: "Dokumenti i CV-së" }}
+      />
+      <Stack.Screen name="cv/ndaje" options={{ title: "Ndaje CV-në" }} />
       <Stack.Screen
         name="pune/shto"
-        options={{ presentation: "modal", title: "Shto një punë", headerStyle: { backgroundColor: t.karta } }}
+        options={{
+          presentation: "modal",
+          title: "Shto një punë",
+          headerStyle: { backgroundColor: t.karta },
+        }}
       />
     </Stack>
   );

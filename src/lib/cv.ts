@@ -56,7 +56,12 @@ export type SkedariPDF = { uri: string; name: string; size: number | null; mimeT
 
 const prit = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let versionet: CvRresht[] = [];
+let cvAktuale: CvStrukturuar | null = null;
 
+export async function merrCVTeFundit(): Promise<CvStrukturuar> {
+  await prit(100);
+  return cvAktuale ?? SHEMBULL_CV;
+}
 /** Ruan PDF-në në Storage (privat) dhe krijon rreshtin. Hedh Error me mesazh në shqip nëse dështon. */
 export async function ngarkoCV(skedari: SkedariPDF): Promise<CvRresht> {
   if (skedari.size !== null && skedari.size > 5 * 1024 * 1024) {
@@ -95,15 +100,31 @@ export async function krijoCV(
   formati: FormatiCV,
   gjuha: GjuhaCV,
 ): Promise<CvStrukturuar> {
-  await prit(2000); // MOCK
-  void burimi;
-  const skaTeDhenaPersonale = formati === "us" || formati === "uk" || formati === "ats";
-  return { ...SHEMBULL_CV, datelindja: skaTeDhenaPersonale ? null : SHEMBULL_CV.datelindja, ...(gjuha === "en" ? { titulli: "Computer Engineering student" } : {}) };
+  await prit(2000);
+
+  const cvBurim =
+    "cv" in burimi ? burimi.cv : SHEMBULL_CV;
+
+  const skaTeDhenaPersonale =
+    formati === "us" || formati === "uk" || formati === "ats";
+
+  const cvRi: CvStrukturuar = {
+    ...cvBurim,
+    datelindja: skaTeDhenaPersonale ? null : cvBurim.datelindja,
+    titulli:
+      gjuha === "en"
+        ? "Computer Engineering student"
+        : cvBurim.titulli,
+  };
+
+  cvAktuale = cvRi;
+  return cvRi;
 }
 
 /** Ruan një CV të krijuar si version i ri. */
 export async function ruajCV(cv: CvStrukturuar, formati: FormatiCV): Promise<CvRresht> {
   await prit(400); // MOCK
+  cvAktuale = cv;
   void cv; void formati;
   const rresht: CvRresht = {
     id: `mock-${versionet.length + 1}`,
