@@ -75,7 +75,12 @@ export type GjuhaCV = "sq" | "en";
 
 // ---------- Konfigurimi i AI-së ----------
 
-export const MODELI = "claude-sonnet-5-5";
+// Model i lehtë dhe i lirë (vendimi i Gentit, 11.11). Haiku 5.5: mendim adaptiv (pa budget_tokens),
+// effort low–max (default medium), pa temperature/top_p/top_k, pa "fallback" në server kur refuzon.
+export const MODELI = "claude-haiku-5-5";
+
+/** Sa thellë mendon AI-ja: cv-review "medium" (vlerëson), cv-create "low" (rishkruan fakte të dhëna). */
+export type Perpjekja = "low" | "medium";
 
 /** Gabim që funksioni ia kthen app-it me këtë status dhe këtë mesazh (shqip, pa detaje teknike). */
 export class GabimIAI extends Error {
@@ -128,6 +133,7 @@ export async function gjeneroJSON<T extends z.ZodType>(
   schema: T,
   system: string,
   prompt: string | Anthropic.Messages.ContentBlockParam[],
+  perpjekja: Perpjekja = "medium",
   maxTokens = 16000,
 ): Promise<z.infer<T>> {
   const klienti = merrKlientin();
@@ -139,9 +145,9 @@ export async function gjeneroJSON<T extends z.ZodType>(
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: prompt }],
-      // effort "medium": analizë e mjaftueshme, më shpejt dhe më lirë se "high" (default te Sonnet 5.5).
+      // effort vendoset gjithmonë qartë; asnjë temperature / top_p / top_k (Haiku 5.5 i refuzon).
       output_config: {
-        effort: "medium",
+        effort: perpjekja,
         format: zodOutputFormat(schema),
       },
     });
@@ -153,8 +159,12 @@ export async function gjeneroJSON<T extends z.ZodType>(
     throw new GabimIAI("Përgjigjja e AI-së ishte tepër e gjatë. Provo përsëri.", 502);
   }
 
+  // Haiku 5.5 s'ka model rezervë në server: refuzimi kthehet te përdoruesi si mesazh i qartë.
   if (response.stop_reason === "refusal") {
-    throw new GabimIAI("AI-ja nuk mund ta përpunojë këtë dokument.", 422);
+    throw new GabimIAI(
+      "AI-ja refuzoi ta përpunojë këtë kërkesë. Provo me një dokument ose me përgjigje të tjera.",
+      422,
+    );
   }
 
   if (!response.parsed_output) {

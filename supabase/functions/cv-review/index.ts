@@ -6,6 +6,7 @@
 // 1. Thirrësi: sesion i vërtetë, llogari "kerkues", maksimumi KUFIRI_DITOR analiza në 24 orë.
 // 2. CV-ja lexohet me JWT-në e përdoruesit: RLS-i garanton që është e tija (rreshti dhe skedari).
 // 3. Analiza ruhet te cv_reviews me çelësin sekret: telefoni s'mund ta shkruajë vetë notën.
+// AI-ja: claude-haiku-5-5 (MODELI te _shared/cv-ai.ts), effort "medium".
 import {
   AnalizaCVSchema,
   GabimIAI,
@@ -167,6 +168,7 @@ Use only information supported by the document.
 `,
         },
       ],
+      "medium",
     );
 
     const { data: review, error: gabimiRuajtjes } = await thirresi.admin
