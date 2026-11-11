@@ -2,17 +2,14 @@ import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, Ikona, IKONAT, Karta, T, Titulli } from "@/components/ui";
 import { analizaEFundit, listoVersionet, MADHESIA_MAKS_CV, ngarkoCV, type AnalizaCV, type CvRresht } from "@/lib/cv";
-import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { useTema } from "@/lib/tema";
-import { CV_PAS_DEMO_DAY_HAPUR, TEKSTI_PAS_DEMO_DAY } from "@/lib/vecorite";
 
 type TeDhenat = { versionet: CvRresht[]; eFundit: { cv: CvRresht; analiza: AnalizaCV } | null };
 
@@ -21,7 +18,6 @@ export default function CvIndex() {
   const t = useTema();
   const router = useRouter();
   const njofto = useNjoftim();
-  const { stili: stiliIDridhjes, dridhu } = useDridhja();
 
   const [teDhenat, setTeDhenat] = useState<TeDhenat | null>(null); // null = ende pa ardhur
   const [gabimi, setGabimi] = useState<string | null>(null);
@@ -87,22 +83,13 @@ export default function CvIndex() {
     }
   }
 
-  function hapNdertuesin() {
-    if (CV_PAS_DEMO_DAY_HAPUR) {
-      router.push("/cv/ndertoje");
-      return;
-    }
-    prekja.lehte();
-    dridhu();
-  }
-
   const eFundit = teDhenat?.eFundit ?? null;
 
   return (
     <Faqja>
       <View style={styles.kreu}>
         <Titulli>CV-ja ime</Titulli>
-        <T zbehur>Ngarko CV-në një herë. AI-ja të thotë çka është mirë dhe çka duhet përmirësuar.</T>
+        <T zbehur>Ngarko CV-në ose ndërtoje me AI. AI-ja të thotë çka është mirë dhe çka duhet përmirësuar.</T>
       </View>
 
       <Prekshme
@@ -130,22 +117,19 @@ export default function CvIndex() {
       </Prekshme>
 
       <Prekshme
-        onPress={hapNdertuesin}
+        onPress={() => router.push("/cv/ndertoje")}
         accessibilityRole="button"
-        accessibilityLabel={`Nuk kam CV, ndërtoje me AI. ${CV_PAS_DEMO_DAY_HAPUR ? "" : TEKSTI_PAS_DEMO_DAY}`}
-        accessibilityState={{ disabled: !CV_PAS_DEMO_DAY_HAPUR }}
+        accessibilityLabel="Nuk kam CV, ndërtoje me AI. Përgjigju në 5 pyetje të shkurtra."
         style={[styles.veprimi, styles.veprimiSekondar, { backgroundColor: t.karta, borderColor: t.vija }]}
       >
-        <Animated.View style={[styles.rreshti, styles.flex, stiliIDridhjes]}>
-          <Ikona emri={IKONAT.grafiku} madhesia={24} ngjyra={t.zbehur} />
-          <View style={styles.veprimiTeksti}>
-            <T pesha="trashe">Nuk kam CV · Ndërtoje me AI</T>
-            <T madhesia={12} zbehur>
-              {CV_PAS_DEMO_DAY_HAPUR ? "Përgjigju në 5 pyetje të shkurtra" : TEKSTI_PAS_DEMO_DAY}
-            </T>
-          </View>
-          <Ikona emri={CV_PAS_DEMO_DAY_HAPUR ? IKONAT.shigjeta : IKONAT.kycja} madhesia={14} ngjyra={t.zbehur} />
-        </Animated.View>
+        <Ikona emri={IKONAT.grafiku} madhesia={24} ngjyra={t.teksti} />
+        <View style={styles.veprimiTeksti}>
+          <T pesha="trashe">Nuk kam CV · Ndërtoje me AI</T>
+          <T madhesia={12} zbehur>
+            Përgjigju në 5 pyetje të shkurtra
+          </T>
+        </View>
+        <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
       </Prekshme>
 
       <View style={styles.privatesia}>
@@ -238,7 +222,7 @@ export default function CvIndex() {
         ) : teDhenat.versionet.length === 0 ? (
           <Karta>
             <T zbehur madhesia={13}>
-              Ende s&apos;ke ngarkuar asnjë CV. Ngarko PDF-në tënde më lart.
+              Ende s&apos;ke asnjë CV. Ngarko PDF-në tënde ose ndërtoje me AI më lart.
             </T>
           </Karta>
         ) : (
@@ -260,18 +244,23 @@ export default function CvIndex() {
                 </View>
               </Karta>
             );
-            // Versioni i ngarkuar hap analizën e vet (ose e nis, nëse s'është analizuar ende).
-            return ngarkuar ? (
+            // Versioni i ngarkuar hap analizën e vet (ose e nis, nëse s'është analizuar ende);
+            // versioni i krijuar me AI hap dokumentin e vet.
+            return (
               <Prekshme
                 key={versioni.id}
-                onPress={() => router.push({ pathname: "/cv/analiza", params: { id: versioni.id } })}
+                onPress={() =>
+                  ngarkuar
+                    ? router.push({ pathname: "/cv/analiza", params: { id: versioni.id } })
+                    : router.push({ pathname: "/cv/dokumenti", params: { id: versioni.id } })
+                }
                 accessibilityRole="button"
-                accessibilityLabel={`Versioni ${versioni.versioni}. ${versioni.nota === null ? "Analizoje" : "Shiko analizën"}`}
+                accessibilityLabel={`Versioni ${versioni.versioni}. ${
+                  ngarkuar ? (versioni.nota === null ? "Analizoje" : "Shiko analizën") : "Hap CV-në"
+                }`}
               >
                 {permbajtja}
               </Prekshme>
-            ) : (
-              <View key={versioni.id}>{permbajtja}</View>
             );
           })
         )}

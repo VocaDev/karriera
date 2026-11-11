@@ -19,7 +19,7 @@ export const VECORITE: Vecoria[] = [
   {
     celesi: "cv",
     titulli: "CV-ja ime",
-    pershkrimi: "Ngarko CV-në (PDF); AI-ja e analizon",
+    pershkrimi: "Ngarko ose ndërto CV-në; AI-ja e analizon",
     href: "/cv", // në ndërtim: hapet vetëm në zhvillim (__DEV__), që ta provojmë në telefon
     gjendja: { lloji: "ndertim", kush: "Edoniku" },
   },
@@ -53,9 +53,9 @@ export const VECORITE: Vecoria[] = [
   },
 ];
 
-// Pjesët e CV-së që HARTA i lë pas Demo Day-t (13.01): "Ndërto CV-në me AI (pa CV)", 6 formatet,
-// rishkrimi në anglisht dhe karta "Ndaje" për rrjetet sociale. Kodi mbetet; ekranet s'hapen
-// (_layout.tsx, Stack.Protected) dhe butonat tregojnë "Pas Demo Day-t" derisa kjo të bëhet true.
+// "Ndërto CV-në me AI (pa CV)" del TANI: vendimi i Gentit, 11.11 (HARTA e linte pas Demo Day-t).
+// Pas Demo Day-t mbeten: formatet e tjera (Europass, EU, US, UK, ATS), rishkrimi në anglisht dhe
+// karta "Ndaje" për rrjetet sociale. Kodi i tyre mbetet; ekranet/butonat s'hapen derisa kjo të bëhet true.
 export const CV_PAS_DEMO_DAY_HAPUR = false;
 export const TEKSTI_PAS_DEMO_DAY = "Vjen pas Demo Day-t";
 

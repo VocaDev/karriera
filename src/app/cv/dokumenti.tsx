@@ -1,8 +1,8 @@
-// Dokumenti i CV-së: 6 formatet, shqip/anglisht, PDF. HARTA: vjen PAS Demo Day-t. Ekrani është i mbyllur
-// në _layout.tsx (CV_PAS_DEMO_DAY_HAPUR = false); kodi mbetet gati për atëherë.
+// Dokumenti i CV-së së krijuar me AI: parapamja dhe PDF. Del tani bashkë me ndërtuesin (vendimi i Gentit, 11.11).
+// Pas Demo Day-t: 5 formatet e tjera dhe rishkrimi në anglisht (CV_PAS_DEMO_DAY_HAPUR); deri atëherë: Kosovë, shqip.
 import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import * as Print from "expo-print";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
@@ -11,6 +11,7 @@ import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import { Faqja, Ikona, IKONAT, Karta, T, Titulli } from "@/components/ui";
 import { krijoCV, merrCVTeFundit, ruajCV, type CvStrukturuar, type FormatiCV, type GjuhaCV } from "@/lib/cv";
+import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
 import { prekja } from "@/lib/prekja";
 import { useTema } from "@/lib/tema";
 
@@ -123,6 +124,7 @@ export default function DokumentiCV() {
   const t = useTema();
   const router = useRouter();
   const njofto = useNjoftim();
+  const { id } = useLocalSearchParams<{ id?: string }>();
 
   const [gjendja, setGjendja] = useState<Gjendja>({ lloji: "duke" });
   const [formati, setFormati] = useState<FormatiCV>("ks");
@@ -132,9 +134,14 @@ export default function DokumentiCV() {
 
   useEffect(() => {
     let aktiv = true;
-    merrCVTeFundit()
-      .then((cv) => {
-        if (aktiv) setGjendja({ lloji: "gati", cv });
+    merrCVTeFundit(id)
+      .then((r) => {
+        if (!aktiv) return;
+        setGjendja({ lloji: "gati", cv: r?.cv ?? null });
+        if (r) {
+          setFormati(r.formati);
+          setGjuha(r.gjuha);
+        }
       })
       .catch((e: unknown) => {
         if (aktiv) setGjendja({ lloji: "gabim", mesazhi: e instanceof Error ? e.message : "S'u hap CV-ja." });
@@ -142,7 +149,7 @@ export default function DokumentiCV() {
     return () => {
       aktiv = false;
     };
-  }, []);
+  }, [id]);
 
   const cv = gjendja.lloji === "gati" ? gjendja.cv : null;
 
@@ -236,8 +243,14 @@ export default function DokumentiCV() {
   return (
     <Faqja>
       <Titulli>CV-ja ime</Titulli>
-      <T zbehur>Ndrysho formatin dhe gjuhën para shkarkimit.</T>
+      <T zbehur>
+        {CV_PAS_DEMO_DAY_HAPUR
+          ? "Ndrysho formatin dhe gjuhën para shkarkimit."
+          : "Kontrolloje, pastaj shkarkoje si PDF. Formati: Kosovë, shqip."}
+      </T>
 
+      {CV_PAS_DEMO_DAY_HAPUR && (
+        <>
       <T pesha="trashe" style={styles.nentitull}>
         Formati
       </T>
@@ -272,6 +285,8 @@ export default function DokumentiCV() {
         appearance={t.errët ? "dark" : "light"}
         accessibilityLabel="Gjuha e CV-së"
       />
+        </>
+      )}
 
       <View style={styles.kryeParapamjes}>
         <T pesha="trashe">Parapamja</T>
@@ -388,14 +403,17 @@ export default function DokumentiCV() {
         )}
       </Prekshme>
 
-      <Prekshme
-        onPress={ruaje}
-        disabled={dukeRuajtur}
-        accessibilityRole="button"
-        style={[styles.butonDyte, { borderColor: t.vija }]}
-      >
-        {dukeRuajtur ? <ActivityIndicator color={t.teksti} /> : <T pesha="trashe">Ruaje versionin</T>}
-      </Prekshme>
+      {/* Ndërtuesi e ruan vetë versionin; "Ruaje" duhet vetëm pas një formati/gjuhe të re (pas Demo Day-t). */}
+      {CV_PAS_DEMO_DAY_HAPUR && (
+        <Prekshme
+          onPress={ruaje}
+          disabled={dukeRuajtur}
+          accessibilityRole="button"
+          style={[styles.butonDyte, { borderColor: t.vija }]}
+        >
+          {dukeRuajtur ? <ActivityIndicator color={t.teksti} /> : <T pesha="trashe">Ruaje versionin</T>}
+        </Prekshme>
+      )}
 
       <View style={styles.hapesira} />
     </Faqja>

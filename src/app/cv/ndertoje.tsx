@@ -1,5 +1,5 @@
-// Ndërto CV-në me AI (pa CV). HARTA: vjen PAS Demo Day-t. Ekrani është i mbyllur në _layout.tsx
-// (CV_PAS_DEMO_DAY_HAPUR = false); kodi mbetet gati për atëherë.
+// Ndërto CV-në me AI (pa CV): 5 pyetje → cv-create → ruhet si version i ri → dokumenti.
+// Del tani (vendimi i Gentit, 11.11), vetëm për kërkuesin (_layout.tsx). Formati: Kosovë, shqip.
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, TextInput, View } from "react-native";
@@ -60,10 +60,10 @@ export default function NdertojeCV() {
     setDukeKrijuar(true);
     try {
       const cv = await krijoCV({ pergjigjet }, "ks", "sq");
-      await ruajCV(cv, "ks", "sq");
+      const versioni = await ruajCV(cv, "ks", "sq");
       prekja.sukses();
       njofto("CV-ja u krijua", "sukses");
-      router.replace("/cv/dokumenti");
+      router.replace({ pathname: "/cv/dokumenti", params: { id: versioni.id } });
     } catch (e) {
       prekja.gabim();
       njofto(e instanceof Error ? e.message : "Krijimi i CV-së dështoi.", "gabim");
