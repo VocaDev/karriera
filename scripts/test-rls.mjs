@@ -113,6 +113,29 @@ let punaP1 = null;
   rezultati("Punëdhënësi poston; serveri vendos pronari_id", !error && data?.pronari_id === p1.id, error?.message);
 }
 {
+  // Pa filtër në kod: RLS-i vendos çka kthehet.
+  const { data } = await p2.k.from("punet").select("id, pronari_id");
+  const lista = data ?? [];
+  rezultati(
+    "Punëdhënësi 2 s'i sheh punët e punëdhënësit 1",
+    !lista.some((p) => p.id === punaP1) && lista.every((p) => p.pronari_id === p2.id),
+    `${lista.length} punë`,
+  );
+}
+{
+  const { data } = await p1.k.from("punet").select("id, pronari_id");
+  const lista = data ?? [];
+  rezultati(
+    "Punëdhënësi sheh vetëm punët e veta (pa filtër në kod)",
+    lista.length > 0 && lista.every((p) => p.pronari_id === p1.id),
+    `${lista.length} punë`,
+  );
+}
+{
+  const { data } = await k1.k.from("punet").select("id");
+  rezultati("Kërkuesi e sheh punën e punëdhënësit", (data ?? []).some((p) => p.id === punaP1));
+}
+{
   const { error } = await p1.k
     .from("punet")
     .insert({ titulli: "Në emër të tjetrit", kompania: "X Y", qyteti: "Pejë", pronari_id: p2.id });
@@ -195,7 +218,12 @@ let punaP1 = null;
     });
   const teKerkuesit = [];
   const teAnonit = [];
-  await Promise.all([lidhu(k2.k, "rt-kerkues", teKerkuesit), lidhu(anon, "rt-anon", teAnonit)]);
+  const tePunedhenesit1 = [];
+  await Promise.all([
+    lidhu(k2.k, "rt-kerkues", teKerkuesit),
+    lidhu(anon, "rt-anon", teAnonit),
+    lidhu(p1.k, "rt-punedhenes1", tePunedhenesit1),
+  ]);
   await prit(4000); // serveri e aktivizon abonimin pak sekonda pas "SUBSCRIBED"
   const { data } = await p2.k
     .from("punet")
@@ -205,9 +233,15 @@ let punaP1 = null;
   await prit(4000);
   rezultati("Realtime: kërkuesi e merr punën e re menjëherë", !!data && teKerkuesit.includes(data.id), `${teKerkuesit.length} ngjarje`);
   rezultati("Realtime: pa hyrë s'merr asgjë", teAnonit.length === 0, `${teAnonit.length} punë`);
+  rezultati(
+    "Realtime: punëdhënësi 1 s'e merr punën e punëdhënësit 2",
+    tePunedhenesit1.length === 0,
+    `${tePunedhenesit1.length} punë`,
+  );
   if (data) await p2.k.from("punet").delete().eq("id", data.id);
   await k2.k.removeAllChannels();
   await anon.removeAllChannels();
+  await p1.k.removeAllChannels();
 }
 
 // Pastrim i asaj që lejohet nga app-i (llogaritë fshihen nga SQL Editor-i).

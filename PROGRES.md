@@ -8,7 +8,7 @@
 
 1. **Dera mbyllet:** policy-të e J5 u fshinë dhe `anon` s'ka më asnjë leje. Pa hyrë, Supabase kthen `permission denied` për çdo tabelë.
 2. **Serveri e di pronarin:** çdo punë dhe çdo ⭐ ka `pronari_id`, që e vendos serveri me `default auth.uid()`; app-i s'e dërgon kurrë.
-3. **Policy pyet "a është i yti?":** `using (pronari_id = auth.uid())` vendos cilat rreshta i sheh/prek; `with check (...)` vendos çka lejohet të shkruash. Profili dhe ⭐ shihen vetëm nga pronari.
+3. **Policy pyet "a është i yti?":** `using (pronari_id = auth.uid())` vendos cilat rreshta i sheh/prek; `with check (...)` vendos çka lejohet të shkruash. Profili, ⭐ dhe punët e punëdhënësit shihen vetëm nga pronari; kërkuesi i sheh të gjitha shpalljet.
 4. **Roli jeton te `profiles.lloji`, jo te `user_metadata`:** trigger-i e krijon profilin, përdoruesi s'mund ta ndryshojë llojin, dhe "qender" jepet vetëm nga SQL Editor-i.
 5. **Roja te `_layout.tsx`** (`Stack.Protected`) i tregon secilit vetëm ekranet e veta: hyrja, tab-at e kërkuesit, ose "Punët e mia" e punëdhënësit/qendrës. Roja është për përdoruesin; RLS-i është për sulmuesin.
 
@@ -26,7 +26,7 @@
 
 ### Testuar
 
-- `node --env-file=.env scripts/test-rls.mjs`: **30/30** rregulla, vetëm me çelësin publishable (pa hyrë, me llogarinë tjetër, me rolin e gabuar, me `user_metadata` të ndryshuar, Realtime). Qendra e provuar veçmas: merr vetëm 4 totale.
+- `node --env-file=.env scripts/test-rls.mjs`: **34/34** rregulla, vetëm me çelësin publishable (pa hyrë, me llogarinë tjetër, dy punëdhënës që s'ia shohin punët njëri-tjetrit, me rolin e gabuar, me `user_metadata` të ndryshuar, Realtime). Qendra e provuar veçmas: merr vetëm 4 totale.
 - `npx tsc --noEmit` pa gabime · `npx expo lint` pa gabime · `npx expo export -p android` ndërtohet; në bundle s'ka asnjë çelës sekret.
 
 ### Çka mësuam / çka nuk e kuptuam

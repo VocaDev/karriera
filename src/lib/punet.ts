@@ -60,14 +60,10 @@ export async function shtoPunen(puna: PunaERe): Promise<Puna> {
   return data as Puna;
 }
 
-// "Punët e mia" (punëdhënësi, qendra). Leximi i punëve është i hapur për çdo llogari të kyçur,
-// prandaj .eq këtu vetëm zgjedh çka shfaqet. Mbrojtja është te RLS: ndryshon dhe fshin vetëm pronari.
-export async function listoPunetEMia(pronariId: string): Promise<Puna[]> {
-  const { data, error } = await supabase
-    .from("punet")
-    .select(FUSHAT)
-    .eq("pronari_id", pronariId)
-    .order("krijuar_me", { ascending: false });
+// "Punët e mia" (punëdhënësi, qendra). Pa filtër në kod: RLS-i (punet_lexo) i kthen punëdhënësit
+// vetëm punët e veta, kështu që dy punëdhënës s'ia shohin shpalljet njëri-tjetrit as përmes API-t.
+export async function listoPunetEMia(): Promise<Puna[]> {
+  const { data, error } = await supabase.from("punet").select(FUSHAT).order("krijuar_me", { ascending: false });
   if (error) throw new Error(mesazhiIGabimit(error));
   return data as Puna[];
 }

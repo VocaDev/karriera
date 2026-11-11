@@ -2,7 +2,7 @@
 -- Qëllimi: dy llogari që nuk i shohin të dhënat e njëra-tjetrës.
 -- Tri llojet e llogarisë (profiles.lloji):
 --   kerkues     lexon punët, ruan me ⭐ punët e veta (privat), nuk poston punë
---   punedhenes  poston punë, ndryshon dhe fshin vetëm punët e veta
+--   punedhenes  poston punë, sheh, ndryshon dhe fshin vetëm punët e veta
 --   qender      si punëdhënësi + numrat e përgjithshëm (vetëm totale, asnjë emër)
 -- Ekzekutohet pas supabase/migrations/20261104120000_punet.sql. Mund të ekzekutohet disa herë.
 
@@ -83,9 +83,11 @@ revoke all on public.punet from authenticated;
 grant select, insert, delete on public.punet to authenticated;
 grant update (titulli, kompania, qyteti, roli, pershkrimi, aftesite) on public.punet to authenticated;
 
--- Lexim: çdo llogari e kyçur i sheh të gjitha punët (shpalljet janë publike, jo të dhëna personale).
+-- Lexim: kërkuesi i sheh të gjitha punët (për këtë e ka app-in).
+-- Punëdhënësi dhe qendra shohin VETËM punët e veta: dy punëdhënës s'ia shohin njëri-tjetrit shpalljet.
 create policy "punet_lexo" on public.punet
-  for select to authenticated using (true);
+  for select to authenticated
+  using (public.lloji_im() = 'kerkues' or pronari_id = auth.uid());
 
 -- Shtim: vetëm punëdhënësi dhe qendra, dhe vetëm në emrin e vet.
 create policy "punet_shto" on public.punet

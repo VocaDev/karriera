@@ -34,7 +34,7 @@ export default function PunetEMia() {
     if (!profili) return false;
     try {
       const [teMiat, n] = await Promise.all([
-        listoPunetEMia(profili.id),
+        listoPunetEMia(),
         profili.lloji === "qender" ? merrNumratEQendres() : Promise.resolve(null),
       ]);
       const iRi = merrPunenERe();
