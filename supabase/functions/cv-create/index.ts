@@ -3,6 +3,7 @@
 // dhe në anglisht ekziston këtu, por app-i s'e hap para Demo Day-t (CV_PAS_DEMO_DAY_HAPUR).
 //
 // Thirrësi: sesion i vërtetë, llogari "kerkues", maksimumi KUFIRI_DITOR thirrje në 24 orë.
+// AI-ja: claude-haiku-5-5 (MODELI te _shared/cv-ai.ts), effort "low": vetëm rishkruan faktet e dhëna.
 import {
   CvStrukturuarSchema,
   GabimIAI,
@@ -165,7 +166,7 @@ For US, UK and ATS formats, date of birth must be null.
 
     await regjistroThirrjen(thirresi, "cv-create");
 
-    const cv = await gjeneroJSON(CvStrukturuarSchema, SYSTEM_PROMPT, prompt);
+    const cv = await gjeneroJSON(CvStrukturuarSchema, SYSTEM_PROMPT, prompt, "low");
 
     const cvFinal: CvStrukturuar = {
       ...cv,

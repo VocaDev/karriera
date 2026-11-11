@@ -1,6 +1,7 @@
 # CV Edge Functions
 
-Dy funksione që thërrasin AI-në (Anthropic, `claude-sonnet-5-5`) për CV-në. Çelësi i AI-së jeton vetëm këtu, kurrë në app.
+Dy funksione që thërrasin AI-në (Anthropic, `claude-haiku-5-5`: model i lehtë dhe i lirë, vendimi i Gentit 11.11) për CV-në.
+`cv-review` me effort `medium`, `cv-create` me effort `low`. Haiku 5.5 s'ka model rezervë kur refuzon: funksioni kthen 422 me një fjali në shqip. Çelësi i AI-së jeton vetëm këtu, kurrë në app.
 
 Të dy funksionet e kontrollojnë vetë thirrësin (`_shared/thirresi.ts`):
 
