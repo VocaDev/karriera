@@ -26,7 +26,7 @@ export const VECORITE: Vecoria[] = [
   {
     celesi: "punet",
     titulli: "Punët",
-    pershkrimi: "Shpallje nga Supabase; shto edhe vetë",
+    pershkrimi: "Shpallje nga punëdhënësit; ⭐ i ruan për vete",
     href: "/pune",
     gjendja: { lloji: "gati" },
   },

@@ -1,5 +1,38 @@
 # Progresi · Karriera
 
+## J6 · 11.11.2026 · Hyrja në llogari dhe RLS
+
+**Qëllimi:** dy llogari që nuk i shohin të dhënat e njëra-tjetrës. Tri lloje llogarie: kërkues pune, punëdhënës, qendër karriere.
+
+### Si funksionon, në 5 rreshta
+
+1. **Dera mbyllet:** policy-të e J5 u fshinë dhe `anon` s'ka më asnjë leje. Pa hyrë, Supabase kthen `permission denied` për çdo tabelë.
+2. **Serveri e di pronarin:** çdo punë dhe çdo ⭐ ka `pronari_id`, që e vendos serveri me `default auth.uid()`; app-i s'e dërgon kurrë.
+3. **Policy pyet "a është i yti?":** `using (pronari_id = auth.uid())` vendos cilat rreshta i sheh/prek; `with check (...)` vendos çka lejohet të shkruash. Profili dhe ⭐ shihen vetëm nga pronari.
+4. **Roli jeton te `profiles.lloji`, jo te `user_metadata`:** trigger-i e krijon profilin, përdoruesi s'mund ta ndryshojë llojin, dhe "qender" jepet vetëm nga SQL Editor-i.
+5. **Roja te `_layout.tsx`** (`Stack.Protected`) i tregon secilit vetëm ekranet e veta: hyrja, tab-at e kërkuesit, ose "Punët e mia" e punëdhënësit/qendrës. Roja është për përdoruesin; RLS-i është për sulmuesin.
+
+### Çka punon
+
+| Pjesa | Ku |
+|---|---|
+| SQL-i (hapat A + C + rolet) | `supabase/j6-hyrja-rls.sql` |
+| Hyrja, dhe regjistrimi hap pas hapi (1 Lloji · 2 Të dhënat · 3 Verifikimi dhe 4 Hyrja "së shpejti") | `src/app/hyrja.tsx`, `src/lib/hyrja.ts`, gabimet në shqip `src/lib/hyrja-offline.ts` |
+| Sesioni dhe rojet | `src/lib/sesioni.tsx`, `src/app/_layout.tsx` |
+| Kërkuesi: punët, ⭐ që ruhet, të ruajturat te Profili | `src/app/(tabs)/`, `src/lib/ruajtura.ts` |
+| Punëdhënësi dhe qendra: Punët e mia, Shto, Fshi, numrat | `src/app/organizata/` |
+| Puna e re i shkon kërkuesit menjëherë (Realtime) + shenja te "Punët" | `src/app/(tabs)/_layout.tsx`, `src/app/(tabs)/pune.tsx` |
+| Dil | `src/components/ButoniDil.tsx` |
+
+### Testuar
+
+- `node --env-file=.env scripts/test-rls.mjs`: **30/30** rregulla, vetëm me çelësin publishable (pa hyrë, me llogarinë tjetër, me rolin e gabuar, me `user_metadata` të ndryshuar, Realtime). Qendra e provuar veçmas: merr vetëm 4 totale.
+- `npx tsc --noEmit` pa gabime · `npx expo lint` pa gabime · `npx expo export -p android` ndërtohet; në bundle s'ka asnjë çelës sekret.
+
+### Çka mësuam / çka nuk e kuptuam
+
+> ✏️ Genti / Edonik: shkruajeni me fjalët tuaja para dorëzimit.
+
 ## J5 · 04.11.2026 · Lidhja me Supabase
 
 ### Çka punon

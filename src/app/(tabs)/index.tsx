@@ -1,10 +1,13 @@
 import { Link, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import Prekshme from "@/components/Prekshme";
 import RreshtiVecorise from "@/components/RreshtiVecorise";
+import { Pulsi, Vije } from "@/components/Skeleti";
 import { Faqja, IKONAT, Ikona, Karta, Progresi, T, Titulli } from "@/components/ui";
 import { listoPunet, type Puna } from "@/lib/punet";
+import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 import { VECORITE } from "@/lib/vecorite";
 
@@ -19,6 +22,7 @@ function dataSot(): string {
 // Kreu (bordi, ekrani 41): data, rruga e HARTA-s si listë hapash me gjendjen reale,
 // dhe punët e fundit nga Supabase. Streak-u dhe plani ditor vijnë më vonë, prandaj tregojnë 0.
 export default function Sot() {
+  const { profili } = useSesioni();
   const t = useTema();
   const [punet, setPunet] = useState<Puna[] | null>(null);
   const [gabimi, setGabimi] = useState<string | null>(null);
@@ -72,8 +76,8 @@ export default function Sot() {
           <T zbehur madhesia={13} style={styles.flex}>
             Hapi tjetër: {iRadhes ? iRadhes.titulli : "asnjë"}
           </T>
-          <T zbehur madhesia={13}>
-            Login: 11.11
+          <T zbehur madhesia={13} numberOfLines={1}>
+            {profili?.emri}
           </T>
         </View>
       </Karta>
@@ -85,7 +89,7 @@ export default function Sot() {
       </Karta>
 
       <Link href="/pune" asChild>
-        <Pressable accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+        <Prekshme accessibilityRole="button" accessibilityLabel="Hap listën e punëve">
           <Karta style={styles.rreshtKarte}>
             <Ikona emri={IKONAT.canta} madhesia={20} ngjyra={t.theksi} />
             <View style={styles.flex}>
@@ -95,11 +99,16 @@ export default function Sot() {
                     S&apos;u lexuan punët
                   </T>
                   <T zbehur madhesia={13}>
-                    {gabimi} · prek për të provuar përsëri
+                    Hape listën për të provuar përsëri
                   </T>
                 </>
               ) : punet === null ? (
-                <ActivityIndicator style={styles.majtas} />
+                <Pulsi>
+                  <View style={styles.skeleti} accessibilityLabel="Po ngarkohen punët">
+                    <Vije gjeresia="55%" lartesia={16} />
+                    <Vije gjeresia="85%" lartesia={12} />
+                  </View>
+                </Pulsi>
               ) : (
                 <>
                   <T pesha="trashe" madhesia={15.5}>
@@ -118,7 +127,7 @@ export default function Sot() {
             </View>
             <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
           </Karta>
-        </Pressable>
+        </Prekshme>
       </Link>
     </Faqja>
   );
@@ -139,5 +148,5 @@ const styles = StyleSheet.create({
   rresht: { flexDirection: "row", alignItems: "center", gap: 8 },
   lista: { padding: 0, overflow: "hidden" },
   rreshtKarte: { flexDirection: "row", alignItems: "center", gap: 12 },
-  majtas: { alignSelf: "flex-start" },
+  skeleti: { gap: 7, paddingVertical: 2 },
 });

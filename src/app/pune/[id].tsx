@@ -1,35 +1,82 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
-import { Chip, Faqja, Karta, Rruga, T } from "@/components/ui";
+import Prekshme from "@/components/Prekshme";
+import { Pulsi, Vije } from "@/components/Skeleti";
+import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
+import { useDridhja } from "@/lib/levizja";
+import { prekja } from "@/lib/prekja";
 import { gjePunen, type Puna } from "@/lib/punet";
 import { useTema } from "@/lib/tema";
 
 // Detajet e punës (bordi, ekrani 11).
 export default function DetajetEPunes() {
   const t = useTema();
+  const { stili: stiliIButonit, dridhu } = useDridhja();
   // Lista dërgon vetëm id-në në adresë (/pune/p3); këtu e lexojmë dhe e kërkojmë në Supabase.
   const { id } = useLocalSearchParams<{ id: string }>();
   const [puna, setPuna] = useState<Puna | null | undefined>(undefined); // undefined = duke ngarkuar
   const [gabimi, setGabimi] = useState<string | null>(null);
 
-  useEffect(() => {
+  const lexo = useCallback(() => {
     gjePunen(id)
-      .then(setPuna)
+      .then((p) => {
+        setGabimi(null);
+        setPuna(p);
+      })
       .catch((e) => setGabimi(e instanceof Error ? e.message : "Gabim i panjohur"));
   }, [id]);
+
+  useEffect(() => {
+    lexo();
+  }, [lexo]);
 
   if (gabimi) {
     return (
       <View style={[styles.qendra, { backgroundColor: t.sfondi }]}>
-        <T>S&apos;u lexua puna: {gabimi}</T>
+        <T pesha="trashe" madhesia={16}>
+          S&apos;u lexua puna
+        </T>
+        <T zbehur madhesia={14} style={styles.qendroj}>
+          {gabimi}
+        </T>
+        <Prekshme
+          accessibilityRole="button"
+          onPress={() => {
+            setGabimi(null);
+            setPuna(undefined);
+            lexo();
+          }}
+          style={[styles.butoniVogel, { backgroundColor: t.teksti }]}
+        >
+          <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
+            Provo përsëri
+          </T>
+        </Prekshme>
       </View>
     );
   }
 
+  // Gjatë leximit: skeleti ka formën e faqes (chip-i, titulli, kompania, karta), që asgjë të mos kërcejë.
   if (puna === undefined) {
-    return <ActivityIndicator style={[styles.qendra, { backgroundColor: t.sfondi }]} />;
+    return (
+      <Faqja>
+        <Pulsi>
+          <View style={styles.skeleti} accessibilityLabel="Po ngarkohet puna">
+            <Vije gjeresia={48} lartesia={22} rrezja={7} />
+            <Vije gjeresia="88%" lartesia={26} rrezja={8} />
+            <Vije gjeresia="55%" lartesia={15} />
+            <View style={[styles.kartaSkelet, { backgroundColor: t.karta }]}>
+              <Vije gjeresia="40%" lartesia={14} />
+              <Vije gjeresia="80%" lartesia={12} />
+              <Vije gjeresia="100%" lartesia={10} rrezja={5} />
+            </View>
+          </View>
+        </Pulsi>
+      </Faqja>
+    );
   }
 
   // Roja: nëse id-ja nuk ekziston (p.sh. /pune/x99), nuk rrëzohet aplikacioni.
@@ -94,11 +141,24 @@ export default function DetajetEPunes() {
         </>
       )}
 
-      <View style={[styles.butoni, { backgroundColor: t.teksti, opacity: 0.35 }]} accessibilityState={{ disabled: true }}>
-        <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
-          A jam gati për këtë?
-        </T>
-      </View>
+      {/* Ende i kyçur: prekja jep një dridhje të lehtë ("jo tani"), dhe teksti poshtë thotë kur vjen. */}
+      <Animated.View style={stiliIButonit}>
+        <Prekshme
+          accessibilityRole="button"
+          accessibilityState={{ disabled: true }}
+          accessibilityHint="Vjen më 02.12"
+          onPress={() => {
+            prekja.lehte();
+            dridhu();
+          }}
+          style={[styles.butoni, { backgroundColor: t.teksti, opacity: 0.35 }]}
+        >
+          <Ikona emri={IKONAT.kycja} madhesia={14} ngjyra={t.sfondi} />
+          <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
+            A jam gati për këtë?
+          </T>
+        </Prekshme>
+      </Animated.View>
       <T zbehur madhesia={12.5} style={styles.qendroj}>
         &quot;A jam gati?&quot; vjen më 02.12, me AI-në
       </T>
@@ -107,7 +167,10 @@ export default function DetajetEPunes() {
 }
 
 const styles = StyleSheet.create({
-  qendra: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  qendra: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 8 },
+  qendroj: { textAlign: "center" },
+  skeleti: { gap: 12 },
+  kartaSkelet: { borderRadius: 22, padding: 16, gap: 10, marginTop: 4 },
   rresht: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   titulli: { letterSpacing: -0.5, lineHeight: 31 },
   pershkrimi: { lineHeight: 22 },
@@ -122,6 +185,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  butoni: { borderRadius: 999, paddingVertical: 16, alignItems: "center", marginTop: 8 },
-  qendroj: { textAlign: "center" },
+  butoni: {
+    flexDirection: "row",
+    gap: 8,
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  butoniVogel: { marginTop: 8, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 26, minHeight: 44, justifyContent: "center" },
 });
