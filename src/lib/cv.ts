@@ -145,6 +145,30 @@ async function mesazhiIFunksionit(gabimi: unknown, rezerva: string): Promise<str
   return rezerva;
 }
 
+function eshte401(gabimi: unknown): boolean {
+  return gabimi instanceof FunctionsHttpError && (gabimi.context as Response).status === 401;
+}
+
+// Thërret një Edge Function me tokenin e sesionit (supabase-js e vendos vetë, e rifreskon kur skadon).
+// 401 = serveri s'e njeh më sesionin, edhe pse tokeni në telefon duket ende i vlefshëm
+// (p.sh. dikush doli nga llogaria në një pajisje tjetër me "global sign-out", ose sesioni u fshi).
+// Atëherë: një rifreskim; nëse edhe ai dështon, dalim nga llogaria këtu, që roja të hapë hyrjen.
+async function thirrFunksionin(emri: "cv-review" | "cv-create", body: object, rezerva: string): Promise<unknown> {
+  let { data, error } = await supabase.functions.invoke(emri, { body });
+
+  if (error && eshte401(error)) {
+    const { error: gabimiRifreskimit } = await supabase.auth.refreshSession();
+    if (gabimiRifreskimit) {
+      await supabase.auth.signOut({ scope: "local" });
+      throw new Error("Sesioni ka skaduar. Hyr përsëri.");
+    }
+    ({ data, error } = await supabase.functions.invoke(emri, { body }));
+  }
+
+  if (error) throw new Error(await mesazhiIFunksionit(error, rezerva));
+  return data;
+}
+
 const FUSHAT_CV = "id, burimi, emri_skedarit, versioni, krijuar_me";
 type RreshtiCV = Omit<CvRresht, "nota">;
 
@@ -195,8 +219,7 @@ export async function ngarkoCV(skedari: SkedariPDF): Promise<CvRresht> {
 
 /** Thërret `cv-review` (AI-ja lexon PDF-në nga Storage dhe e ruan analizën). Zgjat 10–40 sekonda. */
 export async function analizoCV(cvId: string): Promise<AnalizaCV> {
-  const { data, error } = await supabase.functions.invoke("cv-review", { body: { cv_id: cvId } });
-  if (error) throw new Error(await mesazhiIFunksionit(error, "Analiza e CV-së dështoi. Provo përsëri."));
+  const data = await thirrFunksionin("cv-review", { cv_id: cvId }, "Analiza e CV-së dështoi. Provo përsëri.");
   const analiza: unknown = eshteObjekt(data) ? data.analiza : null;
   if (!eshteAnalizeCV(analiza)) throw new Error("AI-ja ktheu një përgjigje të paplotë. Provo përsëri.");
   return analiza;
@@ -277,8 +300,7 @@ export async function krijoCV(
   formati: FormatiCV,
   gjuha: GjuhaCV,
 ): Promise<CvStrukturuar> {
-  const { data, error } = await supabase.functions.invoke("cv-create", { body: { burimi, formati, gjuha } });
-  if (error) throw new Error(await mesazhiIFunksionit(error, "Krijimi i CV-së dështoi. Provo përsëri."));
+  const data = await thirrFunksionin("cv-create", { burimi, formati, gjuha }, "Krijimi i CV-së dështoi. Provo përsëri.");
   if (!eshteCvStrukturuar(data)) throw new Error("AI-ja ktheu një CV të paplotë. Provo përsëri.");
   return data;
 }
