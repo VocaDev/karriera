@@ -132,6 +132,8 @@ export const IKONAT = {
   shkolla: { ios: "graduationcap.fill", android: "school" },
   kosha: { ios: "trash", android: "delete" },
   email: { ios: "envelope.fill", android: "mail" },
+  kerko: { ios: "magnifyingglass", android: "search" },
+  mbyll: { ios: "xmark.circle.fill", android: "cancel" },
 } satisfies Record<string, EmriIkones>;
 
 /** Chip (etiketë e vogël), p.sh. "SWE" ose "Gati". */

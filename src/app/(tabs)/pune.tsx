@@ -1,25 +1,43 @@
 import { Link, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { SegmentedControl } from "@expo/ui/community/segmented-control";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeIn, LinearTransition, useReducedMotion } from "react-native-reanimated";
 
 import KartaPunes from "@/components/KartaPunes";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import { KartaSkelet } from "@/components/Skeleti";
-import { Faqja, T, Titulli } from "@/components/ui";
+import { Faqja, IKONAT, Ikona, T, Titulli } from "@/components/ui";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
-import { useTema } from "@/lib/tema";
+import { SHKRONJAT, useTema } from "@/lib/tema";
 
 // Kur lista ndryshon (p.sh. erdhi një punë e re lart), kartat e tjera rrëshqasin poshtë në vend që të kërcejnë.
 const LEVIZJA_E_LISTES = LinearTransition.duration(KOHA.mesme).easing(LEHTESIMI.levizje);
 const HYRJA_E_PUNES_SE_RE = FadeIn.duration(320).easing(LEHTESIMI.hyrje);
 
+// Filtri i rolit (AGENTS.md, "Native feel" #6): kontrolli i segmentuar i sistemit, 3 zgjedhje.
+// "Zyrë" = Asistent/PR. Punët "Tjetër" dalin vetëm te "Të gjitha".
+const ROLET = [
+  { emri: "Të gjitha", roli: null },
+  { emri: "SWE", roli: "SWE" },
+  { emri: "Zyrë", roli: "Asistent/PR" },
+] as const satisfies readonly { emri: string; roli: Puna["roli"] | null }[];
+
+// Kërkimi pa shenja: "prishtine" gjen "Prishtinë", "zyre" gjen "Zyrë".
+function normalizo(teksti: string): string {
+  return teksti
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 // Punët (bordi, ekrani 09), vetëm për kërkuesin: lexon, ruan me ⭐, s'poston (këtë e bën punëdhënësi).
-// Kërkimi dhe chip-at e filtrave i shton Edoniku këtu.
+// Kërkimi dhe filtri i rolit: Edoniku.
 export default function Punet() {
   const t = useTema();
   const qetesi = useReducedMotion();
@@ -29,6 +47,26 @@ export default function Punet() {
   const [rifreskim, setRifreskim] = useState(false);
   const [ePunesSeRe, setEPunesSeRe] = useState<string | null>(null);
   const [teRuajturat, setTeRuajturat] = useState<Set<string>>(() => new Set());
+  const [kerkimi, setKerkimi] = useState("");
+  const [iRolit, setIRolit] = useState(0); // indeksi te ROLET
+
+  const punetEFiltruara = useMemo(() => {
+    if (punet === null) return null;
+    const fjala = normalizo(kerkimi);
+    const roli = ROLET[iRolit].roli;
+    return punet.filter(
+      (p) =>
+        (roli === null || p.roli === roli) &&
+        (fjala === "" || normalizo(`${p.titulli} ${p.kompania} ${p.qyteti}`).includes(fjala)),
+    );
+  }, [punet, kerkimi, iRolit]);
+  const kaFiltra = kerkimi.trim() !== "" || iRolit !== 0;
+
+  function pastroFiltrat() {
+    prekja.zgjedhje();
+    setKerkimi("");
+    setIRolit(0);
+  }
 
   const ngarko = useCallback(async (ngaPerdoruesi: boolean) => {
     try {
@@ -98,8 +136,35 @@ export default function Punet() {
 
   // Koka: në tab-a s'ka header, prandaj titulli është këtu (si në bord). Pa "+": kërkuesi s'poston punë.
   const koka = (
-    <View style={styles.koka}>
-      <Titulli>Punët</Titulli>
+    <View style={styles.kokaEPlote}>
+      <View style={styles.koka}>
+        <Titulli>Punët</Titulli>
+      </View>
+      <View style={[styles.kerkimi, { backgroundColor: t.karta, borderColor: t.vija }]}>
+        <Ikona emri={IKONAT.kerko} madhesia={17} ngjyra={t.zbehur} />
+        <TextInput
+          value={kerkimi}
+          onChangeText={setKerkimi}
+          placeholder="Kërko punë, kompani ose qytet"
+          placeholderTextColor={t.zbehur}
+          style={[styles.fusha, { color: t.teksti }]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          accessibilityLabel="Kërko punë"
+        />
+      </View>
+      <SegmentedControl
+        values={ROLET.map((r) => r.emri)}
+        selectedIndex={iRolit}
+        onChange={(e) => {
+          prekja.zgjedhje();
+          setIRolit(e.nativeEvent.selectedSegmentIndex);
+        }}
+        appearance={t.errët ? "dark" : "light"}
+        accessibilityLabel="Filtri i rolit"
+      />
     </View>
   );
 
@@ -126,6 +191,20 @@ export default function Punet() {
           ))}
         </View>
       )
+    ) : kaFiltra && punet.length > 0 ? (
+      <View style={styles.bosh}>
+        <T pesha="trashe" madhesia={16}>
+          Asnjë punë s&apos;përputhet
+        </T>
+        <T zbehur madhesia={14} style={styles.qendroj}>
+          Provo një fjalë tjetër ose një rol tjetër.
+        </T>
+        <Prekshme onPress={pastroFiltrat} accessibilityRole="button" style={[styles.butoni, { backgroundColor: t.teksti }]}>
+          <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
+            Pastro filtrat
+          </T>
+        </Prekshme>
+      </View>
     ) : (
       <View style={styles.bosh}>
         <T pesha="trashe" madhesia={16}>
@@ -142,7 +221,9 @@ export default function Punet() {
       <Animated.FlatList
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.lista}
-        data={punet ?? []}
+        data={punetEFiltruara ?? []}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         keyExtractor={(item) => item.id}
         refreshing={rifreskim}
         onRefresh={rifresko}
@@ -166,7 +247,18 @@ export default function Punet() {
 }
 
 const styles = StyleSheet.create({
-  koka: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  kokaEPlote: { gap: 12, marginBottom: 4 },
+  koka: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  kerkimi: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    minHeight: 44,
+  },
+  fusha: { flex: 1, fontFamily: SHKRONJAT.normal, fontSize: 15, paddingVertical: 10 },
   lista: { padding: 18, gap: 10, paddingBottom: 120 },
   skeletet: { gap: 10 },
   gabimi: { alignItems: "center", gap: 8, paddingTop: 40, paddingHorizontal: 12 },

@@ -20,7 +20,7 @@ export const VECORITE: Vecoria[] = [
     celesi: "cv",
     titulli: "CV-ja ime",
     pershkrimi: "Ngarko ose ndërto CV-në; AI-ja e analizon",
-    href: null,
+    href: "/cv", // në ndërtim: hapet vetëm në zhvillim (__DEV__), që ta provojmë në telefon
     gjendja: { lloji: "ndertim", kush: "Edoniku" },
   },
   {
@@ -52,6 +52,12 @@ export const VECORITE: Vecoria[] = [
     gjendja: { lloji: "vjen", kur: "09.12" },
   },
 ];
+
+// "Ndërto CV-në me AI (pa CV)" del TANI: vendimi i Gentit, 11.11 (HARTA e linte pas Demo Day-t).
+// Pas Demo Day-t mbeten: formatet e tjera (Europass, EU, US, UK, ATS), rishkrimi në anglisht dhe
+// karta "Ndaje" për rrjetet sociale. Kodi i tyre mbetet; ekranet/butonat s'hapen derisa kjo të bëhet true.
+export const CV_PAS_DEMO_DAY_HAPUR = false;
+export const TEKSTI_PAS_DEMO_DAY = "Vjen pas Demo Day-t";
 
 export function tekstiIGjendjes(g: Gjendja): string {
   if (g.lloji === "gati") return "Gati";
