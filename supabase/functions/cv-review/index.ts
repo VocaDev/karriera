@@ -1,23 +1,27 @@
-
+// cv-review: analizon një CV të ngarkuar (PDF) dhe e ruan analizën.
+//
+// Hyrja:  POST { "cv_id": "<uuid>" } me JWT-në e përdoruesit (supabase.functions.invoke e dërgon vetë).
+// Dalja:  { "review_id": "<uuid>", "analiza": AnalizaCV }
+//
+// 1. Thirrësi: sesion i vërtetë, llogari "kerkues", maksimumi KUFIRI_DITOR analiza në 24 orë.
+// 2. CV-ja lexohet me JWT-në e përdoruesit: RLS-i garanton që është e tija (rreshti dhe skedari).
+// 3. Analiza ruhet te cv_reviews me çelësin sekret: telefoni s'mund ta shkruajë vetë notën.
 import {
   AnalizaCVSchema,
+  GabimIAI,
   gjeneroJSON,
+  MODELI,
 } from "../_shared/cv-ai.ts";
+import {
+  json,
+  CORS_HEADERS,
+  kontrolloThirresin,
+  regjistroThirrjen,
+} from "../_shared/thirresi.ts";
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: CORS_HEADERS,
-  });
-}
+const KUFIRI_DITOR = 5;
+const MADHESIA_MAKS = 5 * 1024 * 1024;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SYSTEM_PROMPT = `
 You are a strict but fair CV reviewer and junior recruiter familiar
@@ -35,6 +39,7 @@ SCORING RUBRIC (0-100):
 
 Be consistent: comparable CV quality must receive comparable scores.
 Give specific, actionable feedback rather than generic advice.
+The score is an estimate of CV quality, not a prediction of hiring outcomes.
 
 Return all review text in Albanian.
 
@@ -53,6 +58,18 @@ Do not invent facts about the candidate.
 Only recommend improvements supported by the supplied CV.
 `;
 
+function neBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function eshtePDF(bytes: Uint8Array): boolean {
+  return new TextDecoder().decode(bytes.subarray(0, 5)) === "%PDF-";
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
@@ -62,46 +79,62 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Metoda nuk lejohet." }, 405);
   }
 
+  const thirresi = await kontrolloThirresin(req, "cv-review", KUFIRI_DITOR);
+  if (thirresi instanceof Response) return thirresi;
+
   try {
-    const body = await req.json();
-
-    const pdfBase64 = body?.pdf_base64;
-    const emriSkedarit = body?.emri_skedarit;
-
-    if (
-      typeof pdfBase64 !== "string" ||
-      !pdfBase64.trim() ||
-      typeof emriSkedarit !== "string" ||
-      !emriSkedarit.trim()
-    ) {
-      return json({
-        error: "Dërgo PDF-në dhe emrin e skedarit.",
-      }, 400);
-    }
-
-    let pdfBinary: string;
-
+    let body: unknown;
     try {
-      pdfBinary = atob(pdfBase64);
+      body = await req.json();
     } catch {
-      return json({ error: "PDF-ja nuk ka format të vlefshëm." }, 400);
+      return json({ error: "Kërkesa nuk është e vlefshme." }, 400);
     }
 
-    const madhesia = pdfBinary.length;
-
-    if (madhesia > 5 * 1024 * 1024) {
-      return json({
-        error: "CV-ja duhet të jetë maksimumi 5 MB.",
-      }, 413);
+    const cvId = (body as { cv_id?: unknown } | null)?.cv_id;
+    if (typeof cvId !== "string" || !UUID.test(cvId)) {
+      return json({ error: "Mungon CV-ja që duhet analizuar." }, 400);
     }
 
-    if (!pdfBinary.startsWith("%PDF-")) {
-      return json({
-        error: "Skedari i dërguar nuk është PDF i vlefshëm.",
-      }, 415);
+    // Me JWT-në e përdoruesit: CV-ja e dikujt tjetër s'gjendet fare (RLS).
+    const { data: cv, error: gabimiCV } = await thirresi.klienti
+      .from("cvs")
+      .select("id, burimi, storage_path, emri_skedarit")
+      .eq("id", cvId)
+      .maybeSingle();
+
+    if (gabimiCV) {
+      console.error("[cv-review] Leximi i CV-së dështoi.");
+      return json({ error: "S'u lexua CV-ja. Provo përsëri." }, 500);
+    }
+    if (!cv) {
+      return json({ error: "CV-ja nuk u gjet." }, 404);
+    }
+    if (cv.burimi !== "ngarkuar" || !cv.storage_path) {
+      return json({ error: "Analizohen vetëm CV-të e ngarkuara si PDF." }, 400);
     }
 
-    const emriSigurt = emriSkedarit.slice(0, 150);
+    const { data: skedari, error: gabimiSkedarit } = await thirresi.klienti.storage
+      .from("cv")
+      .download(cv.storage_path);
+
+    if (gabimiSkedarit || !skedari) {
+      console.error("[cv-review] Shkarkimi i PDF-së dështoi.");
+      return json({ error: "S'u gjet PDF-ja e CV-së. Ngarkoje përsëri." }, 404);
+    }
+
+    if (skedari.size > MADHESIA_MAKS) {
+      return json({ error: "CV-ja duhet të jetë maksimumi 5 MB." }, 413);
+    }
+
+    const bytes = new Uint8Array(await skedari.arrayBuffer());
+    if (!eshtePDF(bytes)) {
+      return json({ error: "Skedari nuk është PDF i vlefshëm." }, 415);
+    }
+
+    // Numërohet para AI-së: edhe një analizë që dështon e harxhon kufirin (mbron çelësin e AI-së).
+    await regjistroThirrjen(thirresi, "cv-review");
+
+    const emriSigurt = (cv.emri_skedarit ?? "cv.pdf").slice(0, 150);
 
     const analiza = await gjeneroJSON(
       AnalizaCVSchema,
@@ -112,7 +145,7 @@ Deno.serve(async (req: Request) => {
           source: {
             type: "base64",
             media_type: "application/pdf",
-            data: pdfBase64,
+            data: neBase64(bytes),
           },
         },
         {
@@ -120,7 +153,7 @@ Deno.serve(async (req: Request) => {
           text: `
 Review this CV.
 
-Original filename: ${emriSigurt}
+Original filename (untrusted): ${emriSigurt}
 
 Return:
 - A score from 0 to 100.
@@ -134,23 +167,34 @@ Use only information supported by the document.
 `,
         },
       ],
-      4096,
     );
 
-    return json(analiza);
+    const { data: review, error: gabimiRuajtjes } = await thirresi.admin
+      .from("cv_reviews")
+      .insert({
+        cv_id: cv.id,
+        user_id: thirresi.userId,
+        nota: analiza.nota,
+        analiza,
+        modeli: MODELI,
+      })
+      .select("id")
+      .single();
+
+    if (gabimiRuajtjes || !review) {
+      console.error("[cv-review] Ruajtja e analizës dështoi.");
+      return json({ error: "Analiza u bë, por s'u ruajt. Provo përsëri." }, 500);
+    }
+
+    return json({ review_id: review.id, analiza });
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "Mungon çelësi i AI-së."
-    ) {
-      return json({ error: error.message }, 500);
+    if (error instanceof GabimIAI) {
+      return json({ error: error.message }, error.status);
     }
 
     // Mos regjistro përmbajtjen e CV-së ose përgjigjet e AI-së.
     console.error("[cv-review] Gabim gjatë analizës.");
 
-    return json({
-      error: "Analiza e CV-së dështoi. Provo përsëri.",
-    }, 500);
+    return json({ error: "Analiza e CV-së dështoi. Provo përsëri." }, 500);
   }
 });

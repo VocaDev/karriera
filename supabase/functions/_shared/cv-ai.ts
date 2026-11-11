@@ -1,9 +1,9 @@
-
-import Anthropic from "npm:@anthropic-ai/sdk";
-import { zodOutputFormat } from "npm:@anthropic-ai/sdk/helpers/zod";
-import { z } from "npm:zod";
+import Anthropic from "npm:@anthropic-ai/sdk@1.7.0";
+import { zodOutputFormat } from "npm:@anthropic-ai/sdk@1.7.0/helpers/zod";
+import { z } from "npm:zod@4.6.7";
 
 // ---------- Modelet e të dhënave ----------
+// Të njëjtat fusha si tipet në src/lib/cv.ts (kontrata me app-in).
 
 export const AnalizaCVSchema = z.object({
   nota: z.number().int().min(0).max(100),
@@ -75,16 +75,51 @@ export type GjuhaCV = "sq" | "en";
 
 // ---------- Konfigurimi i AI-së ----------
 
-const MODELI = "claude-sonnet-5";
+export const MODELI = "claude-sonnet-5-5";
+
+/** Gabim që funksioni ia kthen app-it me këtë status dhe këtë mesazh (shqip, pa detaje teknike). */
+export class GabimIAI extends Error {
+  readonly status: number;
+
+  constructor(mesazhi: string, status: number) {
+    super(mesazhi);
+    this.name = "GabimIAI";
+    this.status = status;
+  }
+}
 
 function merrKlientin(): Anthropic {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
 
   if (!apiKey) {
-    throw new Error("Mungon çelësi i AI-së.");
+    throw new GabimIAI("Shërbimi i AI-së s'është konfiguruar ende.", 500);
   }
 
-  return new Anthropic({ apiKey });
+  // Edge Function ka afat (~150 s): një përpjekje me afat të gjatë, pa riprovime automatike.
+  // Riprovimin e bën përdoruesi me butonin "Provo përsëri".
+  return new Anthropic({ apiKey, timeout: 140_000, maxRetries: 0 });
+}
+
+// Gabimet e SDK-së sipas tipit (jo sipas tekstit të mesazhit), nga më i veçanti te më i përgjithshmi.
+function perktheGabimin(e: unknown): GabimIAI {
+  if (e instanceof Anthropic.RateLimitError) {
+    return new GabimIAI("AI-ja është shumë e zënë tani. Provo pas një minute.", 429);
+  }
+  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
+    console.error("[cv-ai] Çelësi i AI-së u refuzua.");
+    return new GabimIAI("Shërbimi i AI-së s'është konfiguruar mirë.", 500);
+  }
+  if (e instanceof Anthropic.BadRequestError) {
+    // P.sh. PDF me fjalëkalim, e dëmtuar ose me shumë faqe.
+    return new GabimIAI("AI-ja s'e lexoi dot këtë PDF. Provo një PDF tjetër (pa fjalëkalim).", 422);
+  }
+  if (e instanceof Anthropic.APIConnectionError || e instanceof Anthropic.InternalServerError) {
+    return new GabimIAI("AI-ja s'u përgjigj. Provo përsëri pas pak.", 503);
+  }
+  if (e instanceof Anthropic.APIError) {
+    return new GabimIAI("AI-ja ktheu gabim. Provo përsëri.", 502);
+  }
+  return new GabimIAI("Diçka shkoi keq me AI-në. Provo përsëri.", 500);
 }
 
 // ---------- Gjenerimi i përgjigjeve JSON ----------
@@ -93,35 +128,37 @@ export async function gjeneroJSON<T extends z.ZodType>(
   schema: T,
   system: string,
   prompt: string | Anthropic.Messages.ContentBlockParam[],
-  maxTokens = 4096,
+  maxTokens = 16000,
 ): Promise<z.infer<T>> {
   const klienti = merrKlientin();
 
-  const response = await klienti.messages.parse({
-    model: MODELI,
-    max_tokens: maxTokens,
-    system,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
+  let response;
+  try {
+    response = await klienti.messages.parse({
+      model: MODELI,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: prompt }],
+      // effort "medium": analizë e mjaftueshme, më shpejt dhe më lirë se "high" (default te Sonnet 5.5).
+      output_config: {
+        effort: "medium",
+        format: zodOutputFormat(schema),
       },
-    ],
-    output_config: {
-      format: zodOutputFormat(schema),
-    },
-  });
+    });
+  } catch (e) {
+    throw perktheGabimin(e);
+  }
 
   if (response.stop_reason === "max_tokens") {
-    throw new Error("Përgjigjja e AI-së ishte tepër e gjatë.");
+    throw new GabimIAI("Përgjigjja e AI-së ishte tepër e gjatë. Provo përsëri.", 502);
   }
 
   if (response.stop_reason === "refusal") {
-    throw new Error("AI-ja nuk mund ta përpunojë këtë kërkesë.");
+    throw new GabimIAI("AI-ja nuk mund ta përpunojë këtë dokument.", 422);
   }
 
   if (!response.parsed_output) {
-    throw new Error("AI-ja nuk ktheu përgjigje në formatin e kërkuar.");
+    throw new GabimIAI("AI-ja nuk ktheu përgjigje në formatin e kërkuar. Provo përsëri.", 502);
   }
 
   return response.parsed_output as z.infer<T>;
