@@ -1,76 +1,57 @@
 # CV Edge Functions
 
-Këto funksione përdorin Anthropic API për analizimin dhe krijimin e CV-ve.
+Dy funksione që thërrasin AI-në (Anthropic, `claude-sonnet-5-5`) për CV-në. Çelësi i AI-së jeton vetëm këtu, kurrë në app.
 
-## 1. cv-review
+Të dy funksionet e kontrollojnë vetë thirrësin (`_shared/thirresi.ts`):
 
-Analizon një CV në format PDF.
+1. sesion i vërtetë (JWT i përdoruesit, `auth.getUser`), përndryshe **401**
+2. llogari `kerkues` (`public.lloji_im()`), përndryshe **403**
+3. kufiri ditor për përdorues (tabela `cv_ai_thirrjet`), përndryshe **429**
 
-**Request:** `POST /functions/v1/cv-review`
+Gabimet kthehen si `{ "error": "<fjali në shqip>" }`; app-i e tregon atë fjali.
 
-Body:
+## 1. cv-review (IN: AI · 02.12)
 
-```json
-{
-  "pdf_base64": "BASE64_PDF_CONTENT",
-  "emri_skedarit": "cv.pdf"
-}
-```
+Analizon një CV të ngarkuar. App-i: `analizoCV(cvId)` në `src/lib/cv.ts`.
 
-Kthen analizën e CV-së sipas skemës `AnalizaCVSchema`.
+**Request:** `POST /functions/v1/cv-review` · `{ "cv_id": "<uuid>" }`
 
-## 2. cv-create
+1. Lexon rreshtin `cvs` dhe PDF-në nga bucket-i `cv` **me JWT-në e përdoruesit**: RLS-i garanton që CV-ja është e tija.
+2. Kontrollon 5 MB dhe `%PDF-`, e dërgon PDF-në te AI-ja me structured output (`AnalizaCVSchema`).
+3. E ruan analizën te `cv_reviews` me çelësin sekret (app-i s'mund ta shkruajë vetë notën).
 
-Krijon ose rishkruan një CV të strukturuar.
+**Response:** `{ "review_id": "<uuid>", "analiza": AnalizaCV }` · kufiri: 5 analiza në 24 orë.
 
-**Request:** `POST /functions/v1/cv-create`
+## 2. cv-create (PAS Demo Day-t)
 
-Shembull me përgjigjet e përdoruesit:
+Ndërtuesi i CV-së dhe formatet. HARTA i lë pas Demo Day-t: app-i s'e hap (`CV_PAS_DEMO_DAY_HAPUR = false`). **Mos e deploy-o pa vendimin e ekipit.**
 
-```json
-{
-  "formati": "ks",
-  "gjuha": "sq",
-  "burimi": {
-    "pergjigjet": [
-      "Emri dhe mbiemri",
-      "Pozita e dëshiruar",
-      "Arsimimi",
-      "Përvoja e punës",
-      "Aftësitë"
-    ]
-  }
-}
-```
+**Request:** `POST /functions/v1/cv-create` · `{ "formati": "ks", "gjuha": "sq", "burimi": { "pergjigjet": [5 tekste] } }` ose `"burimi": { "cv": CvStrukturuar }` për rishkrim. Formatet: `ks`, `europass`, `eu`, `us`, `uk`, `ats`; gjuhët `sq`, `en`. Kufiri: 10 në 24 orë.
 
-Formatet: `ks`, `europass`, `eu`, `us`, `uk`, `ats`.
+## 3. Go-live (vetëm me OK-në e Gentit; asgjë nga këto s'është bërë ende)
 
-Gjuhët: `sq`, `en`.
+1. **SQL**, në SQL Editor, në këtë rend:
+   1. `supabase/migrations/20261104120000_punet.sql` (është aplikuar që në J5)
+   2. `supabase/j6-hyrja-rls.sql` (është aplikuar që në J6)
+   3. `supabase/migrations/20261111000000_cv.sql` (i ri: `cvs`, `cv_reviews`, `cv_ai_thirrjet`, bucket-i `cv` dhe policy-të)
+2. **Sekreti:** `supabase secrets set ANTHROPIC_API_KEY=<çelësi>` (ose Dashboard → Edge Functions → Secrets). `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS` dhe `SUPABASE_SECRET_KEYS` i jep platforma vetë.
+3. **Deploy**, pa verifikimin e gateway-it (çelësat e rinj s'janë JWT; funksioni e verifikon vetë përdoruesin):
+   `supabase functions deploy cv-review --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   (`cv-create` vetëm pas Demo Day-t, me të njëjtën flag.)
+4. **Prova** me dy llogari demo (`.env.demo`): kërkuesi ngarkon PDF dhe merr analizë; punëdhënësi merr 403; kërkuesi s'e sheh CV-në e tjetrit; analiza e 6-të brenda 24 orëve merr 429.
+5. **Pastaj** te `src/lib/vecorite.ts`: CV-ja bëhet `{ lloji: "gati" }` vetëm pasi kjo rrjedhë punon në telefon.
 
-Mund të dërgohet edhe një CV ekzistuese e strukturuar për rishkrim, në vend të përgjigjeve.
-
-## 3. Konfigurimi
-
-Funksionet përdorin variablën e ambientit:
-
-`ANTHROPIC_API_KEY`
-
-Mos e vendosni API key në kod, README ose Git.
-
-## 4. Testimi lokal i AI
-
-Testimi bëhet me Deno dhe një PDF lokal:
+## 4. Prova lokale e AI-së (pa Supabase)
 
 ```powershell
-$env:ANTHROPIC_API_KEY="YOUR_API_KEY"
-deno run --node-modules-dir=auto --allow-env=ANTHROPIC_API_KEY --allow-read="C:\PATH\TO\cv.pdf" .\scripts\test-cv-ai.ts "C:\PATH\TO\cv.pdf"
+$env:ANTHROPIC_API_KEY = "..."
+deno run --allow-env=ANTHROPIC_API_KEY --allow-net=api.anthropic.com --allow-read="C:\PATH\TO\cv.pdf" .\scripts\test-cv-ai.ts "C:\PATH\TO\cv.pdf"
 ```
 
-Ky skript teston funksionet e përbashkëta të AI-së dhe validimin e skemave. Nuk deploy-on Edge Functions.
+Shtyp analizën e plotë. `--krijo` provon edhe krijimin e CV-së me të dhëna testi. PDF-ja dërgohet te Anthropic me çelësin tënd.
 
 ## 5. Siguria
 
-- Mos ruani API keys në Git.
-- Mos publikoni të dhëna personale të CV-ve.
-- Migrimi SQL duhet të shqyrtohet dhe të aplikohet nga personi përgjegjës.
-- Këto funksione nuk janë deploy-uar nga ky projekt.
+- Asnjë çelës në Git, README ose app. Log-et s'përmbajnë CV, emra apo përgjigje të AI-së.
+- Teksti brenda PDF-së dhe përgjigjet e përdoruesit trajtohen si të dhëna, jo si udhëzime (prompt injection).
+- Nota është vlerësim i AI-së për CV-në, jo parashikim punësimi; app-i e thotë këtë nën notë.
