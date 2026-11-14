@@ -8,7 +8,8 @@ import KartaPunes from "@/components/KartaPunes";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import { KartaSkelet } from "@/components/Skeleti";
-import { Faqja, IKONAT, Ikona, T, Titulli } from "@/components/ui";
+import { GradientiSiper } from "@/components/TabEkrani";
+import { IKONAT, Ikona, T } from "@/components/ui";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
@@ -134,12 +135,10 @@ export default function Punet() {
     await ngarko(true);
   }
 
-  // Koka: në tab-a s'ka header, prandaj titulli është këtu (si në bord). Pa "+": kërkuesi s'poston punë.
+  // Koka e listës: titulli "Punët" është titulli i madh i Stack-ut të tab-it. Pa "+": kërkuesi s'poston punë.
   const koka = (
     <View style={styles.kokaEPlote}>
-      <View style={styles.koka}>
-        <Titulli>Punët</Titulli>
-      </View>
+      <GradientiSiper brenda={18} />
       <View style={[styles.kerkimi, { backgroundColor: t.karta, borderColor: t.vija }]}>
         <Ikona emri={IKONAT.kerko} madhesia={17} ngjyra={t.zbehur} />
         <TextInput
@@ -217,38 +216,37 @@ export default function Punet() {
     );
 
   return (
-    <Faqja pa_scroll>
-      <Animated.FlatList
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.lista}
-        data={punetEFiltruara ?? []}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        keyExtractor={(item) => item.id}
-        refreshing={rifreskim}
-        onRefresh={rifresko}
-        itemLayoutAnimation={qetesi ? undefined : LEVIZJA_E_LISTES}
-        ListHeaderComponent={koka}
-        ListEmptyComponent={kurSkaPune}
-        renderItem={({ item }) => (
-          <Animated.View entering={item.id === ePunesSeRe && !qetesi ? HYRJA_E_PUNES_SE_RE : undefined}>
-            <Link href={`/pune/${item.id}`} asChild>
-              <KartaPunes
-                puna={item}
-                ruajtur={teRuajturat.has(item.id)}
-                kurNdryshonRuajtja={(ruaje) => ndryshoRuajtjen(item.id, ruaje)}
-              />
-            </Link>
-          </Animated.View>
-        )}
-      />
-    </Faqja>
+    <Animated.FlatList
+      style={[styles.flex, { backgroundColor: t.sfondi }]}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.lista}
+      data={punetEFiltruara ?? []}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      keyExtractor={(item) => item.id}
+      refreshing={rifreskim}
+      onRefresh={rifresko}
+      itemLayoutAnimation={qetesi ? undefined : LEVIZJA_E_LISTES}
+      ListHeaderComponent={koka}
+      ListEmptyComponent={kurSkaPune}
+      renderItem={({ item }) => (
+        <Animated.View entering={item.id === ePunesSeRe && !qetesi ? HYRJA_E_PUNES_SE_RE : undefined}>
+          <Link href={`/pune/${item.id}`} asChild>
+            <KartaPunes
+              puna={item}
+              ruajtur={teRuajturat.has(item.id)}
+              kurNdryshonRuajtja={(ruaje) => ndryshoRuajtjen(item.id, ruaje)}
+            />
+          </Link>
+        </Animated.View>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   kokaEPlote: { gap: 12, marginBottom: 4 },
-  koka: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  flex: { flex: 1 },
   kerkimi: {
     flexDirection: "row",
     alignItems: "center",
