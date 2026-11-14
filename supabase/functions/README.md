@@ -1,27 +1,31 @@
-# CV Edge Functions
+# Edge Functions
+
+Ky dosje ka funksionet e CV-së (`cv-review`, `cv-create`), `gati` (README i vet: [gati/README.md](gati/README.md)), tri funksionet e intervistës (`intervista-nis`, `intervista-kthesa`, `intervista-raporti`) dhe `portalet` (më poshtë, pjesa "Portalet"). Rendi i vetëm i go-live për të gjitha është te seksioni 3.
+
+## CV: dy funksione
 
 Dy funksione që thërrasin AI-në (Anthropic, `claude-haiku-5-5`: model i lehtë dhe i lirë, vendimi i Gentit 11.11) për CV-në.
 `cv-review` me effort `medium`, `cv-create` me effort `low`. Haiku 5.5 s'ka model rezervë kur refuzon: funksioni kthen 422 me një fjali në shqip. Çelësi i AI-së jeton vetëm këtu, kurrë në app.
 
-Të dy funksionet e kontrollojnë vetë thirrësin (`_shared/thirresi.ts`):
+Të dy funksionet e CV-së (si `gati` dhe `intervista-*`, me kufijtë e tyre) e kontrollojnë vetë thirrësin (`_shared/thirresi.ts`):
 
 1. sesion i vërtetë (JWT i përdoruesit, `auth.getUser`), përndryshe **401**
 2. llogari `kerkues` (`public.lloji_im()`), përndryshe **403**
-3. kufiri ditor për përdorues (tabela `cv_ai_thirrjet`), përndryshe **429**
+3. kufiri ditor për përdorues (tabela `cv_ai_thirrjet`; vetëm për `cv-review` dhe `cv-create`: `gati` ka `gati_thirrjet`, intervista ka kufirin e vet te `intervista-nis`), përndryshe **429**
 
 Gabimet kthehen si `{ "error": "<fjali në shqip>" }`; app-i e tregon atë fjali.
 
 ## 1. cv-review (IN: AI · 02.12)
 
-Analizon një CV të ngarkuar. App-i: `analizoCV(cvId)` në `src/lib/cv.ts`.
+Analizon një CV, ose një PDF të ngarkuar, ose një CV të krijuar në app (`cvs.permbajtja`). App-i: `analizoCV(cvId)` në `src/lib/cv.ts`.
 
 **Request:** `POST /functions/v1/cv-review` · `{ "cv_id": "<uuid>" }`
 
-1. Lexon rreshtin `cvs` dhe PDF-në nga bucket-i `cv` **me JWT-në e përdoruesit**: RLS-i garanton që CV-ja është e tija.
-2. Kontrollon 5 MB dhe `%PDF-`, e dërgon PDF-në te AI-ja me structured output (`AnalizaCVSchema`).
+1. Lexon rreshtin `cvs` **me JWT-në e përdoruesit**: RLS-i garanton që CV-ja është e tija. Për PDF lexon skedarin nga bucket-i `cv`, kontrollon 5 MB dhe `%PDF-`, dhe e dërgon te AI-ja me structured output; AI-ja e kthen edhe CV-në si të dhëna (`cv`). Për CV të krijuar, `permbajtja` është vetë `cv`.
+2. Sugjerimet marrin `id` dhe placeholder-at nga serveri; shqipja e AI-së kontrollohet (`_shared/sugjerimet.ts`).
 3. E ruan analizën te `cv_reviews` me çelësin sekret (app-i s'mund ta shkruajë vetë notën).
 
-**Response:** `{ "review_id": "<uuid>", "analiza": AnalizaCV }` · kufiri: 5 analiza në 24 orë.
+**Response:** `{ "review_id": "<uuid>", "analiza": AnalizaRuajtur }` (`AnalizaRuajtur` te `_shared/cv-ai.ts`, versioni 2: `versioni: 2`, `nota`, `permbledhja`, `seksionet`, `cv`, `sugjerimet`, `rishkrimet` për app-in e vjetër) · kufiri: 5 analiza në 24 orë.
 
 ## 2. cv-create (del tani: vendimi i Gentit, 11.11)
 
@@ -31,16 +35,27 @@ Ndërtuesi i CV-së nga 5 përgjigje (format Kosovë, shqip). App-i: `krijoCV` n
 
 ## 3. Go-live (vetëm me OK-në e Gentit; asgjë nga këto s'është bërë ende)
 
+Rendi i vetëm për degën e bashkuar (7 degët e javës 14–15.11). **Migrimet para kodit që i lexon**: app-i i ri e lexon `punet` me kolonat e reja që në ekranin e parë, prandaj migrimi i portaleve nuk mund të vijë pas app-it.
+
 1. **SQL**, në SQL Editor, në këtë rend:
    1. `supabase/migrations/20261104120000_punet.sql` (është aplikuar që në J5)
    2. `supabase/j6-hyrja-rls.sql` (është aplikuar që në J6)
-   3. `supabase/migrations/20261111000000_cv.sql` (i ri: `cvs`, `cv_reviews`, `cv_ai_thirrjet`, bucket-i `cv` dhe policy-të)
-2. **Sekreti:** `supabase secrets set ANTHROPIC_API_KEY=<çelësi>` (ose Dashboard → Edge Functions → Secrets). `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS` dhe `SUPABASE_SECRET_KEYS` i jep platforma vetë.
-3. **Deploy**, pa verifikimin e gateway-it (çelësat e rinj s'janë JWT; funksioni e verifikon vetë përdoruesin):
+   3. `supabase/migrations/20261111000000_cv.sql` (është aplikuar: `cvs`, `cv_reviews`, `cv_ai_thirrjet`, bucket-i `cv`)
+   4. `supabase/migrations/20261114120000_punet_portalet.sql` (portalet: kolonat e reja te `punet`)
+   5. `supabase/migrations/20261115100000_profili_roli.sql` (roli i synuar, gjuha e intervistës)
+   6. `supabase/migrations/20261115110000_gatishmeria.sql` (`gatishmeria`, `gati_thirrjet`)
+   7. `supabase/migrations/20261115120000_intervistat.sql` (kërkon `gatishmeria`: jep gabim nëse mungon)
+2. **Sekretet:** `supabase secrets set ANTHROPIC_API_KEY=<çelësi>` (ose Dashboard → Edge Functions → Secrets) dhe `supabase secrets set PORTALET_SEKRETI=<varg i rastësishëm, 32+ shenja>` (vetëm për `portalet`). `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS` dhe `SUPABASE_SECRET_KEYS` i jep platforma vetë.
+3. **Deploy**, pa verifikimin e gateway-it (çelësat e rinj s'janë JWT; funksioni e verifikon vetë përdoruesin ose sekretin), në këtë rend:
    `supabase functions deploy cv-review --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
-   `supabase functions deploy cv-create --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
-4. **Prova** me dy llogari demo (`.env.demo`): kërkuesi ngarkon PDF dhe merr analizë; punëdhënësi merr 403; kërkuesi s'e sheh CV-në e tjetrit; analiza e 6-të brenda 24 orëve merr 429.
-5. **Pastaj** te `src/lib/vecorite.ts`: CV-ja bëhet `{ lloji: "gati" }` vetëm pasi kjo rrjedhë punon në telefon.
+   `supabase functions deploy gati --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   `supabase functions deploy intervista-nis --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   `supabase functions deploy intervista-kthesa --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   `supabase functions deploy intervista-raporti --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   `supabase functions deploy portalet --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   (`cv-create` s'ka ndryshuar në këtë bashkim; deploy-o vetëm nëse s'është live. `cv-review` ka ndryshuar: kontrata e re me `cv` dhe `sugjerimet`.)
+4. **Prova** me dy llogari demo (`.env.demo`): kërkuesi ngarkon PDF dhe merr analizë; punëdhënësi merr 403; kërkuesi s'e sheh CV-në e tjetrit; analiza e 6-të brenda 24 orëve merr 429. Pastaj `gati` (CV, pa CV → `pa_cv`, punëdhënës 403, thirrja e 11-të 429) dhe intervista nga fillimi në fund (seksionet e tyre më poshtë dhe te `gati/README.md`). Portalet: shih "Go-live" te pjesa e tyre (provë pa shkrim, importi i parë një portal në një kohë, pastaj `supabase/portalet-orari.sql`).
+5. **Pastaj** te `src/lib/vecorite.ts`: CV-ja, "A jam gati?" dhe Intervista bëhen `{ lloji: "gati" }` (me `href`) vetëm pasi rrjedha përkatëse punon në telefon.
 
 ## 4. Prova lokale e AI-së (pa Supabase)
 
