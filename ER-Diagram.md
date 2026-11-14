@@ -161,6 +161,10 @@ erDiagram
     auth_users ||--o{ intervista_kthesat : "zoteron"
 ```
 
+![Diagrami ER i bazës sot, 14.11.2026](docs/er/er-sot.svg)
+
+*Diagrami është kontrolluar me renderuesin zyrtar të Mermaid (i vlefshëm, lloji `er`). I njëjti diagram si imazh: [docs/er/er-sot.svg](docs/er/er-sot.svg).*
+
 ### Burimi i çdo tabele
 
 Të gjitha tabelat e diagramit janë **live**. Asnjë tabelë nuk është "në pritje": migrimet e kësaj jave u aplikuan më 14.11 (shih 4.5). Numri i rreshtave është ai i 14.11 dhe tregon se jemi ende në fazën e provës.
@@ -451,6 +455,10 @@ erDiagram
     auth_users ||--o{ mesimi_progresi : "PLAN"
     auth_users ||--o{ ditet_aktive : "PLAN"
 ```
+
+![Diagrami ER si do të duket në fund (plan, jo i ndërtuar)](docs/er/er-ne-fund.svg)
+
+*Diagrami është kontrolluar me renderuesin zyrtar të Mermaid (i vlefshëm, lloji `er`). I njëjti diagram si imazh: [docs/er/er-ne-fund.svg](docs/er/er-ne-fund.svg).*
 
 ### 6.1 Kategoritë për të gjitha llojet e punëve (A)
 
