@@ -95,12 +95,15 @@ I njëjti kod (`burimet.ts` + `harta.ts`), pa Supabase. Shtyp numrat për çdo p
 
 ## Go-live (vetëm me OK-në e Gentit)
 
-1. **Para gjithçkaje, në app** (Edonik/Genti): `degjoPunetERe` (`src/lib/punet.ts`) të dëgjojë vetëm `filter: "burimi=eq.perdoruesi"`. Tani çdo INSERT jep njoftim + dridhje: një import me 30 punë = 30 njoftime.
-2. **SQL**: `migrations/20261114120000_punet_portalet.sql` në SQL Editor.
+**App-i dhe migrimi shkojnë bashkë.** Që nga 14.11 kjo degë ndryshon edhe app-in: `src/lib/punet.ts` lexon kolonat e reja (`linku`, `portali`, `afati`, `aktive`) dhe `listoPunet` kthen vetëm `aktive = true`; Realtime-i dëgjon vetëm `burimi=eq.perdoruesi` (importi s'jep njoftime). `src/app/pune/[id].tsx` tregon afatin dhe ka "Ruaje", "Ndaje" dhe "Hape në shfletues". Pa migrimin, lista dhe detajet dështojnë (kolonat s'ekzistojnë), prandaj **migrimi aplikohet para merge-it të kësaj dege ose bashkë me të, kurrë pas.**
+
+1. **SQL**: `migrations/20261114120000_punet_portalet.sql` në SQL Editor (para merge-it të kësaj dege në `main`).
+2. **Merge** i degës (app-i i ri lexon kolonat e reja).
 3. **Sekreti**: `supabase secrets set PORTALET_SEKRETI=<varg i rastësishëm, 32+ shenja>`.
 4. **Deploy** (funksioni e kontrollon vetë sekretin, s'ka JWT përdoruesi):
    `supabase functions deploy portalet --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
 5. **Provë pa shkrim**: `POST /functions/v1/portalet` me header `x-portalet-sekreti` dhe trup `{"provo": true, "portalet": ["kosovajob"]}` → kthen raportin dhe rreshtat, s'shkruan asgjë.
 6. **Importi i parë**, një portal në një kohë (`{"portalet": ["kosovajob"]}`, pastaj `portalpune`), sepse funksioni ka 150 s. Me `maks_detaje` 20 (parazgjedhja) importi i parë mund të mbarojë në dy ditë.
 7. **Orari**: `supabase/portalet-orari.sql` (pg_cron, çdo ditë 06:00 dhe 06:10 në Kosovë).
-8. **App-i** (pas kësaj): `listoPunet` me `.eq("aktive", true)`; tipi `Puna` me `burimi: "portal"`, `linku`, `afati`; butoni "Hape në shfletues" (`expo-web-browser`) dhe "Nga KosovaJob" te karta.
+8. **Prova në telefon**: një punë "Nga KosovaJob" hapet me "Hape në shfletues"; "Ruaje" del te ⭐; importi s'jep njoftime; punët e skaduara s'dalin në listë.
+9. **Më vonë**: "Nga KosovaJob" edhe te karta e listës (`KartaPunes.tsx`).
