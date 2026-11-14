@@ -5,13 +5,32 @@ import { supabase } from "@/lib/supabase";
 
 export type Lloji = "kerkues" | "punedhenes" | "qender";
 
+/** Roli për të cilin përgatitet kërkuesi (HARTA: SWE ose Asistent/PR). Njëlloj si `punet.roli`. */
+export type RoliSynuar = "SWE" | "Asistent/PR";
+/** Gjuha e intervistës: shqip, anglisht, gjermanisht. */
+export type Gjuha = "sq" | "en" | "de";
+
+export const ROLET: readonly RoliSynuar[] = ["SWE", "Asistent/PR"];
+export const GJUHET: readonly Gjuha[] = ["sq", "en", "de"];
+
+export const EMRAT_E_ROLEVE: Record<RoliSynuar, { titulli: string; pershkrimi: string }> = {
+  SWE: { titulli: "Zhvillues/e softueri", pershkrimi: "Frontend, backend, mobile" },
+  "Asistent/PR": { titulli: "Asistent/e ose PR", pershkrimi: "Zyrë, administratë, komunikim me klientët" },
+};
+
+export const EMRAT_E_GJUHEVE: Record<Gjuha, string> = { sq: "Shqip", en: "English", de: "Deutsch" };
+
 export type Profili = {
   id: string;
   lloji: Lloji;
   emri: string;
   organizata: string | null;
-  gjuha: "sq" | "en" | "de";
+  gjuha: Gjuha;
+  /** null = kërkuesi s'e ka zgjedhur ende (onboarding). Punëdhënësi dhe qendra e kanë gjithmonë null. */
+  roli_synuar: RoliSynuar | null;
 };
+
+const KOLONAT_E_PROFILIT = "id, lloji, emri, organizata, gjuha, roli_synuar";
 
 export const EMRAT_E_LLOJEVE: Record<Lloji, string> = {
   kerkues: "Kërkoj punë",
@@ -68,10 +87,28 @@ export async function dil(): Promise<void> {
 export async function merrProfilin(): Promise<Profili | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, lloji, emri, organizata, gjuha")
+    .select(KOLONAT_E_PROFILIT)
     .maybeSingle();
   if (error) throw new Error(mesazhiIGabimit(error));
   return data as Profili | null;
+}
+
+/**
+ * Ndryshon rolin dhe/ose gjuhën e intervistës. Serveri lejon vetëm këto kolona (+ emrin) dhe vetëm rreshtin tim;
+ * lloji i llogarisë s'ndryshohet dot nga app-i. Kthen profilin e ri që ekrani ta vendosë pa e lexuar sërish.
+ */
+export async function ndryshoProfilin(ndryshimet: { roli_synuar?: RoliSynuar; gjuha?: Gjuha }): Promise<Profili> {
+  const { data: sesioni } = await supabase.auth.getSession();
+  const uid = sesioni.session?.user.id;
+  if (!uid) throw new Error("Sesioni ka mbaruar. Hyr përsëri.");
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(ndryshimet)
+    .eq("id", uid)
+    .select(KOLONAT_E_PROFILIT)
+    .single();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  return data as Profili;
 }
 
 export type NumratEQendres = { kerkues: number; punedhenes: number; punet: number; ruajtje: number };
