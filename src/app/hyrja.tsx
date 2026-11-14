@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type Text
 import Animated, { useSharedValue } from "react-native-reanimated";
 
 import { ButoniKryesor, Etiketa, Fusha, Udhezimi } from "@/components/Forma";
+import Fillimi from "@/components/Fillimi";
 import Prekshme from "@/components/Prekshme";
 import Unaza from "@/components/Unaza";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
@@ -108,7 +109,7 @@ function HapatERegjistrimit({ hapi }: { hapi: 1 | 2 }) {
 // Hyrja dhe regjistrimi (bordi: ekranet 01 dhe 57). Ky është i vetmi ekran që sheh kush s'ka hyrë.
 export default function Hyrja() {
   const t = useTema();
-  const { sesioni, gabimiIProfilit, rifreskoProfilin } = useSesioni();
+  const { sesioni, profiliPaRol, gabimiIProfilit, rifreskoProfilin } = useSesioni();
   const { stili: stiliIButonit, dridhu } = useDridhja();
   const unaza = useSharedValue(0.78);
   const fjalekalimiRef = useRef<TextInputInstance>(null);
@@ -130,7 +131,9 @@ export default function Hyrja() {
     emri: regjistrim && emri.trim().length < 2,
     organizata: regjistrim && lloji === "punedhenes" && organizata.trim().length < 2,
     email: !EMAIL_I_SAKTE.test(email.trim()),
-    fjalekalimi: fjalekalimi.length < 6,
+    // Rregulli i 6 shkronjave vlen vetëm kur krijohet fjalëkalimi; te hyrja mjafton që të mos jetë bosh
+    // (llogaritë e vjetra mund të kenë fjalëkalim tjetër, dhe serveri e kontrollon vetë).
+    fjalekalimi: regjistrim ? fjalekalimi.length < 6 : fjalekalimi.length === 0,
   };
   const valide = !mungon.emri && !mungon.organizata && !mungon.email && !mungon.fjalekalimi;
 
@@ -169,6 +172,9 @@ export default function Hyrja() {
     }
   }
 
+  // Kërkues i ri (ose i vjetër pa rol): zgjedh rolin dhe gjuhën e intervistës para se të hyjë në app.
+  if (sesioni && profiliPaRol) return <Fillimi profili={profiliPaRol} />;
+
   // Ke hyrë, por profili s'u lexua (p.sh. pa internet): mos e ngec përdoruesin.
   if (sesioni && gabimiIProfilit) {
     return (
@@ -180,7 +186,7 @@ export default function Hyrja() {
           <T zbehur madhesia={14}>
             {gabimiIProfilit}
           </T>
-          <ButoniKryesor teksti="Provo përsëri" onPress={rifreskoProfilin} />
+          <ButoniKryesor teksti="Provo përsëri" onPress={() => rifreskoProfilin()} />
           <Prekshme onPress={() => dil().catch(() => {})} accessibilityRole="button" style={styles.lidhja}>
             <T pesha="gjysme" madhesia={15} ngjyra={t.keq}>
               Dil nga llogaria
@@ -379,7 +385,9 @@ export default function Hyrja() {
               returnKeyType="go"
               onSubmitEditing={dergo}
             />
-            <Udhezimi shfaq={provoi && mungon.fjalekalimi}>Fjalëkalimi duhet të ketë të paktën 6 shkronja.</Udhezimi>
+            <Udhezimi shfaq={provoi && mungon.fjalekalimi}>
+              {regjistrim ? "Fjalëkalimi duhet të ketë të paktën 6 shkronja." : "Shkruaj fjalëkalimin."}
+            </Udhezimi>
 
             {gabimi && (
               <View style={[styles.gabimi, { backgroundColor: t.karta }]} accessibilityLiveRegion="polite">

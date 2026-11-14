@@ -4,17 +4,31 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { merrProfilin, type Profili } from "@/lib/hyrja";
+import { merrProfilin, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
 import { supabase } from "@/lib/supabase";
 
 type GjendjaESesionit = {
   sesioni: Session | null;
+  /**
+   * Profili që app-i mund ta përdorë. Një kërkues që s'e ka zgjedhur ende rolin (roli_synuar = null) NUK është këtu:
+   * për rojet te _layout.tsx ai është "pa profil të gatshëm" dhe mbetet te ekrani i hyrjes, që i shfaq onboarding-un
+   * (zgjedhja e rolit dhe e gjuhës). Sapo e ruan zgjedhjen, profili shfaqet dhe rojet e çojnë te tab-at.
+   */
   profili: Profili | null;
+  /** Profili i kërkuesit që pret ende onboarding-un (roli pa zgjedhur); përndryshe null. */
+  profiliPaRol: Profili | null;
+  /** Roli i synuar dhe gjuha e intervistës të profilit të gatshëm (null / "sq" kur s'ka profil). */
+  roli_synuar: RoliSynuar | null;
+  gjuha: Gjuha;
   /** true derisa të dihet a ka sesion dhe, nëse ka, cili është profili. */
   duke_ngarkuar: boolean;
   /** Gabimi i leximit të profilit (p.sh. pa internet). */
   gabimiIProfilit: string | null;
-  rifreskoProfilin: () => void;
+  /**
+   * Pa argument: e lexon sërish profilin nga serveri (në heshtje: ekranet nuk zhduken derisa të vijë përgjigja).
+   * Me profilin e ri (p.sh. nga ndryshoProfilin): e vendos menjëherë, pa rrugë shtesë te rrjeti.
+   */
+  rifreskoProfilin: (profili?: Profili) => void;
 };
 
 const Konteksti = createContext<GjendjaESesionit | null>(null);
@@ -55,7 +69,13 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
         if (aktiv) setLexuar({ uid, profili, gabimi: profili ? null : "Profili s'u gjet." });
       })
       .catch((e: unknown) => {
-        if (aktiv) setLexuar({ uid, profili: null, gabimi: e instanceof Error ? e.message : "Gabim i panjohur" });
+        if (!aktiv) return;
+        // Një rilexim që dështon (pa internet) nuk e heq profilin që e kemi: përdoruesi mbetet ku është.
+        setLexuar((l) =>
+          l?.uid === uid && l.profili
+            ? l
+            : { uid, profili: null, gabimi: e instanceof Error ? e.message : "Gabim i panjohur" },
+        );
       });
     return () => {
       aktiv = false;
@@ -63,13 +83,24 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   }, [uid, rilexo]);
 
   const iKesajLlogarie = uid && lexuar?.uid === uid ? lexuar : null;
+  const iLexuari = iKesajLlogarie?.profili ?? null;
+  const paRol = iLexuari?.lloji === "kerkues" && iLexuari.roli_synuar === null;
   const vlera: GjendjaESesionit = {
     sesioni,
-    profili: iKesajLlogarie?.profili ?? null,
+    profili: paRol ? null : iLexuari,
+    profiliPaRol: paRol ? iLexuari : null,
+    roli_synuar: iLexuari?.roli_synuar ?? null,
+    gjuha: iLexuari?.gjuha ?? "sq",
     duke_ngarkuar: !sesioniULexua || (uid !== null && iKesajLlogarie === null),
     gabimiIProfilit: iKesajLlogarie?.gabimi ?? null,
-    rifreskoProfilin: () => {
-      setLexuar(null);
+    rifreskoProfilin: (profiliIRi) => {
+      if (profiliIRi && uid && profiliIRi.id === uid) {
+        setLexuar({ uid, profili: profiliIRi, gabimi: null });
+        return;
+      }
+      // Rilexim në heshtje: profili i vjetër mbetet derisa të vijë i riu, që rojet te _layout të mos të nxjerrin
+      // ekranin e hapur. Vetëm pas një gabimi (s'ka profil) kthehemi te gjendja "po ngarkohet".
+      setLexuar((l) => (l?.profili ? l : null));
       setRilexo((n) => n + 1);
     },
   };
