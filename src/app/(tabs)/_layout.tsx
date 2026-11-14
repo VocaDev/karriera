@@ -35,7 +35,8 @@ export default function TabLayout() {
 
   return (
     <NativeTabs tintColor={t.theksi}>
-      <NativeTabs.Trigger name="index">
+      {/* Çdo tab ka Stack-un e vet (titull i madh); "(sot)" është grup, kështu që Sot mbetet në URL-në "/". */}
+      <NativeTabs.Trigger name="(sot)">
         <NativeTabs.Trigger.Label>Sot</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "house", selected: "house.fill" }} md="home" />
       </NativeTabs.Trigger>
