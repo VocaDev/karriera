@@ -56,3 +56,54 @@ Shtyp analizën e plotë. `--krijo` provon edhe krijimin e CV-së me të dhëna 
 - Asnjë çelës në Git, README ose app. Log-et s'përmbajnë CV, emra apo përgjigje të AI-së.
 - Teksti brenda PDF-së dhe përgjigjet e përdoruesit trajtohen si të dhëna, jo si udhëzime (prompt injection).
 - Nota është vlerësim i AI-së për CV-në, jo parashikim punësimi; app-i e thotë këtë nën notë.
+
+---
+
+# Portalet: shpalljet e vërteta (14.11, prototip; asgjë live ende)
+
+Edge Function `portalet` sjell punët SWE dhe Asistent/PR nga KosovaJob dhe PortalPune te tabela `punet` me `burimi = 'portal'`. E thërret pg_cron, jo app-i. Pa AI: rolet, qyteti dhe aftësitë dalin nga rregulla (`portalet/harta.ts`).
+
+## Burimet (kontrolluar 14.11.2026)
+
+| Portali | robots.txt | Kushtet | Si lexohet | Statusi |
+|---|---|---|---|---|
+| **KosovaJob** | lejon gjithçka, përveç `/*?*drop=` | s'ka faqe kushtesh (vetëm privatësia) | lista në ballinë (titulli, qyteti, afati) + faqja e shpalljes (kompania, kategoria, orari) | ✅ përdoret |
+| **PortalPune** | lejon `/jobs`, jep `sitemap.xml` | "të drejtat e autorit"; pa përfitim për palë të treta pa pëlqim me shkrim | `active_jobs_sitemap` + JSON-LD `JobPosting` te faqja | ✅ vetëm faktet + linku; **t'u kërkohet pëlqimi** (info@portalpune.com) |
+| **OfertaPune** | `Crawl-delay: 10` | s'ka faqe kushtesh | lista në ballinë (titulli, kompania, qyteti, afati); parseri ekziston | ❌ **i ktheu botit tonë 403** (14.11): s'e anashkalojmë; pjesë e KosovaJob, shpalljet janë kryesisht edhe atje |
+| DuaPune | lejon `*`, bllokon botët e AI-së | **9.3 dhe 9.4 ndalojnë scraper-ët dhe agregatorët** | – | ❌ s'përdoret |
+| MerrJep | lejon `*` | – | njoftime të përgjithshme, jo portal pune | ❌ |
+| Gjirafa | `Crawl-delay: 300` | – | s'ka më faqe punësh (`/Pune` = 404) | ❌ |
+| SuperPuna | – | – | domeni në shitje | ❌ |
+| PunaIme, LypPune | – | – | u blenë nga KosovaJob | ❌ |
+| APRK (agjencia shtetërore) | s'ka robots.txt | – | lista me JavaScript (`/JobSeeker/Vacancies`) | ⏳ për më vonë |
+
+Rregullat e sjelljes (`portalet/shfletuesi.ts`): një kërkesë në një kohë për host, të paktën 2 s mes kërkesave (ose `Crawl-delay` i portalit, nëse është më i gjatë), robots.txt lexohet në çdo ekzekutim, User-Agent `KarrieraJobsBot/0.1 (university course project; respects robots.txt)` pa të dhëna personale. Faqja e një shpalljeje hapet vetëm një herë (kur është e re) dhe vetëm nëse titulli i ngjan SWE ose Asistent/PR.
+
+## Çka ruhet
+
+`MODELI.md`: teksti i plotë i shpalljes **s'ruhet kurrë**. Për çdo shpallje: titulli, kompania, qyteti, roli, afati, aftësitë që përmend, linku te portali dhe një përmbledhje me fjalët tona ("Pozitë në zhvillim softueri te X, Prishtinë. Afati i aplikimit: … Shpallja përmend: React, Git. Shpallja e plotë dhe aplikimi: te KosovaJob."). Email-et dhe telefonat e rekrutuesve s'merren.
+
+Migrimi `migrations/20261114120000_punet_portalet.sql` (pa aplikuar): `burimi` merr edhe `'portal'`; kolonat e reja `linku`, `portali`, `id_e_jashtme`, `gjurma`, `afati`, `aktive`, `pare_me`. RLS-i i J6 s'ndryshon: app-i shton vetëm `burimi = 'perdoruesi'`; rreshtat `portal` s'kanë pronar, s'i ndryshon e s'i fshin askush nga app-i; kërkuesi i lexon. Shpalljet e skaduara bëhen `aktive = false` (s'fshihen, që ⭐ të mos humbasin).
+
+## Prova lokale (pa databazë)
+
+```powershell
+node scripts/provo-portalet.ts "$env:TEMP\portalet.json" 40
+```
+
+I njëjti kod (`burimet.ts` + `harta.ts`), pa Supabase. Shtyp numrat për çdo portal dhe rol, dublikatat, dhe e shkruan rezultatin në JSON jashtë Git-it. Zgjat disa minuta (pauzat janë me qëllim).
+
+## Go-live (vetëm me OK-në e Gentit)
+
+**App-i dhe migrimi shkojnë bashkë.** Që nga 14.11 kjo degë ndryshon edhe app-in: `src/lib/punet.ts` lexon kolonat e reja (`linku`, `portali`, `afati`, `aktive`) dhe `listoPunet` kthen vetëm `aktive = true`; Realtime-i dëgjon vetëm `burimi=eq.perdoruesi` (importi s'jep njoftime). `src/app/pune/[id].tsx` tregon afatin dhe ka "Ruaje", "Ndaje" dhe "Hape në shfletues". Pa migrimin, lista dhe detajet dështojnë (kolonat s'ekzistojnë), prandaj **migrimi aplikohet para merge-it të kësaj dege ose bashkë me të, kurrë pas.**
+
+1. **SQL**: `migrations/20261114120000_punet_portalet.sql` në SQL Editor (para merge-it të kësaj dege në `main`).
+2. **Merge** i degës (app-i i ri lexon kolonat e reja).
+3. **Sekreti**: `supabase secrets set PORTALET_SEKRETI=<varg i rastësishëm, 32+ shenja>`.
+4. **Deploy** (funksioni e kontrollon vetë sekretin, s'ka JWT përdoruesi):
+   `supabase functions deploy portalet --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+5. **Provë pa shkrim**: `POST /functions/v1/portalet` me header `x-portalet-sekreti` dhe trup `{"provo": true, "portalet": ["kosovajob"]}` → kthen raportin dhe rreshtat, s'shkruan asgjë.
+6. **Importi i parë**, një portal në një kohë (`{"portalet": ["kosovajob"]}`, pastaj `portalpune`), sepse funksioni ka 150 s. Me `maks_detaje` 20 (parazgjedhja) importi i parë mund të mbarojë në dy ditë.
+7. **Orari**: `supabase/portalet-orari.sql` (pg_cron, çdo ditë 06:00 dhe 06:10 në Kosovë).
+8. **Prova në telefon**: një punë "Nga KosovaJob" hapet me "Hape në shfletues"; "Ruaje" del te ⭐; importi s'jep njoftime; punët e skaduara s'dalin në listë.
+9. **Më vonë**: "Nga KosovaJob" edhe te karta e listës (`KartaPunes.tsx`).

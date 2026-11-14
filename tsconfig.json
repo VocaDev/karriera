@@ -16,6 +16,7 @@
   "exclude": [
     "node_modules",
     "supabase/functions",
-    "scripts/test-cv-ai.ts"
+    "scripts/test-cv-ai.ts",
+    "scripts/provo-portalet.ts"
   ]
 }

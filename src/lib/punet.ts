@@ -10,18 +10,34 @@ export type Puna = {
   roli: "SWE" | "Asistent/PR" | "Tjetër";
   pershkrimi: string;
   aftesite: string[];
-  burimi: "seed" | "perdoruesi";
+  // "portal" = e importuar nga KosovaJob / PortalPune nga Edge Function "portalet" (migrimi 20261114120000).
+  burimi: "seed" | "perdoruesi" | "portal";
   krijuar_me: string; // ISO, për shiritin "E RE"
-  pronari_id: string | null; // kush e postoi (null te shpalljet "seed"); e vendos serveri
+  pronari_id: string | null; // kush e postoi (null te "seed" dhe "portal"); e vendos serveri
+  linku: string | null; // shpallja origjinale ("Hape në shfletues")
+  portali: Portali | null; // vetëm te "portal"
+  afati: string | null; // YYYY-MM-DD, afati i aplikimit
+  aktive: boolean; // false = skadoi ose s'është më te portali
 };
 
-const FUSHAT = "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me, pronari_id";
+export type Portali = "kosovajob" | "portalpune" | "ofertapune";
 
-// M1: lexon listën nga tabela "punet" (më të rejat lart).
+export const EMRI_I_PORTALIT: Record<Portali, string> = {
+  kosovajob: "KosovaJob",
+  portalpune: "PortalPune",
+  ofertapune: "OfertaPune",
+};
+
+const FUSHAT =
+  "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me, pronari_id, linku, portali, afati, aktive";
+
+// M1: lexon listën nga tabela "punet" (më të rejat lart). Vetëm punët aktive: shpalljet e skaduara
+// të portaleve mbeten në tabelë (që ⭐ të mos humbasin), por s'dalin më në listë.
 export async function listoPunet(): Promise<Puna[]> {
   const { data, error } = await supabase
     .from("punet")
     .select(FUSHAT)
+    .eq("aktive", true)
     .order("krijuar_me", { ascending: false });
   if (error) throw new Error(mesazhiIGabimit(error));
   return data as Puna[];
@@ -77,10 +93,12 @@ export async function fshiPunen(id: string): Promise<void> {
 
 // Punët e reja në kohë reale (Supabase Realtime): kur një punëdhënës poston, kërkuesi e merr menjëherë.
 // Realtime-i zbaton të njëjtin RLS: vetëm llogaritë e kyçura i marrin ngjarjet. Kthen funksionin për t'u shkëputur.
+// Vetëm burimi = "perdoruesi": importi i përditshëm nga portalet shton dhjetëra rreshta njëherësh,
+// dhe secili do të jepte një njoftim dhe një dridhje. Ato dalin në listë me rifreskimin e radhës.
 export function degjoPunetERe(emriIKanalit: string, kurVjen: (puna: Puna) => void): () => void {
   const kanali = supabase
     .channel(emriIKanalit)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "punet" }, (ngjarja) => {
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "punet", filter: "burimi=eq.perdoruesi" }, (ngjarja) => {
       kurVjen(ngjarja.new as Puna);
     })
     .subscribe();
