@@ -5,7 +5,7 @@ import * as Print from "expo-print";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
@@ -131,6 +131,7 @@ export default function DokumentiCV() {
   const [gjuha, setGjuha] = useState<GjuhaCV>("sq");
   const [dukeGjeneruar, setDukeGjeneruar] = useState(false);
   const [dukeRuajtur, setDukeRuajtur] = useState(false);
+  const [cvId, setCvId] = useState<string | null>(null); // versioni i hapur (për "Analizo këtë version")
 
   useEffect(() => {
     let aktiv = true;
@@ -141,6 +142,7 @@ export default function DokumentiCV() {
         if (r) {
           setFormati(r.formati);
           setGjuha(r.gjuha);
+          setCvId(r.id);
         }
       })
       .catch((e: unknown) => {
@@ -402,6 +404,27 @@ export default function DokumentiCV() {
           </>
         )}
       </Prekshme>
+
+      {/* Nota e re vjen vetëm nga një analizë e vërtetë e këtij versioni (cv-review pranon edhe CV-të e krijuara). */}
+      {cvId ? (
+        <Prekshme
+          onPress={() =>
+            Alert.alert(
+              "Ta analizoj këtë version?",
+              "Nëse ky version s'është analizuar ende, AI-ja e lexon dhe i jep notë të re. Përdor një nga 5 analizat e tua të sotme.",
+              [
+                { text: "Anulo", style: "cancel" },
+                { text: "Analizo", onPress: () => router.push({ pathname: "/cv/analiza", params: { id: cvId } }) },
+              ],
+            )
+          }
+          accessibilityRole="button"
+          accessibilityHint="Përdor një nga 5 analizat e sotme"
+          style={[styles.butonDyte, { borderColor: t.vija }]}
+        >
+          <T pesha="trashe">Analizo këtë version</T>
+        </Prekshme>
+      ) : null}
 
       {/* Ndërtuesi e ruan vetë versionin; "Ruaje" duhet vetëm pas një formati/gjuhe të re (pas Demo Day-t). */}
       {CV_PAS_DEMO_DAY_HAPUR && (

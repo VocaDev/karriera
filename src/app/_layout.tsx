@@ -94,6 +94,8 @@ function Navigimi({ t }: { t: Tema }) {
             {/* Ndërtuesi i CV-së del tani (vendimi i Gentit, 11.11). */}
             <Stack.Screen name="cv/ndertoje" options={{ title: "" }} />
             <Stack.Screen name="cv/dokumenti" options={{ title: "" }} />
+            {/* Rindërto CV-në: sugjerimet e pranuara të analizës, të zbatuara pa AI (14.11). */}
+            <Stack.Screen name="cv/rindertoje" options={{ title: "" }} />
           </Stack.Protected>
           {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
           <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
