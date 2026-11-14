@@ -1,14 +1,12 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import { Share, StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
-import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { EMRI_I_PORTALIT, gjePunen, type Puna } from "@/lib/punet";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
@@ -45,7 +43,7 @@ export default function DetajetEPunes() {
   const { profili } = useSesioni();
   // RLS-i (ruajtura_shto) lejon ⭐ vetëm për kërkuesin; punëdhënësi s'e sheh butonin.
   const mundRuan = profili?.lloji === "kerkues";
-  const { stili: stiliIButonit, dridhu } = useDridhja();
+  const router = useRouter();
   // Lista dërgon vetëm id-në në adresë (/pune/p3); këtu e lexojmë dhe e kërkojmë në Supabase.
   const { id } = useLocalSearchParams<{ id: string }>();
   const [puna, setPuna] = useState<Puna | null | undefined>(undefined); // undefined = duke ngarkuar
@@ -274,27 +272,19 @@ export default function DetajetEPunes() {
         </>
       )}
 
-      {/* Ende i kyçur: prekja jep një dridhje të lehtë ("jo tani"), dhe teksti poshtë thotë kur vjen. */}
-      <Animated.View style={stiliIButonit}>
+      {/* "A jam gati?" (WP3): AI-ja e krahason CV-në e fundit me këtë shpallje. Rruga është vetëm për kërkuesin. */}
+      {mundRuan && (
         <Prekshme
           accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          accessibilityHint="Vjen më 02.12"
-          onPress={() => {
-            prekja.lehte();
-            dridhu();
-          }}
-          style={[styles.butoni, { backgroundColor: t.teksti, opacity: 0.35 }]}
+          accessibilityHint="AI-ja e krahason CV-në tënde me këtë shpallje"
+          onPress={() => router.push({ pathname: "/gati/[id]", params: { id: puna.id } })}
+          style={[styles.butoni, { backgroundColor: t.teksti }]}
         >
-          <Ikona emri={IKONAT.kycja} madhesia={14} ngjyra={t.sfondi} />
           <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
             A jam gati për këtë?
           </T>
         </Prekshme>
-      </Animated.View>
-      <T zbehur madhesia={12.5} style={styles.qendroj}>
-        &quot;A jam gati?&quot; vjen më 02.12, me AI-në
-      </T>
+      )}
     </Faqja>
   );
 }
