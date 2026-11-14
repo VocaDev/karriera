@@ -34,10 +34,9 @@ export type Roli = "SWE" | "Asistent/PR" | "Tjetër";
 export const GJUHET: readonly Gjuha[] = ["sq", "en", "de"];
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// thirresi.ts njeh vetëm emrat e CV-së. Me kufi të pafund (Infinity) numërimi i cv_ai_thirrjet s'pengon kurrë;
-// emri shërben vetëm si etiketë në log. Kufiri i vërtetë i intervistës: KUFIRI_DITOR_INTERVISTAVE te intervista-nis.
-// TODO pas bashkimit: shto "intervista" te FunksioniAI në thirresi.ts dhe hiq këtë konvertim.
-export const ETIKETA_E_THIRRESIT = "intervista" as FunksioniAI;
+// Me kufi të pafund (Infinity) numërimi i cv_ai_thirrjet s'pengon kurrë; emri shërben vetëm si etiketë në log.
+// Kufiri i vërtetë i intervistës: KUFIRI_DITOR_INTERVISTAVE te intervista-nis.
+export const ETIKETA_E_THIRRESIT: FunksioniAI = "intervista";
 
 // ---------- Skemat (structured output) ----------
 // Pa min/max në skemë: SDK-ja i kontrollon në klient dhe një 101 do ta rrëzonte gjithë përgjigjen. Kodi i kufizon.

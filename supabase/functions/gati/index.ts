@@ -12,7 +12,7 @@
 import { z } from "npm:zod@4.6.7";
 
 import { GabimIAI, gjeneroJSON, MODELI, type Perpjekja } from "../_shared/cv-ai.ts";
-import { CORS_HEADERS, json, kontrolloThirresin, type FunksioniAI } from "../_shared/thirresi.ts";
+import { CORS_HEADERS, json, kontrolloThirresin } from "../_shared/thirresi.ts";
 
 const KUFIRI_DITOR = 10;
 const PERPJEKJA: Perpjekja = "medium";
@@ -128,8 +128,7 @@ Deno.serve(async (req: Request) => {
 
   // Sesioni + "kerkues" nga thirresi.ts. Kufiri i tij ditor numëron vetëm funksionet e CV-së (cv_ai_thirrjet),
   // kështu që këtu e çaktivizojmë (Infinity) dhe e zbatojmë kufirin e `gati` më poshtë, te gati_thirrjet.
-  // "gati" jepet vetëm si etiketë për log-et; FunksioniAI s'e përfshin (thirresi.ts s'është i yni për ta ndryshuar).
-  const thirresi = await kontrolloThirresin(req, "gati" as unknown as FunksioniAI, Number.POSITIVE_INFINITY);
+  const thirresi = await kontrolloThirresin(req, "gati", Number.POSITIVE_INFINITY);
   if (thirresi instanceof Response) return thirresi;
 
   try {

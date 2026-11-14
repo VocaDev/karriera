@@ -18,7 +18,10 @@ export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: CORS_HEADERS });
 }
 
-export type FunksioniAI = "cv-review" | "cv-create";
+// "gati" dhe "intervista" kanë kufijtë e tyre (gati_thirrjet, intervistat): ato i japin kontrolloThirresin
+// kufirin Infinity, kështu që etiketa shërben vetëm për log-et. regjistroThirrjen shkruan te cv_ai_thirrjet,
+// ku check-u pranon vetëm "cv-review" dhe "cv-create": mos e thirr për këto dy.
+export type FunksioniAI = "cv-review" | "cv-create" | "gati" | "intervista";
 
 export type Thirresi = {
   userId: string;
