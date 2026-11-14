@@ -191,7 +191,9 @@ export default function CvIndex() {
                 {eFundit.analiza.permbledhja}
               </T>
               <T pesha="gjysme" madhesia={12} zbehur>
-                Shiko analizën →
+                {eFundit.analiza.sugjerimet?.length
+                  ? `${eFundit.analiza.sugjerimet.length} sugjerime për CV-në, me një prekje →`
+                  : "Shiko analizën →"}
               </T>
             </Karta>
           </Prekshme>

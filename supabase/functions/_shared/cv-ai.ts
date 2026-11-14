@@ -2,29 +2,15 @@ import Anthropic from "npm:@anthropic-ai/sdk@1.7.0";
 import { zodOutputFormat } from "npm:@anthropic-ai/sdk@1.7.0/helpers/zod";
 import { z } from "npm:zod@4.6.7";
 
+import {
+  normalizoSugjerimet,
+  rishkrimetNga,
+  rregulloShqipen,
+  type Sugjerimi,
+} from "./sugjerimet.ts";
+
 // ---------- Modelet e të dhënave ----------
 // Të njëjtat fusha si tipet në src/lib/cv.ts (kontrata me app-in).
-
-export const AnalizaCVSchema = z.object({
-  nota: z.number().int().min(0).max(100),
-  permbledhja: z.string(),
-  seksionet: z.array(
-    z.object({
-      emri: z.string(),
-      gjendja: z.enum(["mire", "permiresim"]),
-      komenti: z.string(),
-      roast: z.string(),
-    }),
-  ),
-  rishkrimet: z.array(
-    z.object({
-      para: z.string(),
-      pas: z.string(),
-    }),
-  ),
-  pikat_e_forta: z.array(z.string()),
-  fjalia_roast: z.string(),
-});
 
 export const CvStrukturuarSchema = z.object({
   emri: z.string(),
@@ -67,8 +53,112 @@ export const CvStrukturuarSchema = z.object({
   ),
 });
 
-export type AnalizaCV = z.infer<typeof AnalizaCVSchema>;
+// Një sugjerim = një ndryshim që kandidati e pranon me një prekje. App-i e zbaton vetë (pa AI) te `cv`,
+// prandaj shenja duhet të jetë e saktë: seksioni + indeksi + fusha, dhe `para` = teksti i saktë që ndryshon.
+export const SEKSIONET_E_CV = ["titulli", "profili", "pervoja", "projektet", "arsimi", "aftesite", "gjuhet"] as const;
+export const FUSHAT_E_CV = [
+  "roli",
+  "vendi",
+  "periudha",
+  "pershkrimi",
+  "titulli",
+  "linku",
+  "programi",
+  "institucioni",
+  "gjuha",
+  "niveli",
+] as const;
+
+export const SugjerimiSchema = z.object({
+  lloji: z
+    .enum(["rishkrim", "gabim", "shto", "hiq"])
+    .describe("rishkrim = stronger line; gabim = spelling/grammar fix; shto = add missing; hiq = remove"),
+  seksioni: z.enum(SEKSIONET_E_CV),
+  indeksi: z
+    .number()
+    .int()
+    .nullable()
+    .describe("0-based position of the item in that list of `cv`; null for titulli, profili and a new skill"),
+  fusha: z
+    .enum(FUSHAT_E_CV)
+    .nullable()
+    .describe("Field of that item; null for titulli, profili and aftesite"),
+  para: z.string().describe("Exact text copied from that field of `cv`; empty only for shto"),
+  pas: z.string().describe("New text in the CV's language; facts the CV lacks become [Albanian placeholders]"),
+  arsyeja: z.string().describe("One short Albanian sentence: why this helps"),
+  placeholders: z.array(z.string()).describe("Every [placeholder] in pas, exactly as written"),
+});
+
+// Fushat e analizës (pa CV-në). Renditja ka rëndësi: AI-ja i shkruan fushat me këtë radhë.
+const fushatEAnalizes = {
+  gjuha_e_cv: z.enum(["sq", "en", "de", "tjeter"]).describe("Main language of the CV text"),
+  nota: z.number().int().min(0).max(100),
+  permbledhja: z.string(),
+  seksionet: z.array(
+    z.object({
+      emri: z.string(),
+      gjendja: z.enum(["mire", "permiresim"]),
+      komenti: z.string(),
+      roast: z.string(),
+    }),
+  ),
+  sugjerimet: z.array(SugjerimiSchema),
+  pikat_e_forta: z.array(z.string()),
+  fjalia_roast: z.string(),
+};
+
+/** Analiza e një PDF-je: AI-ja e kthen edhe CV-në si të dhëna (`cv`, e para), që sugjerimet të kenë ku zbatohen. */
+export const AnalizaCVSchema = z.object({ cv: CvStrukturuarSchema, ...fushatEAnalizes });
+
+/** Analiza e një CV-je të krijuar në app: CV-ja e strukturuar ekziston, AI-ja s'e rishkruan. */
+export const AnalizaPaCVSchema = z.object(fushatEAnalizes);
+
+export type AnalizaPaCV = z.infer<typeof AnalizaPaCVSchema>;
 export type CvStrukturuar = z.infer<typeof CvStrukturuarSchema>;
+
+/** Çka ruhet te cv_reviews.analiza dhe çka merr app-i (versioni 2 i kontratës, src/lib/cv.ts). */
+export type AnalizaRuajtur = Omit<AnalizaPaCV, "sugjerimet"> & {
+  versioni: 2;
+  cv: CvStrukturuar;
+  sugjerimet: Sugjerimi[];
+  rishkrimet: { para: string; pas: string }[]; // për app-in e vjetër
+};
+
+/**
+ * Nga përgjigjja e AI-së te analiza që ruhet: id-të dhe placeholder-at nga serveri, shqipja e kontrolluar,
+ * `rishkrimet` për app-in e vjetër. `cv` = CV-ja që sugjerimet e kanë për shenjë.
+ */
+export function pergatitAnalizen(ai: AnalizaPaCV, cv: CvStrukturuar): { analiza: AnalizaRuajtur; korrigjime: number } {
+  let korrigjime = 0;
+  const shqip = (teksti: string) => {
+    const r = rregulloShqipen(teksti);
+    korrigjime += r.ndryshime;
+    return r.teksti;
+  };
+
+  const sugjerimet = normalizoSugjerimet(ai.sugjerimet).map((s) => ({ ...s, arsyeja: shqip(s.arsyeja) }));
+
+  return {
+    analiza: {
+      versioni: 2,
+      gjuha_e_cv: ai.gjuha_e_cv,
+      nota: ai.nota,
+      permbledhja: shqip(ai.permbledhja),
+      seksionet: ai.seksionet.map((s) => ({
+        emri: shqip(s.emri),
+        gjendja: s.gjendja,
+        komenti: shqip(s.komenti),
+        roast: shqip(s.roast),
+      })),
+      pikat_e_forta: ai.pikat_e_forta.map(shqip),
+      fjalia_roast: shqip(ai.fjalia_roast),
+      cv,
+      sugjerimet,
+      rishkrimet: rishkrimetNga(sugjerimet),
+    },
+    korrigjime,
+  };
+}
 
 export type FormatiCV = "ks" | "europass" | "eu" | "us" | "uk" | "ats";
 export type GjuhaCV = "sq" | "en";

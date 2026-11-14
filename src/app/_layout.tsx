@@ -100,6 +100,8 @@ function Navigimi({ t }: { t: Tema }) {
             <Stack.Screen name="intervista/[id]" options={{ title: "Intervista" }} />
             <Stack.Screen name="intervista/rezultatet" options={{ title: "Rezultatet" }} />
             <Stack.Screen name="cilesimet" options={{ title: "Cilësimet" }} />
+            {/* Rindërto CV-në: sugjerimet e pranuara të analizës, të zbatuara pa AI (14.11). */}
+            <Stack.Screen name="cv/rindertoje" options={{ title: "" }} />
           </Stack.Protected>
           {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
           <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>

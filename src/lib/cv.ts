@@ -14,7 +14,26 @@ import { supabase } from "@/lib/supabase";
 
 // ---------- Tipet ----------
 
-/** Rezultati i Edge Function `cv-review` (AI-ja e lexon PDF-në). */
+/** Seksionet e CV-së ku mund të bjerë një sugjerim (të njëjtat si `SEKSIONET_E_CV` te _shared/cv-ai.ts). */
+export type SeksioniCV = "titulli" | "profili" | "pervoja" | "projektet" | "arsimi" | "aftesite" | "gjuhet";
+
+/**
+ * Një sugjerim i analizës (versioni 2): një ndryshim që kandidati e pranon me një prekje.
+ * App-i e zbaton vetë te `AnalizaCV.cv`, pa AI (src/lib/rindertimi.ts).
+ */
+export type SugjerimCV = {
+  id: string; // "s1", "s2", … (nga serveri; unik brenda një analize)
+  lloji: "rishkrim" | "gabim" | "shto" | "hiq";
+  seksioni: SeksioniCV;
+  indeksi: number | null; // pozita në listën e seksionit; null për titullin, profilin ose një aftësi të re
+  fusha: string | null; // p.sh. "pershkrimi"; null për titullin, profilin dhe aftësitë
+  para: string; // teksti i saktë në CV që ndryshon ("" kur shtohet diçka)
+  pas: string; // teksti i ri; faktet që mungojnë janë "[placeholder]"
+  arsyeja: string; // pse ndihmon (1 fjali)
+  placeholders: string[]; // "[numri i përdoruesve]", … që i plotëson kandidati
+};
+
+/** Rezultati i Edge Function `cv-review` (AI-ja e lexon PDF-në ose CV-në e krijuar). */
 export type AnalizaCV = {
   nota: number; // 0–100, vlerësim i AI-së për CV-në (jo parashikim punësimi)
   permbledhja: string; // 1 fjali, p.sh. "2 gjëra e ngrenë mbi 75"
@@ -27,7 +46,14 @@ export type AnalizaCV = {
   rishkrimet: { para: string; pas: string }[]; // rreshta nga CV-ja, të rishkruar me rezultate
   pikat_e_forta: string[];
   fjalia_roast: string; // një fjali për kartën "Ndaje", pa emër dhe pa të dhëna personale
+  // Versioni 2 (cv-review pas 14.11). Analizat e vjetra s'i kanë: atëherë s'ka "Shtoje në CV".
+  cv?: CvStrukturuar; // CV-ja ashtu siç është, ku zbatohen sugjerimet
+  sugjerimet?: SugjerimCV[];
+  gjuha_e_cv?: "sq" | "en" | "de" | "tjeter";
 };
+
+/** Një analizë e ruajtur dhe id-ja e saj (çelësi i zgjedhjeve "Shtoje në CV" në telefon). */
+export type AnalizaERuajtur = { reviewId: string; analiza: AnalizaCV };
 
 export type FormatiCV = "ks" | "europass" | "eu" | "us" | "uk" | "ats";
 export type GjuhaCV = "sq" | "en";
@@ -70,6 +96,26 @@ const eshteObjekt = (v: unknown): v is Record<string, unknown> => typeof v === "
 const listeMe = (v: unknown, kontrollo: (x: unknown) => boolean) => Array.isArray(v) && v.every(kontrollo);
 const tekstOseNull = (v: unknown) => v === null || eshteTekst(v);
 
+const SEKSIONET: readonly SeksioniCV[] = ["titulli", "profili", "pervoja", "projektet", "arsimi", "aftesite", "gjuhet"];
+const LLOJET: readonly SugjerimCV["lloji"][] = ["rishkrim", "gabim", "shto", "hiq"];
+const GJUHET_E_CV = ["sq", "en", "de", "tjeter"] as const;
+
+function eshteSugjerim(v: unknown): v is SugjerimCV {
+  return (
+    eshteObjekt(v) &&
+    eshteTekst(v.id) &&
+    LLOJET.includes(v.lloji as SugjerimCV["lloji"]) &&
+    SEKSIONET.includes(v.seksioni as SeksioniCV) &&
+    (v.indeksi === null || (typeof v.indeksi === "number" && Number.isInteger(v.indeksi) && v.indeksi >= 0)) &&
+    tekstOseNull(v.fusha) &&
+    eshteTekst(v.para) &&
+    eshteTekst(v.pas) &&
+    eshteTekst(v.arsyeja) &&
+    listeMe(v.placeholders, eshteTekst)
+  );
+}
+
+/** Pjesa e analizës që e kanë edhe analizat e vjetra (para "Shtoje në CV"). */
 export function eshteAnalizeCV(v: unknown): v is AnalizaCV {
   if (!eshteObjekt(v)) return false;
   return (
@@ -91,6 +137,35 @@ export function eshteAnalizeCV(v: unknown): v is AnalizaCV {
         eshteTekst(s.roast),
     )
   );
+}
+
+/**
+ * Analiza nga serveri, e kontrolluar. Analizat e vjetra (pa `cv`/`sugjerimet`) kthehen siç janë.
+ * Te versioni 2: një CV e dëmtuar hiqet (s'ka "Shtoje në CV"), një sugjerim i dëmtuar hiqet vetëm ai,
+ * dhe id-të e përsëritura hiqen (çelësi i zgjedhjeve duhet të jetë unik).
+ */
+export function lexoAnalizen(v: unknown): AnalizaCV | null {
+  if (!eshteAnalizeCV(v)) return null;
+  const { cv, sugjerimet, gjuha_e_cv, ...baza } = v as AnalizaCV & Record<string, unknown>;
+  const analiza: AnalizaCV = {
+    nota: baza.nota,
+    permbledhja: baza.permbledhja,
+    seksionet: baza.seksionet,
+    rishkrimet: baza.rishkrimet,
+    pikat_e_forta: baza.pikat_e_forta,
+    fjalia_roast: baza.fjalia_roast,
+  };
+  if (GJUHET_E_CV.includes(gjuha_e_cv as (typeof GJUHET_E_CV)[number])) analiza.gjuha_e_cv = gjuha_e_cv;
+  if (eshteCvStrukturuar(cv) && Array.isArray(sugjerimet)) {
+    const idte = new Set<string>();
+    analiza.cv = cv;
+    analiza.sugjerimet = (sugjerimet as unknown[]).filter((s): s is SugjerimCV => {
+      if (!eshteSugjerim(s) || idte.has(s.id)) return false;
+      idte.add(s.id);
+      return true;
+    });
+  }
+  return analiza;
 }
 
 export function eshteCvStrukturuar(v: unknown): v is CvStrukturuar {
@@ -217,27 +292,33 @@ export async function ngarkoCV(skedari: SkedariPDF): Promise<CvRresht> {
   return { ...(data as RreshtiCV), nota: null };
 }
 
-/** Thërret `cv-review` (AI-ja lexon PDF-në nga Storage dhe e ruan analizën). Zgjat 10–40 sekonda. */
-export async function analizoCV(cvId: string): Promise<AnalizaCV> {
+/**
+ * Thërret `cv-review` (AI-ja lexon CV-në dhe e ruan analizën). Zgjat 10–40 sekonda.
+ * Vlen edhe për një CV të krijuar/rindërtuar, pasi të dalë versioni i ri i funksionit
+ * (versioni i vjetër kthen "Analizohen vetëm CV-të e ngarkuara si PDF.").
+ */
+export async function analizoCV(cvId: string): Promise<AnalizaERuajtur> {
   const data = await thirrFunksionin("cv-review", { cv_id: cvId }, "Analiza e CV-së dështoi. Provo përsëri.");
-  const analiza: unknown = eshteObjekt(data) ? data.analiza : null;
-  if (!eshteAnalizeCV(analiza)) throw new Error("AI-ja ktheu një përgjigje të paplotë. Provo përsëri.");
-  return analiza;
+  const analiza = lexoAnalizen(eshteObjekt(data) ? data.analiza : null);
+  const reviewId = eshteObjekt(data) && eshteTekst(data.review_id) ? data.review_id : null;
+  if (!analiza || !reviewId) throw new Error("AI-ja ktheu një përgjigje të paplotë. Provo përsëri.");
+  return { reviewId, analiza };
 }
 
 /** Analiza e fundit e kësaj CV-je, ose null nëse s'është analizuar ende (pa thirrur AI-në). */
-export async function analizaPerCV(cvId: string): Promise<AnalizaCV | null> {
+export async function analizaPerCV(cvId: string): Promise<AnalizaERuajtur | null> {
   const { data, error } = await supabase
     .from("cv_reviews")
-    .select("analiza")
+    .select("id, analiza")
     .eq("cv_id", cvId)
     .order("krijuar_me", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(mesazhiIGabimit(error));
   if (!data) return null;
-  const analiza: unknown = (data as { analiza: unknown }).analiza;
-  return eshteAnalizeCV(analiza) ? analiza : null;
+  const r = data as { id: string; analiza: unknown };
+  const analiza = lexoAnalizen(r.analiza);
+  return analiza ? { reviewId: r.id, analiza } : null;
 }
 
 /** Analiza e fundit e përdoruesit, ose null nëse s'ka ende. */
@@ -252,13 +333,14 @@ export async function analizaEFundit(): Promise<{ cv: CvRresht; analiza: Analiza
   if (!review) return null;
 
   const r = review as { cv_id: string; nota: number; analiza: unknown };
-  if (!eshteAnalizeCV(r.analiza)) return null;
+  const analiza = lexoAnalizen(r.analiza);
+  if (!analiza) return null;
 
   const { data: cv, error: gabimiCV } = await supabase.from("cvs").select(FUSHAT_CV).eq("id", r.cv_id).maybeSingle();
   if (gabimiCV) throw new Error(mesazhiIGabimit(gabimiCV));
   if (!cv) return null;
 
-  return { cv: { ...(cv as RreshtiCV), nota: r.nota }, analiza: r.analiza };
+  return { cv: { ...(cv as RreshtiCV), nota: r.nota }, analiza };
 }
 
 /** Të gjitha versionet e CV-së, më e reja e para, me notën e analizës së fundit të secilës. */
@@ -284,14 +366,16 @@ export async function listoVersionet(): Promise<CvRresht[]> {
 /** Një CV e krijuar me AI (versioni `cvId`, ose i fundit nëse s'jepet), ose null nëse s'ka. */
 export async function merrCVTeFundit(
   cvId?: string,
-): Promise<{ cv: CvStrukturuar; formati: FormatiCV; gjuha: GjuhaCV } | null> {
-  let pyetja = supabase.from("cvs").select("permbajtja, formati, gjuha").eq("burimi", "krijuar");
+): Promise<{ id: string; versioni: number; cv: CvStrukturuar; formati: FormatiCV; gjuha: GjuhaCV } | null> {
+  let pyetja = supabase.from("cvs").select("id, versioni, permbajtja, formati, gjuha").eq("burimi", "krijuar");
   if (cvId) pyetja = pyetja.eq("id", cvId);
   const { data, error } = await pyetja.order("versioni", { ascending: false }).limit(1).maybeSingle();
   if (error) throw new Error(mesazhiIGabimit(error));
   if (!data) return null;
-  const r = data as { permbajtja: unknown; formati: FormatiCV; gjuha: GjuhaCV };
-  return eshteCvStrukturuar(r.permbajtja) ? { cv: r.permbajtja, formati: r.formati, gjuha: r.gjuha } : null;
+  const r = data as { id: string; versioni: number; permbajtja: unknown; formati: FormatiCV; gjuha: GjuhaCV };
+  return eshteCvStrukturuar(r.permbajtja)
+    ? { id: r.id, versioni: r.versioni, cv: r.permbajtja, formati: r.formati, gjuha: r.gjuha }
+    : null;
 }
 
 /** Thërret `cv-create`: nga 5 përgjigjet, ose rishkruan një CV ekzistuese për një format/gjuhë tjetër. */
@@ -305,11 +389,22 @@ export async function krijoCV(
   return data;
 }
 
-/** Ruan një CV të krijuar si version i ri. */
-export async function ruajCV(cv: CvStrukturuar, formati: FormatiCV, gjuha: GjuhaCV = "sq"): Promise<CvRresht> {
+/** Ruan një CV të krijuar si version i ri. `emri`: si shfaqet te versionet (p.sh. "Rindërtuar nga cv.pdf"). */
+export async function ruajCV(
+  cv: CvStrukturuar,
+  formati: FormatiCV,
+  gjuha: GjuhaCV = "sq",
+  emri?: string,
+): Promise<CvRresht> {
   const { data, error } = await supabase
     .from("cvs")
-    .insert({ burimi: "krijuar", permbajtja: cv, formati, gjuha })
+    .insert({
+      burimi: "krijuar",
+      permbajtja: cv,
+      formati,
+      gjuha,
+      ...(emri ? { emri_skedarit: emri.slice(0, 150) } : {}),
+    })
     .select(FUSHAT_CV)
     .single();
   if (error) throw new Error(mesazhiIGabimit(error));
