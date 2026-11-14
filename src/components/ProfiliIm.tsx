@@ -1,13 +1,14 @@
 // Profili (bordi, ekrani 18): kush je, lloji i llogarisë, dhe "Dil". Për kërkuesin edhe ⭐ të ruajturat:
 // lista private që e kthen RLS-i, pa asnjë filtër në kod (dëshmia e J6 "secili sheh të vetat").
+import { LinearGradient } from "expo-linear-gradient";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import ButoniDil from "@/components/ButoniDil";
 import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
-import { Faqja, IKONAT, Ikona, Karta, T, Titulli } from "@/components/ui";
+import { IKONAT, Ikona, Karta, T, Titulli } from "@/components/ui";
 import { EMRAT_E_GJUHEVE, EMRAT_E_LLOJEVE, EMRAT_E_ROLEVE } from "@/lib/hyrja";
 import { listoTeRuajturatMePune, type PunaERuajtur } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
@@ -103,8 +104,16 @@ export default function ProfiliIm() {
   const ikona = profili.lloji === "kerkues" ? IKONAT.personi : profili.lloji === "qender" ? IKONAT.shkolla : IKONAT.canta;
 
   return (
-    <Faqja>
-      <Titulli>Profili</Titulli>
+    // Rrënja është ScrollView me contentInsetAdjustmentBehavior="automatic": kërkuesi e ka titullin e madh të sistemit
+    // (Stack-u i tab-it "Profili"), prandaj palos kur rrëshqet përmbajtja. Gradienti rri brenda përmbajtjes.
+    <ScrollView
+      style={[styles.flex, { backgroundColor: t.sfondi }]}
+      contentContainerStyle={styles.faqja}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      <LinearGradient colors={[t.theksiButë, t.sfondi]} locations={[0, 1]} style={styles.gradienti} pointerEvents="none" />
+      {/* Punëdhënësi dhe qendra s'kanë kokë të sistemit (tab-at e tyre janë pa Stack): titulli mbetet në faqe. */}
+      {!kerkues && <Titulli>Profili</Titulli>}
 
       <Karta style={styles.koka}>
         <View style={[styles.avatari, { backgroundColor: t.teksti }]}>
@@ -134,13 +143,16 @@ export default function ProfiliIm() {
 
       {kerkues && (
         <Karta style={styles.lista}>
-          <RreshtiLista
-            ikona={IKONAT.dokumenti}
-            titulli="CV-ja ime"
-            nentitulli="Ngarko, analizo dhe ndërto CV-në"
-            onPress={() => router.push("/cv")}
-          />
-          <RreshtiLista kufi ikona={IKONAT.personi} titulli="Cilësimet" nentitulli="Roli, gjuha e intervistës, privatësia" onPress={() => router.push("/cilesimet")} />
+          {/* Brendësia e rrumbullakosur: fonduk i prekur s'del jashtë qosheve (hija e kartës mbetet e padukur-prerë). */}
+          <View style={styles.listaBrenda}>
+            <RreshtiLista
+              ikona={IKONAT.dokumenti}
+              titulli="CV-ja ime"
+              nentitulli="Ngarko, analizo dhe ndërto CV-në"
+              onPress={() => router.push("/cv")}
+            />
+            <RreshtiLista kufi ikona={IKONAT.personi} titulli="Cilësimet" nentitulli="Roli, gjuha e intervistës, privatësia" onPress={() => router.push("/cilesimet")} />
+          </View>
         </Karta>
       )}
 
@@ -183,7 +195,7 @@ export default function ProfiliIm() {
       )}
 
       <ButoniDil />
-    </Faqja>
+    </ScrollView>
   );
 }
 
@@ -193,7 +205,10 @@ const styles = StyleSheet.create({
   avatari: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
   lloji: { alignSelf: "flex-start", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, marginTop: 4 },
   roli: { marginTop: 2 },
-  lista: { padding: 0, overflow: "hidden" },
+  faqja: { padding: 18, gap: 12, paddingBottom: 120 },
+  gradienti: { position: "absolute", left: 0, right: 0, top: 0, height: 320 },
+  lista: { padding: 0 },
+  listaBrenda: { borderRadius: 22, overflow: "hidden" },
   rreshtiLista: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
   skeleti: { gap: 16, paddingTop: 4 },
   skeletiRreshti: { gap: 7 },
