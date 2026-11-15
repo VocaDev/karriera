@@ -51,6 +51,43 @@ export function tekstNgaHtml(html: string): string {
   return dekodo(html.replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 }
 
+/** Si tekstNgaHtml, por e ruan strukturën (rreshta, pikat e listave), që AI-ja t'i dallojë detyrat nga kërkesat. */
+export function tekstMeRreshta(html: string): string {
+  return dekodo(
+    html
+      .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+      .replace(/<li[^>]*>/gi, "\n- ")
+      .replace(/<\/(p|div|li|ul|ol|h[1-6]|tr)>|<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, " "),
+  )
+    .replace(/[ \t ]+/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Teksti i plotë i shpalljes nga faqja e saj (i përkohshëm: shkon te AI-ja dhe s'ruhet).
+ * KosovaJob e ka te <pre id="defaultSettingsID">; PortalPune te JSON-LD "description". Pa fund = null.
+ */
+export function trupiNgaFaqja(portali: Portali, html: string): string | null {
+  let teksti: string | null = null;
+  if (portali === "kosovajob") {
+    const m = html.match(/<pre[^>]*id="defaultSettingsID"[^>]*>([\s\S]*?)<\/pre>/i);
+    teksti = m ? tekstMeRreshta(m[1]) : null;
+  } else if (portali === "portalpune") {
+    for (const m of html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+      try {
+        const j = JSON.parse(m[1]) as { "@type"?: string; description?: string };
+        if (j["@type"] === "JobPosting" && j.description) teksti = tekstMeRreshta(j.description);
+      } catch {
+        // JSON-LD i prishur: provojmë bllokun tjetër
+      }
+    }
+  }
+  return teksti && teksti.length >= 40 ? teksti : null;
+}
+
 function kap(html: string, regex: RegExp): string | null {
   const m = html.match(regex);
   return m ? tekstNgaHtml(m[1]) || null : null;
@@ -127,6 +164,7 @@ export async function kosovajob(shf: Shfletuesi, op: OpsionetEBurimit): Promise<
       kategoria: null,
       orari: null,
       teksti: null,
+      trupi: null,
     });
   }
   rez.kandidate = kandidatet.length;
@@ -141,6 +179,7 @@ export async function kosovajob(shf: Shfletuesi, op: OpsionetEBurimit): Promise<
       kategoria,
       orari: kap(faqja, /id="mobile_orar">([^<]+)</),
       teksti: metaPershkrimi(faqja),
+      trupi: trupiNgaFaqja("kosovajob", faqja),
     };
   });
   return rez;
@@ -181,6 +220,7 @@ export async function portalpune(shf: Shfletuesi, op: OpsionetEBurimit): Promise
         kategoria: null,
         orari: null,
         teksti: null,
+        trupi: null,
       });
     }
   }
@@ -206,6 +246,7 @@ export async function portalpune(shf: Shfletuesi, op: OpsionetEBurimit): Promise
       afati: jp.validThrough?.slice(0, 10) ?? null,
       orari: lloji ? lloji.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : null,
       teksti: jp.description ? tekstNgaHtml(jp.description) : null,
+      trupi: trupiNgaFaqja("portalpune", faqja),
     };
   });
   return rez;
@@ -242,13 +283,14 @@ export async function ofertapune(shf: Shfletuesi, op: OpsionetEBurimit): Promise
       kategoria: null,
       orari: null,
       teksti: null,
+      trupi: null,
     });
   }
   rez.kandidate = kandidatet.length;
   await meDetaje(shf, op, rez, kandidatet, (s, faqja) => {
     const kategoria = kap(faqja, /href="https:\/\/ofertapune\.net\/kategori-pune\/[^"]+"[^>]*>([^<]+)</);
     if (!gjejRolin(s.titulli, kategoria)) return null;
-    return { ...s, kategoria, teksti: metaPershkrimi(faqja) };
+    return { ...s, kategoria, teksti: metaPershkrimi(faqja), trupi: null };
   });
   return rez;
 }
