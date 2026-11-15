@@ -20,8 +20,8 @@ export const VECORITE: Vecoria[] = [
     celesi: "cv",
     titulli: "CV-ja ime",
     pershkrimi: "Ngarko ose ndërto CV-në; AI-ja e analizon",
-    href: "/cv", // në ndërtim: hapet vetëm në zhvillim (__DEV__), që ta provojmë në telefon
-    gjendja: { lloji: "ndertim", kush: "Edoniku" },
+    href: "/cv",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "punet",
@@ -33,16 +33,16 @@ export const VECORITE: Vecoria[] = [
   {
     celesi: "gati",
     titulli: "A jam gati?",
-    pershkrimi: "Sa i përshtatesh një pune dhe çka të mungon",
-    href: null,
-    gjendja: { lloji: "vjen", kur: "02.12" },
+    pershkrimi: "Zgjidh një punë dhe shih sa i përshtatesh",
+    href: "/pune",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "intervista",
     titulli: "Intervista me AI",
-    pershkrimi: "Avatari të pyet me zë për atë punë",
-    href: null,
-    gjendja: { lloji: "ndertim", kush: "Genti" },
+    pershkrimi: "AI-ja të pyet për punën që zgjedh; me tekst tani, me zë së shpejti",
+    href: "/intervista",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "rezultatet",

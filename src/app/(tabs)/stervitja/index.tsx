@@ -32,8 +32,8 @@ export default function Stervitja() {
   const gjuha = GJUHET[iGjuhes];
 
   const intervista = VECORITE.find((v) => v.celesi === "intervista");
-  // Rruga /intervista ndërtohet te WP4 dhe ende s'ekziston në këtë degë; butoni hapet vetëm kur veçoria del gati
-  // (ose në zhvillim, kur ka href), kështu s'ka kurrë një prekje që të çon në "ekran që s'ekziston".
+  // Rruga /intervista ekziston (WP4, intervista me tekst). Butoni hapet kur veçoria ka href dhe është gati
+  // (`hapetVecoria`); me `href: null` ose "në ndërtim" mbetet i mbyllur, kështu s'ka prekje që të çon në "ekran që s'ekziston".
   const hapet = intervista !== undefined && hapetVecoria(intervista);
 
   function nis() {
