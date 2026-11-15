@@ -1,14 +1,19 @@
 // gati: "A jam gati?" Krahason CV-në e fundit të kërkuesit me një punë konkrete dhe e ruan rezultatin.
 //
 // Hyrja:  POST { "puna_id": "<id e punes>" } me JWT-në e përdoruesit (supabase.functions.invoke e dërgon vetë).
-// Dalja:  { "gatishmeria": Gatishmeria }  (rreshti i ri te public.gatishmeria, burimi = "cv")
-// Gabim:  { "error": "<fjali në shqip>", "kodi"?: "pa_cv" }
+// Dalja:  { "gatishmeria": Gatishmeria, "kufiri": Kufiri | null }  (rreshti i ri te public.gatishmeria, burimi = "cv")
+// Kufiri: POST { "veprimi": "kufiri" } kthen vetëm { "kufiri": Kufiri } (pa AI, pa e shtuar thirrjen).
+//         Kufiri = { perdorur, maks, rivendoset }: rivendoset = ISO kur del nga dritarja thirrja më e vjetër (ose null).
+// Gabim:  { "error": "<fjali në shqip>", "kodi"?: "pa_cv" | "kufiri", "kufiri"?: Kufiri }
 //
 // 1. Thirrësi: sesion i vërtetë dhe llogari "kerkues" (_shared/thirresi.ts), maksimumi KUFIRI_DITOR thirrje në 24 orë
 //    (tabela gati_thirrjet; cv_ai_thirrjet pranon vetëm funksionet e CV-së).
+//    Kërkesat e punës: nëse punet.kerkesat ekziston (nxjerrë me AI nga shpallja) shkon te modeli; përndryshe
+//    pershkrimi + aftesite. Puna lexohet me select("*"), kështu funksioni punon edhe para se kolona të ekzistojë.
 // 2. Puna dhe CV-ja lexohen me JWT-në e përdoruesit: RLS-i garanton që CV-ja është e tija.
 // 3. Rezultati ruhet me çelësin sekret: telefoni s'mund ta shkruajë vetë përqindjen.
 // AI-ja: MODELI te _shared/cv-ai.ts (claude-haiku-5-5), effort PERPJEKJA. Asnjë tekst CV-je në log.
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { z } from "npm:zod@4.6.7";
 
 import { GabimIAI, gjeneroJSON, MODELI, type Perpjekja } from "../_shared/cv-ai.ts";
@@ -38,15 +43,20 @@ You are an honest career coach who tells a student or graduate how ready they ar
 for ONE specific job, based only on their CV and the job posting.
 
 HOW TO JUDGE
-- The requirements are ONLY what the job posting actually asks for: the listed skills and the
-  requirements stated in its description. Do not add requirements the posting does not state.
+- The requirements are ONLY what the job posting actually asks for. They come either as a structured
+  <requirements> block (summary, tasks, requirements, nice_to_have, education, experience, languages) or
+  as the listed skills plus the description. Do not add requirements the posting does not state.
+  "requirements", "education", "experience" and "languages" are must-haves, "nice_to_have" weighs less,
+  "tasks" show what the work is: use them to judge whether the CV fits the real work.
 - "ke" (what they have): a requirement goes here only if the CV shows evidence for it.
   "deshmia" points to that evidence in a few words (e.g. a project, a course, a past role).
   Never invent skills, projects or experience. If you are unsure, it does not go in "ke".
 - "mungon" (what is missing): requirements with no evidence, or only weak evidence, in the CV.
-  "pse" says in one sentence why this matters for THIS job.
-  "si" gives one concrete, realistic way to close the gap within a few weeks
-  (a small project, a specific topic to learn, a certificate, practice). No generic advice.
+  EVERY item must point to one concrete requirement of the posting: "aftesia" names that requirement
+  as the posting states it (never a generic skill the posting does not ask for), and "pse" says in one
+  sentence why it matters for THIS job, using the posting's own words where possible.
+  "si" gives one concrete, realistic way to close the gap (a small project, a specific topic,
+  a certificate, practice). No generic advice.
 - "perqindja" (0-100): how much of what this job asks for the CV can back with evidence,
   with must-have requirements weighing more than nice-to-haves.
   0-39 = large gaps, 40-69 = partly ready, 70-89 = mostly ready, 90-100 = nearly everything with strong evidence.
@@ -54,7 +64,12 @@ HOW TO JUDGE
 - "arsyeja": 1-2 sentences that explain the number (e.g. "4 of the 6 requirements are backed by
   your projects; testing and REST APIs are missing.").
   If the posting states few or vague requirements, say so here and stay conservative.
-- "hapat": 1-3 concrete next steps, the most useful first. One may be practising the interview for this job.
+- "hapat": 1-3 concrete next steps, the most useful first. EVERY step must be doable by one person
+  within one week (a small project, one course module, rewriting one named CV section, a practice
+  interview, applying). Never a bare "learn X" without a week-sized scope. When it fits, one step may
+  be practising the interview for this job, one may be improving a named part of the CV, and when the CV
+  already backs most requirements, applying is a valid step. Start each step with a plain action verb
+  (e.g. "Praktiko", "Shto në CV", "Apliko" in Albanian) so the app can offer the matching button.
 - At most 10 items in "ke" and 8 in "mungon". Keep every text short and specific.
 
 LANGUAGE
@@ -113,6 +128,55 @@ function pastro(g: Gati): Gati {
   };
 }
 
+// punet.kerkesat (jsonb, nxjerrë me AI nga shpallja): { permbledhja, detyrat[], kerkesat[], perparesi[], arsimi,
+// pervoja, gjuhet[], orari, paga, perfitimet[], aplikimi }. Modeli merr vetëm çka i duhet për krahasimin.
+const listaTekstesh = (v: unknown, n: number): string[] =>
+  Array.isArray(v)
+    ? v
+        .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+        .slice(0, n)
+        .map((x) => shkurto(x, 300))
+    : [];
+const tekstOseBosh = (v: unknown, n: number): string => (typeof v === "string" ? shkurto(v, n) : "");
+
+function kerkesatPerModel(kerkesat: unknown): string | null {
+  if (!eshteObjekt(kerkesat)) return null;
+  const nga = {
+    summary: tekstOseBosh(kerkesat.permbledhja, 400),
+    tasks: listaTekstesh(kerkesat.detyrat, 15),
+    requirements: listaTekstesh(kerkesat.kerkesat, 20),
+    nice_to_have: listaTekstesh(kerkesat.perparesi, 10),
+    education: tekstOseBosh(kerkesat.arsimi, 200),
+    experience: tekstOseBosh(kerkesat.pervoja, 200),
+    languages: listaTekstesh(kerkesat.gjuhet, 8),
+  };
+  // Pa asnjë kërkesë të vërtetë s'ka kuptim ta dërgojmë: bie te përshkrimi + aftësitë.
+  if (nga.requirements.length === 0 && nga.tasks.length === 0 && !nga.education && !nga.experience) return null;
+  return JSON.stringify(nga);
+}
+
+// ---------- Kufiri ditor ----------
+type Kufiri = { perdorur: number; maks: number; rivendoset: string | null };
+
+// Thirrjet e 24 orëve të fundit. rivendoset = kur del nga dritarja thirrja më e vjetër (atëherë lirohet një vend).
+async function lexoKufirin(admin: SupabaseClient, userId: string): Promise<Kufiri | null> {
+  const nje24OreMePare = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await admin
+    .from("gati_thirrjet")
+    .select("krijuar_me")
+    .eq("user_id", userId)
+    .gte("krijuar_me", nje24OreMePare)
+    .order("krijuar_me", { ascending: true })
+    .limit(KUFIRI_DITOR + 50);
+  if (error || !data) return null;
+  const eParaMs = data.length > 0 ? new Date(String(data[0].krijuar_me)).getTime() : null;
+  return {
+    perdorur: data.length,
+    maks: KUFIRI_DITOR,
+    rivendoset: eParaMs === null ? null : new Date(eParaMs + 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
+
 const FUSHAT_E_RRESHTIT =
   "id, puna_id, cv_id, burimi, intervista_id, perqindja, ke, mungon, hapat, arsyeja, modeli, krijuar_me";
 
@@ -138,30 +202,36 @@ Deno.serve(async (req: Request) => {
     } catch {
       return json({ error: "Kërkesa nuk është e vlefshme." }, 400);
     }
+    // Vetëm gjendja e kufirit (ekrani e pyet para se të ofrojë "Kontrollo përsëri"): pa AI, s'e shton thirrjen.
+    if (eshteObjekt(body) && body.veprimi === "kufiri") {
+      const gjendja = await lexoKufirin(thirresi.admin, thirresi.userId);
+      if (!gjendja) return json({ error: "Diçka shkoi keq. Provo përsëri." }, 500);
+      return json({ kufiri: gjendja });
+    }
+
     const punaId = eshteObjekt(body) ? body.puna_id : undefined;
     if (typeof punaId !== "string" || !punaId.trim() || punaId.length > 200) {
       return json({ error: "Mungon puna që duhet krahasuar." }, 400);
     }
 
     // Kufiri ditor i `gati`.
-    const nje24OreMePare = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count, error: gabimiNumrit } = await thirresi.admin
-      .from("gati_thirrjet")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", thirresi.userId)
-      .gte("krijuar_me", nje24OreMePare);
-    if (gabimiNumrit) {
+    const kufiriPara = await lexoKufirin(thirresi.admin, thirresi.userId);
+    if (!kufiriPara) {
       console.error("[gati] Numërimi i thirrjeve dështoi.");
       return json({ error: "Diçka shkoi keq. Provo përsëri." }, 500);
     }
-    if ((count ?? 0) >= KUFIRI_DITOR) {
-      return json({ error: `Ke arritur kufirin: ${KUFIRI_DITOR} herë në 24 orë. Provo përsëri nesër.` }, 429);
+    if (kufiriPara.perdorur >= KUFIRI_DITOR) {
+      return json(
+        { error: `Ke arritur kufirin: ${KUFIRI_DITOR} herë në 24 orë.`, kodi: "kufiri", kufiri: kufiriPara },
+        429,
+      );
     }
 
-    // Puna (RLS: kërkuesi i lexon të gjitha punët).
+    // Puna (RLS: kërkuesi i lexon të gjitha punët). select("*"): kolona `kerkesat` vjen me migrimin e seancës
+    // tjetër dhe mund të mos ekzistojë ende; një listë fushash do ta thyente funksionin para atij migrimi.
     const { data: puna, error: gabimiPunes } = await thirresi.klienti
       .from("punet")
-      .select("id, titulli, kompania, qyteti, roli, pershkrimi, aftesite")
+      .select("*")
       .eq("id", punaId)
       .maybeSingle();
     if (gabimiPunes) {
@@ -173,7 +243,8 @@ Deno.serve(async (req: Request) => {
     }
     const aftesite: string[] = Array.isArray(puna.aftesite) ? puna.aftesite : [];
     const pershkrimi: string = typeof puna.pershkrimi === "string" ? puna.pershkrimi : "";
-    if (aftesite.length === 0 && pershkrimi.trim().length < 40) {
+    const kerkesat = kerkesatPerModel(puna.kerkesat);
+    if (kerkesat === null && aftesite.length === 0 && pershkrimi.trim().length < 40) {
       return json(
         { error: "Kjo shpallje s'thotë mjaftueshëm se çka kërkon, ndaj s'mund ta krahasojmë me CV-në tënde." },
         422,
@@ -252,8 +323,10 @@ Deno.serve(async (req: Request) => {
       `City: ${shkurto(String(puna.qyteti ?? ""), 60)}`,
       `Role family: ${String(puna.roli ?? "")}`,
       `Skills listed by the employer: ${aftesite.length ? aftesite.map((a) => shkurto(String(a), 60)).join(", ") : "(none listed)"}`,
+      // Me kërkesat e strukturuara, ato janë burimi kryesor; përshkrimi mbetet më i shkurtër, si kontekst.
+      ...(kerkesat ? [`<requirements>`, kerkesat, `</requirements>`] : []),
       `Description:`,
-      shkurto(pershkrimi, 4000) || "(no description)",
+      shkurto(pershkrimi, kerkesat ? 1500 : 4000) || "(no description)",
       `</job>`,
     ].join("\n");
 
@@ -302,7 +375,9 @@ Write all text fields in ${GJUHET[gjuha]}.`,
       return json({ error: "Rezultati u llogarit, por s'u ruajt. Provo përsëri." }, 500);
     }
 
-    return json({ gatishmeria: rreshti });
+    // Kufiri pas kësaj thirrjeje (null nëse leximi dështon: rezultati ruhet gjithsesi).
+    const kufiriPas = await lexoKufirin(thirresi.admin, thirresi.userId);
+    return json({ gatishmeria: rreshti, kufiri: kufiriPas });
   } catch (error) {
     if (error instanceof GabimIAI) {
       return json({ error: error.message }, error.status);
