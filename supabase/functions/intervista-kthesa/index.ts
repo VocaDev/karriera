@@ -26,10 +26,13 @@ import {
   type KthesaDB,
   kthesaPerApp,
   MAKS_PERGJIGJJA,
-  pyetjaRezerve,
+  MAKS_VAZHDIME,
+  meQasjen,
   QIRAJA_MS,
   type Roli,
   UUID,
+  vazhdimetRadhazi,
+  vendosKthesen,
   vendosMenyren,
   vleresoPergjigjen,
 } from "../_shared/intervista-ai.ts";
@@ -151,7 +154,8 @@ Deno.serve(async (req: Request) => {
     const intervistuesi = intervistuesiNga(konteksti); // intervistat e vjetra pa fushën: "arta"
     const roli = intervista.roli as Roli;
     const gjuha = intervista.gjuha as Gjuha;
-    const lejohetVazhdim = aktuale.lloji === "pyetje";
+    // Deri në MAKS_VAZHDIME pyetje vazhduese radhazi për të njëjtën pyetje kryesore.
+    const lejohetVazhdim = vazhdimetRadhazi(kthesat) < MAKS_VAZHDIME;
     const menyra = vendosMenyren({ nrPyetjeve, gjatesia, lejohetVazhdim, pergjigja });
     const meKetePergjigje = kthesat.map((k) => (k.id === aktuale.id ? { ...k, pergjigja } : k));
 
@@ -173,24 +177,16 @@ Deno.serve(async (req: Request) => {
 
     // ---------- Kodi vendos: vazhdon apo mbaron ----------
     const ai = kthesaAI.value;
-    let vazhdon: boolean;
-    let lloji: "pyetje" | "vazhdim" = "pyetje";
-    if (menyra === "vazhdim") {
-      vazhdon = true;
-      lloji = "vazhdim";
-    } else if (menyra === "mbyll") {
-      vazhdon = false;
-    } else {
-      vazhdon = menyra === "vazhdo" || ai.vazhdo;
-      lloji = ai.lloji === "vazhdim" && lejohetVazhdim ? "vazhdim" : "pyetje";
-    }
-    const reagimi = ai.reagimi.trim().slice(0, 600) || null;
-    let pyetja = ai.pyetja.trim().slice(0, 1000);
-    if (vazhdon && !pyetja) {
-      pyetja = pyetjaRezerve(gjuha, roli, nrPyetjeve);
-      lloji = "pyetje";
-    }
-    const nrIRi = vazhdon && lloji === "pyetje" ? nrPyetjeve + 1 : nrPyetjeve;
+    const { vazhdon, lloji, reagimi, pyetja, nrIRi, qasja } = vendosKthesen({
+      ai,
+      menyra,
+      lejohetVazhdim,
+      konteksti,
+      gjuha,
+      roli,
+      nrPyetjeve,
+      nrAktual: aktuale.nr,
+    });
 
     let kthesaERe: Pick<KthesaDB, "nr" | "lloji" | "reagimi" | "pyetja"> | null = null;
     if (vazhdon) {
@@ -208,7 +204,12 @@ Deno.serve(async (req: Request) => {
         return gabim("Pyetja tjetër s'u ruajt. Provo përsëri.", 500);
       }
       kthesaERe = eRe;
-      await t.admin.from("intervistat").update({ nr_pyetjeve: nrIRi }).eq("id", intervistaId).eq("user_id", t.userId);
+      // Qasja e pyetjes së re ruhet te konteksti (private: app-i s'e lexon dot gjatë intervistës).
+      await t.admin
+        .from("intervistat")
+        .update({ nr_pyetjeve: nrIRi, ...(qasja ? { konteksti: meQasjen(konteksti, qasja) } : {}) })
+        .eq("id", intervistaId)
+        .eq("user_id", t.userId);
     } else {
       await t.admin
         .from("intervistat")

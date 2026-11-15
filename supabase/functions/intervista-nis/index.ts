@@ -242,6 +242,8 @@ Deno.serve(async (req: Request) => {
       cv: cvTekst,
       gatishmeria,
       intervistuesi,
+      // Pyetja e parë është gjithmonë hapje e ngrohtë (qasjet e tjera i vendos intervista-kthesa).
+      qasjet: [{ nr: 1, qasja: "ngrohje", arsyeja: "Hapja e intervistës." }],
     };
 
     const { data: intervista, error: gabimiKrijimit } = await t.admin
