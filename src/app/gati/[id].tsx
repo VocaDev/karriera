@@ -1,32 +1,47 @@
-// "A jam gati?" (WP3, bordi: ekrani 25 pritja, ekrani 12 rezultati).
-// Hapet nga detajet e punës: /gati/<puna_id>. Nëse kjo punë është llogaritur më parë, tregohet rezultati
-// i fundit pa e thirrur AI-në; përndryshe AI-ja nis menjëherë (vetëm nëse ka CV).
+// "A jam gati?" (WP3, bordi: ekrani 25 pritja, ekrani 12 rezultati). Hapet nga detajet e punës: /gati/<puna_id>.
+// Nëse kjo punë është llogaritur më parë, tregohet rezultati i fundit pa e thirrur AI-në; përndryshe AI-ja nis
+// menjëherë (vetëm nëse ka CV). Rezultati ka historinë (+12 nga herë e kaluar), Çka ke / Çka të mungon dhe hapat si
+// veprime të vërteta. Numrat vijnë vetëm nga rreshtat e vërtetë të tabelës gatishmeria.
+import * as WebBrowser from "expo-web-browser";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import Animated, {
-  FadeIn,
-  useAnimatedProps,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from "react-native-reanimated";
-import Svg, { Circle } from "react-native-svg";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
-import Prekshme from "@/components/Prekshme";
-import { Pulsi, Vije } from "@/components/Skeleti";
+import {
+  Butoni,
+  dataEPlote,
+  HistoriaERreshtit,
+  NdryshimiChip,
+  Pritja,
+  Qendra,
+  RreshtiIHapit,
+  SkeletiILeximit,
+  UnazaEGatishmerise,
+  type VeprimiNeRresht,
+} from "@/components/GatiPjeset";
+import { useNjoftim } from "@/components/Njoftimet";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import {
   cvEFundit,
+  GabimKufiri,
   GabimPaCV,
   gatishmeriaEFundit,
+  gjykimiIPerqindjes,
+  historiaEPunes,
   KUFIRI_DITOR_GATI,
+  kohaERivendosjes,
+  lexoKufirin,
   llogaritGatishmerine,
+  ndryshimiKundrejtParaprakut,
+  veprimiIHapit,
   type CvEFundit,
   type Gatishmeria,
+  type Kufiri,
+  type Prova,
 } from "@/lib/gati";
-import { KOHA, LEHTESIMI } from "@/lib/levizja";
+import { lexoShenjat, ruajShenjat } from "@/lib/gati-hapat";
+import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { gjePunen, type Puna } from "@/lib/punet";
 import { useTema } from "@/lib/tema";
@@ -38,17 +53,24 @@ type Gjendja =
   | { lloji: "pa_cv"; puna: Puna }
   | { lloji: "llogarit"; puna: Puna; cv: CvEFundit }
   | { lloji: "gabim_ai"; puna: Puna; cv: CvEFundit; mesazhi: string; iFundit: Gatishmeria | null }
+  | { lloji: "kufiri"; puna: Puna; cv: CvEFundit; kufiri: Kufiri | null; iFundit: Gatishmeria | null }
   | { lloji: "rezultati"; puna: Puna; cv: CvEFundit | null; rezultati: Gatishmeria };
+
+const eProva = (r: Gatishmeria): Prova => ({ id: r.id, perqindja: r.perqindja, burimi: r.burimi, krijuar_me: r.krijuar_me });
 
 export default function GatiEkrani() {
   const t = useTema();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [gjendja, setGjendja] = useState<Gjendja>({ lloji: "duke_lexuar" });
+  const [historia, setHistoria] = useState<Prova[]>([]); // kontrollet e kësaj pune, më i riu i pari
+  const [kufiri, setKufiri] = useState<Kufiri | null>(null); // null = s'dihet (funksioni i vjetër ose pa internet)
   const aktiv = useRef(true);
   const gjendjaRef = useRef(gjendja);
   // Një thirrje e AI-së në të njëjtën kohë: prekja e dyfishtë ose efekti i dyfishtë s'e harxhojnë kufirin dy herë.
   const dukeLlogaritur = useRef(false);
+  // Kufiri lexohet një herë kur del rezultati (pa AI); pas një llogaritjeje e jep vetë përgjigjja.
+  const kufiriIPyetur = useRef(false);
 
   useEffect(() => {
     gjendjaRef.current = gjendja;
@@ -67,15 +89,23 @@ export default function GatiEkrani() {
     dukeLlogaritur.current = true;
     setGjendja({ lloji: "llogarit", puna, cv });
     try {
-      const rezultati = await llogaritGatishmerine(puna.id);
+      const { rezultati, kufiri: kufiriRi } = await llogaritGatishmerine(puna.id);
       if (!aktiv.current) return;
       prekja.sukses();
+      kufiriIPyetur.current = kufiriRi !== null;
+      if (kufiriRi) setKufiri(kufiriRi);
+      setHistoria((h) => [eProva(rezultati), ...h.filter((p) => p.id !== rezultati.id)]);
       setGjendja({ lloji: "rezultati", puna, cv, rezultati });
     } catch (e) {
       if (!aktiv.current) return;
       prekja.gabim();
       if (e instanceof GabimPaCV) {
         setGjendja({ lloji: "pa_cv", puna });
+        return;
+      }
+      if (e instanceof GabimKufiri) {
+        if (e.kufiri) setKufiri(e.kufiri);
+        setGjendja({ lloji: "kufiri", puna, cv, kufiri: e.kufiri, iFundit });
         return;
       }
       const mesazhi = e instanceof Error ? e.message : "Llogaritja dështoi. Provo përsëri.";
@@ -85,11 +115,18 @@ export default function GatiEkrani() {
     }
   }, []);
 
-  // Lexon punën, rezultatin e fundit dhe CV-në (pa AI). Pa rezultat dhe me CV: nis AI-në vetë.
+  // Lexon punën, rezultatin e fundit, historinë dhe CV-në (pa AI). Pa rezultat dhe me CV: nis AI-në vetë.
   const lexo = useCallback(() => {
-    Promise.all([gjePunen(id), gatishmeriaEFundit(id), cvEFundit()])
-      .then(([puna, rezultati, cv]) => {
+    Promise.all([
+      gjePunen(id),
+      gatishmeriaEFundit(id),
+      cvEFundit(),
+      // historia është shtesë: nëse dështon, rezultati shfaqet pa të
+      historiaEPunes(id).catch((): Prova[] => []),
+    ])
+      .then(([puna, rezultati, cv, kaluara]) => {
         if (!aktiv.current) return;
+        setHistoria(kaluara);
         if (!puna) setGjendja({ lloji: "pa_pune" });
         else if (rezultati) setGjendja({ lloji: "rezultati", puna, cv, rezultati });
         else if (!cv) setGjendja({ lloji: "pa_cv", puna });
@@ -105,6 +142,15 @@ export default function GatiEkrani() {
     lexo();
   }, [lexo]);
 
+  // Sa kontrolle kanë mbetur: një pyetje pa AI sa del rezultati (nëse funksioni e njeh; përndryshe mbetet null).
+  useEffect(() => {
+    if (gjendja.lloji !== "rezultati" || kufiriIPyetur.current) return;
+    kufiriIPyetur.current = true;
+    lexoKufirin().then((k) => {
+      if (aktiv.current && k) setKufiri(k);
+    });
+  }, [gjendja.lloji]);
+
   // Kur kthehesh këtu (nga CV-ja ose nga intervista), rilexo pa AI: CV-ja e re ose gatishmëria e re
   // që shkroi intervista (burimi "intervista") duken menjëherë.
   useFocusEffect(
@@ -113,9 +159,10 @@ export default function GatiEkrani() {
       if (g.lloji === "pa_cv") {
         lexo();
       } else if (g.lloji === "rezultati") {
-        Promise.all([gatishmeriaEFundit(g.puna.id), cvEFundit()])
-          .then(([rezultati, cv]) => {
+        Promise.all([gatishmeriaEFundit(g.puna.id), cvEFundit(), historiaEPunes(g.puna.id)])
+          .then(([rezultati, cv, kaluara]) => {
             if (!aktiv.current || gjendjaRef.current.lloji !== "rezultati") return;
+            setHistoria(kaluara);
             setGjendja({ lloji: "rezultati", puna: g.puna, cv, rezultati: rezultati ?? g.rezultati });
           })
           .catch(() => {
@@ -127,7 +174,7 @@ export default function GatiEkrani() {
 
   switch (gjendja.lloji) {
     case "duke_lexuar":
-      return <Skeleti />;
+      return <SkeletiILeximit />;
 
     case "gabim_leximi":
       return (
@@ -174,12 +221,42 @@ export default function GatiEkrani() {
             Që ta dish sa je gati për &quot;{gjendja.puna.titulli}&quot;, AI-ja duhet ta krahasojë CV-në tënde me
             shpalljen. Ngarko PDF-në ose ndërtoje me AI, pastaj kthehu këtu.
           </T>
-          <Butoni teksti="Shko te CV-ja" onPress={() => router.push("/cv")} />
+          <Butoni teksti="Ngarko CV-në" onPress={() => router.push("/cv")} />
         </Qendra>
       );
 
     case "llogarit":
       return <Pritja puna={gjendja.puna} cv={gjendja.cv} />;
+
+    case "kufiri": {
+      const { puna, iFundit, kufiri: k } = gjendja;
+      const kur = kohaERivendosjes(k?.rivendoset ?? null);
+      return (
+        <Qendra>
+          <View style={[styles.ikonaEMadhe, { backgroundColor: t.karta2 }]}>
+            <Ikona emri={IKONAT.alarm} madhesia={30} ngjyra={t.zbehur} />
+          </View>
+          <T pesha="trashe" madhesia={18} style={styles.qendroj}>
+            Ke përdorur të gjitha kontrollet
+          </T>
+          <T zbehur madhesia={14} style={styles.qendroj} accessibilityLiveRegion="polite">
+            {k ? `${k.perdorur} nga ${k.maks}` : `${KUFIRI_DITOR_GATI} nga ${KUFIRI_DITOR_GATI}`} kontrolle në 24 orët e
+            fundit.{" "}
+            {kur
+              ? `Një vend lirohet ${kur}.`
+              : "Një vend lirohet brenda 24 orësh nga kontrolli më i vjetër."}
+          </T>
+          {iFundit ? (
+            <Butoni
+              teksti="Shiko rezultatin e fundit"
+              onPress={() => setGjendja({ lloji: "rezultati", puna, cv: gjendja.cv, rezultati: iFundit })}
+            />
+          ) : (
+            <Butoni teksti="Te punët" dytesor onPress={() => router.replace("/pune")} />
+          )}
+        </Qendra>
+      );
+    }
 
     case "gabim_ai": {
       const { puna, cv, iFundit } = gjendja;
@@ -213,109 +290,13 @@ export default function GatiEkrani() {
           puna={puna}
           cv={cv}
           rezultati={rezultati}
-          onPraktiko={() => router.push({ pathname: "/intervista", params: { puna: puna.id } })}
+          historia={historia}
+          kufiri={kufiri}
           onRillogarit={() => (cv ? llogarit(puna, cv, rezultati) : setGjendja({ lloji: "pa_cv", puna }))}
         />
       );
     }
   }
-}
-
-// ---------- Pritja (bordi 25): hapat e vërtetë, jo një rrotë bosh ----------
-
-function Pritja({ puna, cv }: { puna: Puna; cv: CvEFundit }) {
-  const [sekondat, setSekondat] = useState(0);
-
-  useEffect(() => {
-    const ora = setInterval(() => setSekondat((s) => s + 1), 1000);
-    return () => clearInterval(ora);
-  }, []);
-
-  const kerkesat =
-    puna.aftesite.length > 0 ? `${puna.aftesite.length} aftësi të kërkuara` : "kërkesat nga përshkrimi";
-
-  return (
-    <Faqja>
-      <View style={styles.pritja}>
-        <Rruga hapi={1} />
-        <T
-          pesha="trashe"
-          madhesia={24}
-          style={[styles.qendroj, styles.titulliPritjes]}
-          accessibilityRole="header"
-          accessibilityLiveRegion="polite"
-        >
-          Po e krahasoj CV-në tënde me shpalljen
-        </T>
-        <T zbehur madhesia={14} style={styles.qendroj}>
-          {puna.titulli}, {puna.kompania}
-        </T>
-
-        {puna.aftesite.length > 0 && (
-          <View style={[styles.aftesite, styles.qendroRreshtin]}>
-            {puna.aftesite.map((a, i) => (
-              <Animated.View key={`${a}-${i}`} entering={FadeIn.delay(i * 140).duration(KOHA.mesme)}>
-                <Chip teksti={a} />
-              </Animated.View>
-            ))}
-          </View>
-        )}
-
-        <Karta style={styles.hapatEPritjes}>
-          <HapiIPritjes gjendja="kryer" teksti="Lexova shpalljen" detaji={kerkesat} />
-          <HapiIPritjes gjendja="kryer" teksti="Gjeta CV-në tënde" detaji={`Versioni ${cv.versioni}`} />
-          <HapiIPritjes
-            gjendja="aktiv"
-            teksti="AI-ja po i krahason"
-            detaji={`${sekondat} s · zakonisht 10–40 sekonda`}
-          />
-          <HapiIPritjes gjendja="pret" teksti="Rezultati ruhet për këtë punë" />
-        </Karta>
-
-        <T zbehur madhesia={12.5} style={styles.qendroj}>
-          Mund të dalësh nga ky ekran: rezultati ruhet dhe e gjen këtu herën tjetër.
-        </T>
-      </View>
-    </Faqja>
-  );
-}
-
-function HapiIPritjes({
-  gjendja,
-  teksti,
-  detaji,
-}: {
-  gjendja: "kryer" | "aktiv" | "pret";
-  teksti: string;
-  detaji?: string;
-}) {
-  const t = useTema();
-  const etiketa = gjendja === "kryer" ? "kryer" : gjendja === "aktiv" ? "në punë" : "në pritje";
-  return (
-    <View style={styles.hapiIPritjes} accessible accessibilityLabel={`${teksti}, ${etiketa}${detaji ? `, ${detaji}` : ""}`}>
-      <View
-        style={[
-          styles.pikaEHapit,
-          gjendja === "kryer"
-            ? { backgroundColor: t.teksti }
-            : { borderWidth: 2, borderColor: gjendja === "aktiv" ? t.theksi : t.vija },
-        ]}
-      >
-        {gjendja === "kryer" && <Ikona emri={IKONAT.check} madhesia={12} ngjyra={t.sfondi} />}
-        {gjendja === "aktiv" && <ActivityIndicator size="small" color={t.theksi} style={styles.rrota} />}
-      </View>
-      <View style={styles.flex}>
-        <T pesha={gjendja === "pret" ? "normal" : "gjysme"} madhesia={14.5} zbehur={gjendja === "pret"}>
-          {teksti}
-        </T>
-        {detaji ? (
-          <T zbehur madhesia={12.5}>
-            {detaji}
-          </T>
-        ) : null}
-      </View>
-    </View>
-  );
 }
 
 // ---------- Rezultati (bordi 12) ----------
@@ -324,39 +305,116 @@ function Rezultati({
   puna,
   cv,
   rezultati,
-  onPraktiko,
+  historia,
+  kufiri,
   onRillogarit,
 }: {
   puna: Puna;
   cv: CvEFundit | null;
   rezultati: Gatishmeria;
-  onPraktiko: () => void;
+  historia: Prova[];
+  kufiri: Kufiri | null;
   onRillogarit: () => void;
 }) {
   const t = useTema();
+  const router = useRouter();
+  const njofto = useNjoftim();
+  const { stili: stiliIDridhjes, dridhu } = useDridhja();
+  const [bere, setBere] = useState<number[]>([]);
+
   const nga = rezultati.burimi === "intervista" ? "Pas intervistës" : "Nga CV-ja";
+  const delta = ndryshimiKundrejtParaprakut(historia, rezultati);
   // CV-ja është ndërruar pas kësaj llogaritjeje: numri mund të mos jetë më i saktë.
   const cvMeERe =
     cv !== null &&
     (rezultati.cv_id === null || rezultati.cv_id !== cv.id) &&
     new Date(cv.krijuar_me).getTime() > new Date(rezultati.krijuar_me).getTime();
 
+  // Shenjat "e bëra" janë të jotat: lexohen nga telefoni për këtë rezultat (hapat ndryshojnë me çdo llogaritje).
+  useEffect(() => {
+    let gjalle = true;
+    lexoShenjat(puna.id, rezultati.id).then((b) => {
+      if (gjalle) setBere(b);
+    });
+    return () => {
+      gjalle = false;
+    };
+  }, [puna.id, rezultati.id]);
+
+  function ndryshoShenjen(i: number) {
+    prekja.zgjedhje();
+    const tjeter = bere.includes(i) ? bere.filter((x) => x !== i) : [...bere, i];
+    setBere(tjeter);
+    ruajShenjat(puna.id, rezultati.id, tjeter);
+  }
+
+  const praktiko = () => router.push({ pathname: "/intervista", params: { puna: puna.id } });
+  const linku = puna.linku && /^https?:\/\//i.test(puna.linku) ? puna.linku : null;
+
+  function veprimiPer(hapi: string): VeprimiNeRresht | null {
+    switch (veprimiIHapit(hapi)) {
+      case "intervista":
+        return { teksti: "Praktiko intervistën për këtë punë", ikona: IKONAT.mikrofoni, onPress: praktiko };
+      case "cv":
+        return { teksti: "Përmirëso CV-në", ikona: IKONAT.dokumenti, onPress: () => router.push("/cv") };
+      case "apliko":
+        if (!linku) return null; // pa lidhje të shpalljes s'ka çka të hapet: hapi mbetet tekst
+        return {
+          teksti: "Apliko",
+          ikona: IKONAT.linku,
+          onPress: () => {
+            WebBrowser.openBrowserAsync(linku).catch(() => njofto("S'u hap shpallja. Provo përsëri.", "gabim"));
+          },
+        };
+      default:
+        return null;
+    }
+  }
+
+  const veprimet = rezultati.hapat.map(veprimiPer);
+  const interviste_te_hapat = rezultati.hapat.some((h) => veprimiIHapit(h) === "intervista");
+
+  // Kufiri ditor: njohim vetëm çka na jep funksioni; pa të, tregojmë vetëm kufirin e përgjithshëm.
+  const arritur = kufiri !== null && kufiri.perdorur >= kufiri.maks;
+  const kur = kufiri ? kohaERivendosjes(kufiri.rivendoset) : null;
+  const cvPaNdryshuar = !cvMeERe && rezultati.burimi === "cv";
+  let nenButonin: string;
+  if (arritur) {
+    nenButonin = `Ke përdorur ${kufiri.perdorur} nga ${kufiri.maks} kontrolle në 24 orët e fundit.${
+      kur ? ` Një vend lirohet ${kur}.` : ""
+    }`;
+  } else if (kufiri) {
+    nenButonin = `Ke përdorur ${kufiri.perdorur} nga ${kufiri.maks} kontrolle në 24 orët e fundit. Një kontroll i ri zgjat 10–40 sekonda.`;
+  } else {
+    nenButonin = `Kufiri: ${KUFIRI_DITOR_GATI} kontrolle në 24 orë. Një kontroll i ri zgjat 10–40 sekonda.`;
+  }
+  if (cvPaNdryshuar && !arritur) {
+    nenButonin += " CV-ja s'ka ndryshuar që nga ky kontroll, prandaj numri do dalë afërsisht i njëjtë.";
+  }
+
   return (
     <Faqja>
       <View style={styles.koka}>
         <UnazaEGatishmerise perqindja={rezultati.perqindja} />
+        <T pesha="trashe" madhesia={18} style={[styles.qendroj, styles.gjykimi]} accessibilityRole="header">
+          {gjykimiIPerqindjes(rezultati.perqindja)}
+        </T>
         <T zbehur madhesia={14} style={styles.qendroj}>
           {puna.titulli}, {puna.kompania}
         </T>
-        <Chip teksti={`${nga} · ${data(rezultati.krijuar_me)}`} />
+        <View style={styles.chipat}>
+          <Chip teksti={`${nga} · ${dataEPlote(rezultati.krijuar_me)}`} />
+          {delta !== null && <NdryshimiChip delta={delta} />}
+        </View>
       </View>
       <Rruga hapi={2} />
+      <HistoriaERreshtit historia={historia} aktualiId={rezultati.id} />
 
       {cvMeERe && (
         <Karta style={styles.rreshtIkone}>
           <Ikona emri={IKONAT.info} madhesia={18} ngjyra={t.zbehur} />
           <T madhesia={13.5} style={styles.flex}>
-            Ke një CV më të re se kjo llogaritje. Llogarit përsëri për ta parë numrin me CV-në e re.
+            Ke një CV më të re se kjo llogaritje. Kontrollo përsëri për ta parë numrin me CV-në e re.
           </T>
         </Karta>
       )}
@@ -372,7 +430,7 @@ function Rezultati({
 
       <Karta style={styles.karta}>
         <T pesha="trashe" madhesia={15}>
-          Çka ke
+          Çka ke{rezultati.ke.length > 0 ? ` · ${rezultati.ke.length}` : ""}
         </T>
         {rezultati.ke.length === 0 ? (
           <T zbehur madhesia={13.5}>
@@ -402,11 +460,11 @@ function Rezultati({
             </View>
           ))
         )}
+      </Karta>
 
-        <View style={[styles.ndarja, { backgroundColor: t.vija }]} />
-
+      <Karta style={styles.karta}>
         <T pesha="trashe" madhesia={15}>
-          Çka të mungon
+          Çka të mungon{rezultati.mungon.length > 0 ? ` · ${rezultati.mungon.length}` : ""}
         </T>
         {rezultati.mungon.length === 0 ? (
           <T zbehur madhesia={13.5}>
@@ -431,6 +489,9 @@ function Rezultati({
                 </T>
                 {m.pse ? (
                   <T zbehur madhesia={13}>
+                    <T pesha="gjysme" madhesia={13} zbehur>
+                      Pse ka rëndësi:{" "}
+                    </T>
                     {m.pse}
                   </T>
                 ) : null}
@@ -449,205 +510,69 @@ function Rezultati({
       </Karta>
 
       {rezultati.hapat.length > 0 && (
-        <View style={styles.hapat}>
+        <Karta style={styles.karta}>
           <T pesha="trashe" madhesia={17}>
             Hapat e radhës
           </T>
+          <T zbehur madhesia={12.5}>
+            Shenja ✓ është e jotja dhe mbetet vetëm në këtë telefon: s&apos;e ndryshon përqindjen. Numri ndryshon kur
+            kontrollon përsëri.
+          </T>
           {rezultati.hapat.map((h, i) => (
-            <View key={`hapi-${i}`} style={styles.rreshtIkone} accessible accessibilityLabel={`Hapi ${i + 1}: ${h}`}>
-              <View style={[styles.numri, { backgroundColor: t.karta2 }]}>
-                <T pesha="trashe" madhesia={12.5}>
-                  {i + 1}
-                </T>
-              </View>
-              <T madhesia={14.5} style={[styles.flex, styles.rreshtiGjate]}>
-                {h}
-              </T>
-            </View>
+            <RreshtiIHapit
+              key={`hapi-${i}`}
+              numri={i + 1}
+              teksti={h}
+              bere={bere.includes(i)}
+              onNdrysho={() => ndryshoShenjen(i)}
+              veprimi={veprimet[i]}
+            />
           ))}
-        </View>
+        </Karta>
       )}
 
       <T zbehur madhesia={12.5} style={styles.qendroj}>
         Vlerësim i AI-së nga CV-ja dhe shpallja, jo garanci punësimi. AI-ja mund të gabojë: krahasoje me shpalljen.
       </T>
 
-      <Butoni teksti="Praktiko intervistën për këtë punë" ikona={IKONAT.mikrofoni} onPress={onPraktiko} />
-      <Butoni
-        teksti="Llogarit përsëri"
-        dytesor
-        onPress={onRillogarit}
-        hint={`Përdor një nga ${KUFIRI_DITOR_GATI} llogaritjet që ke në 24 orë`}
-      />
-      <T zbehur madhesia={12} style={styles.qendroj}>
-        Llogaritja e re zgjat 10–40 sekonda dhe numërohet te kufiri: {KUFIRI_DITOR_GATI} herë në 24 orë.
-      </T>
-    </Faqja>
-  );
-}
-
-// Numri i madh (bordi: "rd lg"): harku portokalli mbushet një herë kur hapet; me Reduce Motion rri i plotë.
-const R = 42;
-const PERIMETRI = 2 * Math.PI * R;
-const RrethiIAnimuar = Animated.createAnimatedComponent(Circle);
-
-function UnazaEGatishmerise({ perqindja }: { perqindja: number }) {
-  const t = useTema();
-  const qetesi = useReducedMotion();
-  const v = perqindja / 100;
-  const progresi = useSharedValue(qetesi ? v : 0);
-
-  useEffect(() => {
-    progresi.set(qetesi ? v : withDelay(80, withTiming(v, { duration: KOHA.ngadale * 2, easing: LEHTESIMI.hyrje })));
-  }, [v, qetesi, progresi]);
-
-  const harku = useAnimatedProps(() => ({ strokeDashoffset: PERIMETRI * (1 - progresi.get()) }));
-
-  return (
-    <View
-      style={styles.unaza}
-      accessible
-      accessibilityRole="progressbar"
-      accessibilityLabel={`Gati ${perqindja} për qind për këtë punë`}
-      accessibilityValue={{ min: 0, max: 100, now: perqindja }}
-    >
-      <Svg width={176} height={176} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
-        <Circle cx={50} cy={50} r={R} stroke={t.karta2} strokeWidth={7} fill="none" />
-        <RrethiIAnimuar
-          cx={50}
-          cy={50}
-          r={R}
-          stroke={t.theksi}
-          strokeWidth={7}
-          strokeLinecap="round"
-          fill="none"
-          strokeDasharray={`${PERIMETRI} ${PERIMETRI}`}
-          animatedProps={harku}
-          transform="rotate(-90 50 50)"
+      {!interviste_te_hapat && (
+        <Butoni teksti="Praktiko intervistën për këtë punë" ikona={IKONAT.mikrofoni} onPress={praktiko} />
+      )}
+      <Animated.View style={stiliIDridhjes}>
+        <Butoni
+          teksti="Kontrollo përsëri"
+          dytesor
+          jashtePune={arritur}
+          onPress={() => {
+            if (arritur) {
+              // si çdo gjë e kyçur: dridhje e lehtë, dhe teksti poshtë thotë kur lirohet
+              prekja.lehte();
+              dridhu();
+              return;
+            }
+            onRillogarit();
+          }}
+          hint={arritur ? "Kufiri ditor u arrit" : "Përdor një nga kontrollet e 24 orëve"}
         />
-      </Svg>
-      <T pesha="shumeTrashe" madhesia={52} maxFontSizeMultiplier={1.15} style={styles.numriIMadh}>
-        {perqindja}
-        <T pesha="trashe" madhesia={22} maxFontSizeMultiplier={1.15}>
-          %
-        </T>
+      </Animated.View>
+      <T zbehur madhesia={12} style={styles.qendroj} accessibilityLiveRegion="polite">
+        {nenButonin}
       </T>
-      <T zbehur pesha="gjysme" madhesia={13}>
-        gati
-      </T>
-    </View>
-  );
-}
-
-// ---------- Pjesët e vogla ----------
-
-function Qendra({ children }: { children: ReactNode }) {
-  return (
-    <Faqja>
-      <View style={styles.qendra}>{children}</View>
     </Faqja>
   );
-}
-
-function Butoni({
-  teksti,
-  onPress,
-  dytesor = false,
-  ikona,
-  hint,
-}: {
-  teksti: string;
-  onPress: () => void;
-  dytesor?: boolean;
-  ikona?: { ios: string; android: string };
-  hint?: string;
-}) {
-  const t = useTema();
-  const ngjyra = dytesor ? t.teksti : t.sfondi;
-  return (
-    <Prekshme
-      accessibilityRole="button"
-      accessibilityLabel={teksti}
-      accessibilityHint={hint}
-      onPress={onPress}
-      style={[
-        styles.butoni,
-        dytesor ? { borderWidth: 1.5, borderColor: t.vija, backgroundColor: t.karta } : { backgroundColor: t.teksti },
-      ]}
-    >
-      {ikona && <Ikona emri={ikona} madhesia={16} ngjyra={ngjyra} />}
-      <T pesha="trashe" madhesia={16} ngjyra={ngjyra}>
-        {teksti}
-      </T>
-    </Prekshme>
-  );
-}
-
-function Skeleti() {
-  const t = useTema();
-  return (
-    <Faqja>
-      <Pulsi>
-        <View style={styles.skeleti} accessibilityLabel="Po ngarkohet">
-          <View style={[styles.unazaSkelet, { borderColor: t.karta2 }]} />
-          <Vije gjeresia="60%" lartesia={14} />
-          <Vije gjeresia="100%" lartesia={10} rrezja={5} />
-          <View style={[styles.kartaSkelet, { backgroundColor: t.karta }]}>
-            <Vije gjeresia="35%" lartesia={14} />
-            <Vije gjeresia="90%" lartesia={12} />
-            <Vije gjeresia="70%" lartesia={12} />
-          </View>
-        </View>
-      </Pulsi>
-    </Faqja>
-  );
-}
-
-function data(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const dy = (n: number) => String(n).padStart(2, "0");
-  return `${dy(d.getDate())}.${dy(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   qendroj: { textAlign: "center" },
-  qendra: { alignItems: "center", gap: 12, paddingTop: 48, paddingHorizontal: 8 },
   ikonaEMadhe: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  butoni: {
-    flexDirection: "row",
-    gap: 8,
-    alignSelf: "stretch",
-    borderRadius: 999,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  pritja: { gap: 14, paddingTop: 12 },
-  titulliPritjes: { letterSpacing: -0.5, marginTop: 10 },
-  aftesite: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  qendroRreshtin: { justifyContent: "center" },
-  hapatEPritjes: { gap: 14 },
-  hapiIPritjes: { flexDirection: "row", gap: 12, alignItems: "center" },
-  pikaEHapit: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  rrota: { transform: [{ scale: 0.7 }] },
   koka: { alignItems: "center", gap: 10, paddingTop: 4 },
-  unaza: { width: 176, height: 176, alignItems: "center", justifyContent: "center" },
-  numriIMadh: { letterSpacing: -1.5, lineHeight: 58 },
+  gjykimi: { letterSpacing: -0.3 },
+  chipat: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", alignItems: "center" },
   karta: { gap: 10 },
   rreshtIkone: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
   shenja: { width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", marginTop: 1 },
   shenjaX: { lineHeight: 14 },
   mungon: { gap: 2 },
-  ndarja: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
-  hapat: { gap: 10, marginTop: 4 },
-  numri: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   rreshtiGjate: { lineHeight: 21 },
-  skeleti: { gap: 12, alignItems: "center", paddingTop: 8 },
-  unazaSkelet: { width: 176, height: 176, borderRadius: 88, borderWidth: 12 },
-  kartaSkelet: { alignSelf: "stretch", borderRadius: 22, padding: 16, gap: 10, marginTop: 8 },
 });

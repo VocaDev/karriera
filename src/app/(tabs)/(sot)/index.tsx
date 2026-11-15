@@ -1,6 +1,6 @@
 import { Link, useFocusEffect, type Href } from "expo-router";
 import { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
@@ -9,6 +9,7 @@ import { Pulsi, Vije } from "@/components/Skeleti";
 import { TabScroll } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import { listoVersionet, type CvRresht } from "@/lib/cv";
+import { kontrolletEFundit, type KontrollEFundit } from "@/lib/gati";
 import { prekja } from "@/lib/prekja";
 import { listoPunet, type Puna } from "@/lib/punet";
 import { listoTeRuajturat } from "@/lib/ruajtura";
@@ -46,15 +47,24 @@ export default function Sot() {
   const [cvt, setCvt] = useState<Burimi<CvRresht[]>>(null);
   const [teRuajturat, setTeRuajturat] = useState<Burimi<number>>(null);
   const [punet, setPunet] = useState<Burimi<Puna[]>>(null);
+  const [kontrollet, setKontrollet] = useState<Burimi<KontrollEFundit[]>>(null);
   const [rifreskim, setRifreskim] = useState(false);
 
-  // Lexon të tre burimet nga Supabase (RLS kthen vetëm të miat). Kthen true nëse të tre u lexuan.
+  // Lexon burimet nga Supabase (RLS kthen vetëm të miat). Kthen true nëse të gjitha u lexuan.
   const ngarko = useCallback(async (): Promise<boolean> => {
-    const [c, r, p] = await Promise.allSettled([listoVersionet(), listoTeRuajturat(), listoPunet()]);
+    const [c, r, p, g] = await Promise.allSettled([
+      listoVersionet(),
+      listoTeRuajturat(),
+      listoPunet(),
+      kontrolletEFundit(3),
+    ]);
     setCvt(c.status === "fulfilled" ? { ok: true, v: c.value } : { ok: false });
     setTeRuajturat(r.status === "fulfilled" ? { ok: true, v: r.value.size } : { ok: false });
     setPunet(p.status === "fulfilled" ? { ok: true, v: p.value } : { ok: false });
-    return c.status === "fulfilled" && r.status === "fulfilled" && p.status === "fulfilled";
+    setKontrollet(g.status === "fulfilled" ? { ok: true, v: g.value } : { ok: false });
+    return (
+      c.status === "fulfilled" && r.status === "fulfilled" && p.status === "fulfilled" && g.status === "fulfilled"
+    );
   }, []);
 
   useFocusEffect(
@@ -179,6 +189,20 @@ export default function Sot() {
         )}
       </Karta>
 
+      {/* "Gatishmëria jote": vetëm kontrollet e vërteta (tabela gatishmeria). Pa asnjë kontroll, blloku s'shfaqet. */}
+      {kontrollet?.ok && kontrollet.v.length > 0 && (
+        <View style={styles.gatishmeria}>
+          <T pesha="trashe" madhesia={17} accessibilityRole="header">
+            Gatishmëria jote
+          </T>
+          <Karta style={styles.lista}>
+            {kontrollet.v.map((k, i) => (
+              <RreshtiIKontrollit key={k.puna_id} kontrolli={k} iFundit={i === kontrollet.v.length - 1} />
+            ))}
+          </Karta>
+        </View>
+      )}
+
       <Karta style={styles.lista}>
         <RreshtiVecorise vecoria={cvVecoria} bere={iAnalizuar !== null} nenTeksti={nenCV} />
         <RreshtiVecorise vecoria={veco("punet")} bere={(ruajtura ?? 0) > 0} nenTeksti={nenPunet} />
@@ -231,6 +255,49 @@ export default function Sot() {
   );
 }
 
+// Një kontroll i fundit: titulli i punës, përqindja dhe ndryshimi kundrejt kontrollit të mëparshëm; hap ekranin e saj.
+function RreshtiIKontrollit({ kontrolli, iFundit }: { kontrolli: KontrollEFundit; iFundit: boolean }) {
+  const t = useTema();
+  const { delta } = kontrolli;
+  const ndryshimi = delta === null || delta === 0 ? null : `${delta > 0 ? "+" : "−"}${Math.abs(delta)}`;
+  const etiketa = `${kontrolli.titulli}, ${kontrolli.kompania}: gati ${kontrolli.perqindja} për qind${
+    delta === null || delta === 0 ? "" : `, ${delta > 0 ? "plus" : "minus"} ${Math.abs(delta)} nga herë e kaluar`
+  }`;
+  return (
+    <Link href={{ pathname: "/gati/[id]", params: { id: kontrolli.puna_id } }} asChild>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={etiketa}
+        style={({ pressed }) => [
+          styles.kontrolli,
+          !iFundit && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.vija },
+          pressed && { backgroundColor: t.karta2 },
+        ]}
+      >
+        <View style={styles.flex}>
+          <T pesha="trashe" madhesia={15} numberOfLines={1}>
+            {kontrolli.titulli}
+          </T>
+          <T zbehur madhesia={13} numberOfLines={1}>
+            {kontrolli.kompania}
+          </T>
+        </View>
+        <View style={styles.perqindja}>
+          <T pesha="shumeTrashe" madhesia={20} maxFontSizeMultiplier={1.2} ngjyra={t.theksi}>
+            {kontrolli.perqindja}%
+          </T>
+          {ndryshimi !== null && (
+            <T pesha="gjysme" madhesia={12.5} ngjyra={delta !== null && delta > 0 ? t.ok : t.keq}>
+              {ndryshimi}
+            </T>
+          )}
+        </View>
+        <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
+      </Pressable>
+    </Link>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   qellimi: { gap: 10 },
@@ -245,6 +312,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   lista: { padding: 0, overflow: "hidden" },
+  gatishmeria: { gap: 10 },
+  kontrolli: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16, minHeight: 56 },
+  perqindja: { alignItems: "flex-end", minWidth: 48 },
   rreshtKarte: { flexDirection: "row", alignItems: "center", gap: 12 },
   skeleti: { gap: 7, paddingVertical: 2 },
 });
