@@ -21,6 +21,7 @@ import {
   type Gjatesia,
   type Gjuha,
   gjeneroKthesen,
+  intervistuesiNga,
   type Konteksti,
   type KthesaDB,
   kthesaPerApp,
@@ -147,6 +148,7 @@ Deno.serve(async (req: Request) => {
     kthesaEZene = aktuale.id;
 
     const konteksti = intervista.konteksti as Konteksti;
+    const intervistuesi = intervistuesiNga(konteksti); // intervistat e vjetra pa fushën: "arta"
     const roli = intervista.roli as Roli;
     const gjuha = intervista.gjuha as Gjuha;
     const lejohetVazhdim = aktuale.lloji === "pyetje";
@@ -155,8 +157,8 @@ Deno.serve(async (req: Request) => {
 
     // Vlerësimi dhe pyetja tjetër njëherësh: kandidati pret vetëm sa më e ngadalta.
     const [vleresimi, kthesaAI] = await Promise.allSettled([
-      vleresoPergjigjen({ konteksti, roli, gjuha, kthesa: { reagimi: aktuale.reagimi, pyetja: aktuale.pyetja, pergjigja } }),
-      gjeneroKthesen({ konteksti, roli, gjuha, gjatesia, kthesat: meKetePergjigje, nrPyetjeve, menyra, lejohetVazhdim }),
+      vleresoPergjigjen({ konteksti, intervistuesi, roli, gjuha, kthesa: { reagimi: aktuale.reagimi, pyetja: aktuale.pyetja, pergjigja } }),
+      gjeneroKthesen({ konteksti, intervistuesi, roli, gjuha, gjatesia, kthesat: meKetePergjigje, nrPyetjeve, menyra, lejohetVazhdim }),
     ]);
     if (kthesaAI.status === "rejected") {
       await liroQirane();

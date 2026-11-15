@@ -1,10 +1,14 @@
 // Përbërës të vegjël që i ndajnë vetëm tri ekranet e intervistës (src/app/intervista/*).
 // Jetojnë këtu sepse çdo fajll te src/app bëhet rrugë (route).
+import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import Prekshme from "@/components/Prekshme";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
+import { prekja } from "@/lib/prekja";
 import { useTema } from "@/lib/tema";
+
+import { INTERVISTUESIT, PAMJA_E_INTERVISTUESIT, type Intervistuesi } from "./tipet";
 
 /** Butoni në formë kapsule (si te detajet e punës): "kryesor" i errët, "dytesor" me kornizë. */
 export function Butoni({
@@ -50,6 +54,54 @@ export function Butoni({
   );
 }
 
+/** Rrethi me inicialen e intervistuesit (pa figura: avatari 3D vjen më 09.12). Dekorativ: emri lexohet gjetkë. */
+export function AvatariIntervistuesit({ intervistuesi, madhesia = 24 }: { intervistuesi: Intervistuesi; madhesia?: number }) {
+  const t = useTema();
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        styles.avatari,
+        { width: madhesia, height: madhesia, borderRadius: madhesia / 2, backgroundColor: t.karta2, borderColor: t.vija },
+      ]}
+    >
+      <T pesha="trashe" madhesia={Math.round(madhesia * 0.5)} maxFontSizeMultiplier={1.2}>
+        {PAMJA_E_INTERVISTUESIT[intervistuesi].inicialja}
+      </T>
+    </View>
+  );
+}
+
+/** Segmenti "Arta · Arbër" (kontrolli i sistemit). Ekrani i nisjes dhe Cilësimet e përdorin të njëjtin. */
+export function ZgjidhIntervistuesin({
+  vlera,
+  onZgjidh,
+  style,
+}: {
+  vlera: Intervistuesi;
+  onZgjidh: (i: Intervistuesi) => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const t = useTema();
+  return (
+    <SegmentedControl
+      values={INTERVISTUESIT.map((i) => PAMJA_E_INTERVISTUESIT[i].emri)}
+      selectedIndex={INTERVISTUESIT.indexOf(vlera)}
+      onChange={(e) => {
+        const i = INTERVISTUESIT[e.nativeEvent.selectedSegmentIndex];
+        if (i && i !== vlera) {
+          prekja.zgjedhje();
+          onZgjidh(i);
+        }
+      }}
+      appearance={t.errët ? "dark" : "light"}
+      accessibilityLabel="Kush të interviston"
+      style={style}
+    />
+  );
+}
+
 /** Gabim me fjali në shqip dhe (kur ka kuptim) "Provo përsëri". */
 export function KartaEGabimit({
   titulli,
@@ -88,6 +140,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatari: { alignItems: "center", justifyContent: "center", borderWidth: StyleSheet.hairlineWidth },
   gabimi: { gap: 8 },
   rresht: { flexDirection: "row", alignItems: "center", gap: 8 },
   flex: { flex: 1 },

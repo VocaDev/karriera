@@ -16,6 +16,7 @@ import {
   GabimIntervista,
   type Gjuha,
   gjeneroRaportin,
+  intervistuesiNga,
   type Konteksti,
   type KthesaDB,
   kufizo,
@@ -117,6 +118,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const konteksti = intervista.konteksti as Konteksti;
+    const intervistuesi = intervistuesiNga(konteksti); // intervistat e vjetra pa fushën: "arta"
     const roli = intervista.roli as Roli;
     const gjuha = intervista.gjuha as Gjuha;
 
@@ -125,7 +127,7 @@ Deno.serve(async (req: Request) => {
     if (paVleresim.length) {
       const rezultatet = await Promise.allSettled(
         paVleresim.map((k) =>
-          vleresoPergjigjen({ konteksti, roli, gjuha, kthesa: { reagimi: k.reagimi, pyetja: k.pyetja, pergjigja: k.pergjigja ?? "" } }),
+          vleresoPergjigjen({ konteksti, intervistuesi, roli, gjuha, kthesa: { reagimi: k.reagimi, pyetja: k.pyetja, pergjigja: k.pergjigja ?? "" } }),
         ),
       );
       await Promise.all(
@@ -140,7 +142,7 @@ Deno.serve(async (req: Request) => {
     // ---------- Raporti ----------
     let ai;
     try {
-      ai = await gjeneroRaportin({ konteksti, roli, gjuha, kthesat });
+      ai = await gjeneroRaportin({ konteksti, intervistuesi, roli, gjuha, kthesat });
     } catch (e) {
       await liro();
       if (e instanceof GabimIntervista) return gabim(e.message, e.status, e.kodi);
@@ -225,6 +227,7 @@ Deno.serve(async (req: Request) => {
       },
       puna: { id: konteksti.puna.id, titulli: konteksti.puna.titulli, kompania: konteksti.puna.kompania },
       gjuha,
+      intervistuesi,
       modeli: MODELI_RAPORTI,
     };
 

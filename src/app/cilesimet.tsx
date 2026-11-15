@@ -17,6 +17,9 @@ import {
   type Gjuha,
   type RoliSynuar,
 } from "@/lib/hyrja";
+import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
+import { PAMJA_E_INTERVISTUESIT } from "@/lib/intervista/tipet";
+import { ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
@@ -77,6 +80,7 @@ export default function CilesimetEkrani() {
   const [roli, setRoli] = useState<RoliSynuar | null>(profili?.roli_synuar ?? null);
   const [gjuha, setGjuha] = useState<Gjuha>(profili?.gjuha ?? "sq");
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
+  const { intervistuesi, zgjidh: zgjidhIntervistuesin } = useIntervistuesiIZgjedhur();
 
   if (!profili || !roli) return null;
 
@@ -136,6 +140,15 @@ export default function CilesimetEkrani() {
             enabled={!duke_ruajtur}
             style={styles.segmenti}
           />
+        </View>
+      </Grupi>
+
+      <Grupi
+        titulli="Kush të interviston"
+        shenimi={`${PAMJA_E_INTERVISTUESIT[intervistuesi].emri} do të të bëjë pyetjet. Ruhet vetëm në këtë telefon dhe mund ta ndryshosh para çdo interviste.`}
+      >
+        <View style={styles.kontrolli}>
+          <ZgjidhIntervistuesin vlera={intervistuesi} onZgjidh={zgjidhIntervistuesin} style={styles.segmenti} />
         </View>
       </Grupi>
 

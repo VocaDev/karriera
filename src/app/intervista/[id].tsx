@@ -19,8 +19,14 @@ import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Ikona, Progresi, T } from "@/components/ui";
 import { kushEkaRadhen, type Gjendja, type Mesazhi } from "@/lib/intervista/gjendja";
-import { MAKS_PERGJIGJJA, type Gjuha } from "@/lib/intervista/tipet";
-import { KartaEGabimit } from "@/lib/intervista/ui";
+import {
+  INTERVISTUESI_FILLESTAR,
+  MAKS_PERGJIGJJA,
+  PAMJA_E_INTERVISTUESIT,
+  type Gjuha,
+  type Intervistuesi,
+} from "@/lib/intervista/tipet";
+import { AvatariIntervistuesit, KartaEGabimit } from "@/lib/intervista/ui";
 import { useIntervista } from "@/lib/intervista/useIntervista";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { SHKRONJAT, useTema } from "@/lib/tema";
@@ -50,6 +56,9 @@ export default function IntervistaEkrani() {
   const radha = kushEkaRadhen(gjendja);
   const seanca = gjendja.faza === "gati" ? null : gjendja.seanca;
   const info = seanca?.info ?? null;
+  // Emri vjen nga intervista (zgjedhja te nisja); gjatë hapjes, ose pa shënim, mbetet "Arta".
+  const intervistuesi: Intervistuesi = info?.intervistuesi ?? INTERVISTUESI_FILLESTAR;
+  const pamja = PAMJA_E_INTERVISTUESIT[intervistuesi];
   const mundTeDergoje = gjendja.faza === "pret_pergjigjen" && teksti.trim().length > 0;
 
   // Raporti gati → rezultatet (zëvendëson këtë ekran, që "mbrapa" të mos kthejë në një intervistë të mbaruar).
@@ -63,8 +72,8 @@ export default function IntervistaEkrani() {
   const nrAktual = gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;
   const pyetjaAktuale = gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.pyetja ?? null) : null;
   useEffect(() => {
-    if (nrAktual !== null && pyetjaAktuale) AccessibilityInfo.announceForAccessibility(`Arta pyet: ${pyetjaAktuale}`);
-  }, [nrAktual, pyetjaAktuale]);
+    if (nrAktual !== null && pyetjaAktuale) AccessibilityInfo.announceForAccessibility(`${pamja.emri} pyet: ${pyetjaAktuale}`);
+  }, [nrAktual, pyetjaAktuale, pamja.emri]);
 
   function dil() {
     const largohu = () => (router.canGoBack() ? router.back() : router.replace("/"));
@@ -129,14 +138,14 @@ export default function IntervistaEkrani() {
             </T>
             {info && (
               <T zbehur madhesia={12.5} style={styles.qendroj}>
-                Pyetja {pyetjaNr} nga {info.min === info.max ? info.max : `${info.min}–${info.max}`}
+                {pamja.emri} · Pyetja {pyetjaNr} nga {info.min === info.max ? info.max : `${info.min}–${info.max}`}
               </T>
             )}
           </View>
           <View style={styles.dil} />
         </View>
         {info && <Progresi vlera={pyetjaNr / info.max} />}
-        <Statusi gjendja={gjendja} radha={radha} />
+        <Statusi gjendja={gjendja} radha={radha} emri={pamja.emri} />
       </View>
 
       <ScrollView
@@ -149,9 +158,9 @@ export default function IntervistaEkrani() {
       >
         {gjendja.faza === "gati" && <SkeletiIBisedes />}
         {seanca?.biseda.map((m) => (
-          <Flluska key={m.id} mesazhi={m} gjuha={info?.gjuha ?? "sq"} />
+          <Flluska key={m.id} mesazhi={m} gjuha={info?.gjuha ?? "sq"} intervistuesi={intervistuesi} />
         ))}
-        {(gjendja.faza === "vlereson" || (gjendja.faza === "perfundon" && gjendja.mbyllVete)) && <ArtaMendon />}
+        {(gjendja.faza === "vlereson" || (gjendja.faza === "perfundon" && gjendja.mbyllVete)) && <Mendon intervistuesi={intervistuesi} />}
         {gjendja.faza === "perfundon" && (
           <View style={styles.rezultatetVijne} accessibilityLiveRegion="polite">
             <Pulsi>
@@ -194,14 +203,14 @@ export default function IntervistaEkrani() {
           <TextInput
             value={teksti}
             onChangeText={setTeksti}
-            placeholder={radha === "ti" ? "Shkruaj përgjigjen tënde…" : "Prit pyetjen e Artës…"}
+            placeholder={radha === "ti" ? "Shkruaj përgjigjen tënde…" : `Prit pyetjen e ${pamja.gjenitivi}…`}
             placeholderTextColor={t.zbehur}
             multiline
             maxLength={MAKS_PERGJIGJJA}
             editable={gjendja.faza !== "gati"}
             style={[styles.fusha, { backgroundColor: t.karta, color: t.teksti, borderColor: t.vija }]}
             accessibilityLabel="Përgjigjja jote"
-            accessibilityHint={radha === "ti" ? "Shkruaj dhe prek Dërgo" : "Arta po mendon; prit pyetjen tjetër"}
+            accessibilityHint={radha === "ti" ? "Shkruaj dhe prek Dërgo" : `${pamja.emri} po mendon; prit pyetjen tjetër`}
           />
           <Prekshme
             accessibilityRole="button"
@@ -225,7 +234,7 @@ export default function IntervistaEkrani() {
 }
 
 /** Shiriti "kush e ka radhën": pika portokalli kur është radha jote, ndryshe tekst i qetë. */
-function Statusi({ gjendja, radha }: { gjendja: Gjendja; radha: "arta" | "ti" | "askush" }) {
+function Statusi({ gjendja, radha, emri }: { gjendja: Gjendja; radha: "arta" | "ti" | "askush"; emri: string }) {
   const t = useTema();
   const teksti =
     gjendja.faza === "gati"
@@ -235,9 +244,9 @@ function Statusi({ gjendja, radha }: { gjendja: Gjendja; radha: "arta" | "ti" | 
         : gjendja.faza === "perfundon" || gjendja.faza === "raporti"
           ? "Intervista mbaroi"
           : gjendja.faza === "vlereson"
-            ? "Arta po e lexon përgjigjen tënde…"
+            ? `${emri} po e lexon përgjigjen tënde…`
             : gjendja.faza === "pyet"
-              ? "Arta po pyet"
+              ? `${emri} po pyet`
               : "Radha jote: shkruaj përgjigjen";
   return (
     <View style={styles.statusi} accessibilityLiveRegion="polite" accessibilityLabel={teksti}>
@@ -249,7 +258,7 @@ function Statusi({ gjendja, radha }: { gjendja: Gjendja; radha: "arta" | "ti" | 
   );
 }
 
-function Flluska({ mesazhi, gjuha }: { mesazhi: Mesazhi; gjuha: Gjuha }) {
+function Flluska({ mesazhi, gjuha, intervistuesi }: { mesazhi: Mesazhi; gjuha: Gjuha; intervistuesi: Intervistuesi }) {
   const t = useTema();
   const qetesi = useReducedMotion();
   const hyrja = qetesi ? undefined : FadeIn.duration(KOHA.mesme).easing(LEHTESIMI.hyrje);
@@ -269,6 +278,7 @@ function Flluska({ mesazhi, gjuha }: { mesazhi: Mesazhi; gjuha: Gjuha }) {
     );
   }
 
+  const emri = PAMJA_E_INTERVISTUESIT[intervistuesi].emri;
   const reagimi = mesazhi.kush === "arta" ? mesazhi.reagimi : mesazhi.teksti;
   const pyetja = mesazhi.kush === "arta" ? mesazhi.pyetja : MBYLLJA[gjuha];
   return (
@@ -276,11 +286,12 @@ function Flluska({ mesazhi, gjuha }: { mesazhi: Mesazhi; gjuha: Gjuha }) {
       entering={hyrja}
       style={[styles.flluska, styles.eArtes, { backgroundColor: t.karta, borderColor: t.vija }]}
       accessible
-      accessibilityLabel={`Arta: ${[reagimi, pyetja].filter(Boolean).join(" ")}`}
+      accessibilityLabel={`${emri}: ${[reagimi, pyetja].filter(Boolean).join(" ")}`}
     >
       <View style={styles.emriRresht}>
+        <AvatariIntervistuesit intervistuesi={intervistuesi} madhesia={22} />
         <T pesha="trashe" madhesia={12.5} zbehur>
-          Arta
+          {emri}
         </T>
         {mesazhi.kush === "arta" && mesazhi.lloji === "vazhdim" && <Chip teksti="Pyetje vazhduese" />}
       </View>
@@ -296,13 +307,13 @@ function Flluska({ mesazhi, gjuha }: { mesazhi: Mesazhi; gjuha: Gjuha }) {
   );
 }
 
-function ArtaMendon() {
+function Mendon({ intervistuesi }: { intervistuesi: Intervistuesi }) {
   const t = useTema();
   return (
     <View
       style={[styles.flluska, styles.eArtes, styles.mendon, { backgroundColor: t.karta, borderColor: t.vija }]}
       accessible
-      accessibilityLabel="Arta po mendon"
+      accessibilityLabel={`${PAMJA_E_INTERVISTUESIT[intervistuesi].emri} po mendon`}
     >
       <Pulsi>
         <View style={styles.pikat}>

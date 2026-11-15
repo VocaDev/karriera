@@ -11,14 +11,18 @@ import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@s
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
 import { supabase } from "@/lib/supabase";
 
+import { lexoIntervistuesinPer, ruajIntervistuesinPer } from "./intervistuesi";
 import {
+  eshteIntervistues,
   eshteObjekt,
   eshteRaport,
+  INTERVISTUESI_FILLESTAR,
   lexoInfon,
   lexoKthesen,
   type Gjatesia,
   type Gjuha,
   type IntervistaInfo,
+  type Intervistuesi,
   type Kthesa,
   type Raporti,
   type RreshtiIBisedes,
@@ -112,15 +116,22 @@ const PERGJIGJE_E_PAPLOTE = "Serveri ktheu një përgjigje të paplotë. Provo p
 export type Nisja = { intervista: IntervistaInfo; kthesa: Kthesa; rifilluar: boolean };
 
 /** Nis një intervistë për punën; nëse ka një të nisur (24 orët e fundit, e njëjta gjuhë e gjatësi), e vazhdon atë. */
-export async function nisIntervisten(opts: { punaId: string; gjuha: Gjuha; gjatesia: Gjatesia }): Promise<Nisja> {
+export async function nisIntervisten(opts: {
+  punaId: string;
+  gjuha: Gjuha;
+  gjatesia: Gjatesia;
+  intervistuesi: Intervistuesi;
+}): Promise<Nisja> {
   const data = await thirr(
     "intervista-nis",
-    { puna_id: opts.punaId, gjuha: opts.gjuha, gjatesia: opts.gjatesia },
+    { puna_id: opts.punaId, gjuha: opts.gjuha, gjatesia: opts.gjatesia, intervistuesi: opts.intervistuesi },
     "Intervista s'u nis. Provo përsëri.",
   );
   const intervista = eshteObjekt(data) ? lexoInfon(data.intervista) : null;
   const kthesa = eshteObjekt(data) ? lexoKthesen(data.kthesa) : null;
   if (!intervista || !kthesa) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "tjeter");
+  // Chat-i lexon emrin nga këtu (kolona konteksti s'është e lexueshme nga app-i).
+  await ruajIntervistuesinPer(intervista.id, intervista.intervistuesi);
   return { intervista, kthesa, rifilluar: eshteObjekt(data) && data.rifilluar === true };
 }
 
@@ -198,7 +209,13 @@ export async function lexoIntervisten(intervistaId: string): Promise<IntervistaE
     typeof r.puna_id === "string" && punet && typeof punet.titulli === "string" && typeof punet.kompania === "string"
       ? { id: r.puna_id, titulli: punet.titulli, kompania: punet.kompania }
       : null;
-  const info = lexoInfon({ ...r, puna });
+  const raporti = eshteRaport(r.raporti) ? r.raporti : null;
+  // Raporti e mban vetë emrin; përndryshe ai i ruajtur në telefon; përndryshe "Arta" (intervistat e vjetra).
+  const intervistuesi =
+    (raporti && eshteIntervistues(raporti.intervistuesi) ? raporti.intervistuesi : null) ??
+    (await lexoIntervistuesinPer(intervistaId)) ??
+    INTERVISTUESI_FILLESTAR;
+  const info = lexoInfon({ ...r, puna, intervistuesi });
   if (!info) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "tjeter");
 
   const biseda = ((kthesat.data ?? []) as RreshtiIBisedes[]).map((k) => ({
@@ -208,5 +225,5 @@ export async function lexoIntervisten(intervistaId: string): Promise<IntervistaE
     pyetja: k.pyetja,
     pergjigja: k.pergjigja,
   }));
-  return { info, biseda, raporti: eshteRaport(r.raporti) ? r.raporti : null };
+  return { info, biseda, raporti };
 }

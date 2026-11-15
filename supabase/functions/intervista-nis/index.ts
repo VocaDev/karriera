@@ -1,7 +1,8 @@
 // intervista-nis: nis një intervistë me tekst për një punë konkrete dhe kthen pyetjen e parë.
 //
-// Hyrja:  POST { "puna_id": "p1", "gjuha"?: "sq" | "en" | "de", "gjatesia"?: "shkurter" | "plote" }
-// Dalja:  { "intervista": IntervistaInfo, "kthesa": { nr, lloji, reagimi, pyetja, shprehja }, "rifilluar": boolean }
+// Hyrja:  POST { "puna_id": "p1", "gjuha"?: "sq" | "en" | "de", "gjatesia"?: "shkurter" | "plote",
+//                "intervistuesi"?: "arta" | "arber" }   (pa të: "arta"; ruhet te intervistat.konteksti)
+// Dalja:  { "intervista": IntervistaInfo (me "intervistuesi"), "kthesa": { nr, lloji, reagimi, pyetja, shprehja }, "rifilluar": boolean }
 //
 // 1. Thirrësi: sesion i vërtetë dhe llogari "kerkues" (_shared/thirresi.ts, vetëm lexim).
 // 2. Nëse kjo punë ka një intervistë "aktive" nga 24 orët e fundit (e njëjta gjuhë e gjatësi), e vazhdon atë
@@ -18,6 +19,10 @@ import {
   GJATESITE,
   type Gjatesia,
   type Gjuha,
+  INTERVISTUESI_FILLESTAR,
+  type Intervistuesi,
+  intervistuesiNga,
+  IntervistuesiSchema,
   type Konteksti,
   KUFIRI_DITOR_INTERVISTAVE,
   kthesaPerApp,
@@ -99,6 +104,11 @@ Deno.serve(async (req: Request) => {
       return gabim("Gjatësia duhet të jetë e shkurtër ose e plotë.", 400);
     }
     const gjatesia: Gjatesia = b.gjatesia === "plote" ? "plote" : "shkurter";
+    const intervistuesiParsuar = b.intervistuesi === undefined ? null : IntervistuesiSchema.safeParse(b.intervistuesi);
+    if (intervistuesiParsuar && !intervistuesiParsuar.success) {
+      return gabim("Intervistuesi duhet të jetë arta ose arber.", 400);
+    }
+    const intervistuesi: Intervistuesi = intervistuesiParsuar?.data ?? INTERVISTUESI_FILLESTAR;
 
     // Puna, me JWT-në e përdoruesit (RLS: kërkuesi i lexon shpalljet).
     const { data: puna, error: gabimiPunes } = await t.klienti
@@ -123,10 +133,11 @@ Deno.serve(async (req: Request) => {
     const { min, max } = GJATESITE[gjatesia];
     const infoPune = { id: puna.id as string, titulli: puna.titulli as string, kompania: puna.kompania as string };
 
-    // Vazhdo intervistën e nisur për këtë punë (pa e harxhuar kufirin).
-    const { data: eNisur } = await t.admin
+    // Vazhdo intervistën e nisur për këtë punë (pa e harxhuar kufirin), vetëm nëse e bën i njëjti intervistues:
+    // kush provon Artën dhe pastaj Arbërin për të njëjtën punë duhet të marrë një intervistë të re.
+    const { data: teNisurat } = await t.admin
       .from("intervistat")
-      .select("id, gjuha, roli, gjatesia, gjendja, nr_pyetjeve, cv_id")
+      .select("id, gjuha, roli, gjatesia, gjendja, nr_pyetjeve, cv_id, konteksti")
       .eq("user_id", t.userId)
       .eq("puna_id", puna.id)
       .eq("gjendja", "aktive")
@@ -134,8 +145,10 @@ Deno.serve(async (req: Request) => {
       .eq("gjatesia", gjatesia)
       .gte("krijuar_me", nje24OreMePare)
       .order("krijuar_me", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
+    const eNisur = (teNisurat ?? []).find(
+      (x) => intervistuesiNga(eshteObjekt(x.konteksti) ? x.konteksti : null) === intervistuesi,
+    );
     if (eNisur) {
       const { data: kthesa } = await t.admin
         .from("intervista_kthesat")
@@ -146,8 +159,9 @@ Deno.serve(async (req: Request) => {
         .limit(1)
         .maybeSingle();
       if (kthesa) {
+        const { konteksti: _konteksti, ...tePublikat } = eNisur; // konteksti (me CV-në) s'del te app-i
         return json({
-          intervista: { ...eNisur, min, max, puna: infoPune, ka_cv: eNisur.cv_id !== null },
+          intervista: { ...tePublikat, intervistuesi, min, max, puna: infoPune, ka_cv: eNisur.cv_id !== null },
           kthesa: kthesaPerApp(kthesa),
           rifilluar: true,
         });
@@ -227,6 +241,7 @@ Deno.serve(async (req: Request) => {
       },
       cv: cvTekst,
       gatishmeria,
+      intervistuesi,
     };
 
     const { data: intervista, error: gabimiKrijimit } = await t.admin
@@ -248,7 +263,7 @@ Deno.serve(async (req: Request) => {
       return gabim("Intervista s'u krijua. Provo përsëri.", 500);
     }
 
-    const ePara = pyetjaEPare(gjuha, konteksti.puna.titulli, konteksti.puna.kompania);
+    const ePara = pyetjaEPare(gjuha, konteksti.puna.titulli, konteksti.puna.kompania, intervistuesi);
     const { data: kthesa, error: gabimiKthesesSe } = await t.admin
       .from("intervista_kthesat")
       .insert({
@@ -268,7 +283,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return json({
-      intervista: { ...intervista, min, max, puna: infoPune, ka_cv: cvId !== null },
+      intervista: { ...intervista, intervistuesi, min, max, puna: infoPune, ka_cv: cvId !== null },
       kthesa: kthesaPerApp(kthesa, "buzeqeshje"),
       rifilluar: false,
     });

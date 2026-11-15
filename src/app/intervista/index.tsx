@@ -9,8 +9,17 @@ import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { nisIntervisten } from "@/lib/intervista/klienti";
-import { eshteGjuhe, GJATESITE, GJUHET, EMRAT_E_GJUHEVE, type Gjatesia, type Gjuha } from "@/lib/intervista/tipet";
-import { Butoni, KartaEGabimit } from "@/lib/intervista/ui";
+import {
+  eshteGjuhe,
+  GJATESITE,
+  GJUHET,
+  EMRAT_E_GJUHEVE,
+  PAMJA_E_INTERVISTUESIT,
+  type Gjatesia,
+  type Gjuha,
+} from "@/lib/intervista/tipet";
+import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
+import { Butoni, KartaEGabimit, ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { gjePunen, listoPunet } from "@/lib/punet";
@@ -65,6 +74,8 @@ export default function ZgjidhIntervisten() {
     eshteGjuhe(params.gjuha) ? params.gjuha : eshteGjuhe(profili?.gjuha) ? profili.gjuha : "sq",
   );
   const [gjatesia, setGjatesia] = useState<Gjatesia>("shkurter");
+  const { intervistuesi, zgjidh: zgjidhIntervistuesin } = useIntervistuesiIZgjedhur();
+  const emriIntervistuesit = PAMJA_E_INTERVISTUESIT[intervistuesi].emri;
   const [duke_nisur, setDukeNisur] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
 
@@ -97,7 +108,7 @@ export default function ZgjidhIntervisten() {
     setGabimi(null);
     setDukeNisur(true);
     try {
-      const n = await nisIntervisten({ punaId: puna.id, gjuha, gjatesia });
+      const n = await nisIntervisten({ punaId: puna.id, gjuha, gjatesia, intervistuesi });
       if (n.rifilluar) njofto("Vazhdon intervistën që kishe nisur", "info");
       router.replace({ pathname: "/intervista/[id]", params: { id: n.intervista.id } });
     } catch (e) {
@@ -190,13 +201,19 @@ export default function ZgjidhIntervisten() {
   return (
     <Faqja>
       <T zbehur madhesia={14.5} style={styles.hyrja}>
-        Arta, intervistuesja, të bën pyetje për punën që zgjedh, me CV-në tënde si bazë. Ti përgjigjesh me shkrim.
+        {emriIntervistuesit}, {PAMJA_E_INTERVISTUESIT[intervistuesi].roli}, të bën pyetje për punën që zgjedh, me CV-në
+        tënde si bazë. Ti përgjigjesh me shkrim.
       </T>
 
       <T pesha="trashe" madhesia={17} style={styles.seksioni}>
         Për cilën punë?
       </T>
       {listaEPuneve}
+
+      <T pesha="trashe" madhesia={17} style={styles.seksioni}>
+        Kush të interviston
+      </T>
+      <ZgjidhIntervistuesin vlera={intervistuesi} onZgjidh={zgjidhIntervistuesin} />
 
       <T pesha="trashe" madhesia={17} style={styles.seksioni}>
         Gjuha
@@ -232,7 +249,7 @@ export default function ZgjidhIntervisten() {
         accessibilityLabel="Gjatësia e intervistës"
       />
       <T zbehur madhesia={12.5}>
-        Numri tregon pyetjet kryesore. Kur një përgjigje është e shkurtër, Arta mund të bëjë një pyetje vazhduese.
+        Numri tregon pyetjet kryesore. Kur një përgjigje është e shkurtër, {emriIntervistuesit} mund të bëjë një pyetje vazhduese.
       </T>
 
       <Karta style={styles.info}>
@@ -253,7 +270,7 @@ export default function ZgjidhIntervisten() {
           teksti={duke_nisur ? "Po niset…" : "Nis intervistën"}
           duke_punuar={duke_nisur}
           joaktiv={opsionet === null}
-          pershkrimi={puna ? `Intervistë për ${puna.titulli} në ${EMRAT_E_GJUHEVE[gjuha]}` : "Zgjidh më parë një punë"}
+          pershkrimi={puna ? `Intervistë për ${puna.titulli} në ${EMRAT_E_GJUHEVE[gjuha]}, me ${emriIntervistuesit}` : "Zgjidh më parë një punë"}
           onPress={nis}
           style={styles.butoni}
         />

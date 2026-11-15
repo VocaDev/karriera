@@ -5,8 +5,8 @@ import { StyleSheet, View } from "react-native";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Progresi, T, Titulli } from "@/components/ui";
 import { GabimIIntervistes, krijoRaportin, lexoIntervisten } from "@/lib/intervista/klienti";
-import type { IntervistaInfo, Raporti, RreshtiIBisedes } from "@/lib/intervista/tipet";
-import { Butoni, KartaEGabimit } from "@/lib/intervista/ui";
+import { PAMJA_E_INTERVISTUESIT, type IntervistaInfo, type Raporti, type RreshtiIBisedes } from "@/lib/intervista/tipet";
+import { AvatariIntervistuesit, Butoni, KartaEGabimit } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
 import { useTema } from "@/lib/tema";
 
@@ -125,7 +125,8 @@ export default function RezultatetEkrani() {
     );
   }
 
-  const { raporti, biseda } = gjendja;
+  const { raporti, biseda, info } = gjendja;
+  const intervistuesi = PAMJA_E_INTERVISTUESIT[info.intervistuesi];
   const g = raporti.gatishmeria;
   const ndryshimi = g.para !== null && g.pas !== null ? g.pas - g.para : null;
   const pergjigjet = new Map(biseda.map((k) => [k.nr, k.pergjigja]));
@@ -136,6 +137,12 @@ export default function RezultatetEkrani() {
       <T zbehur madhesia={15}>
         {raporti.puna.titulli} · {raporti.puna.kompania}
       </T>
+      <View style={styles.rresht} accessible accessibilityLabel={`Intervistoi ${intervistuesi.emri}`}>
+        <AvatariIntervistuesit intervistuesi={info.intervistuesi} madhesia={22} />
+        <T zbehur madhesia={13.5}>
+          Intervistoi {intervistuesi.emri}
+        </T>
+      </View>
 
       {/* 1 · Gatishmëria për punën: lajmi kryesor */}
       {g.pas !== null ? (
