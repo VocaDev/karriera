@@ -66,6 +66,12 @@ export type Raporti = {
   nota: number; // 0–100, vlerësim praktik i AI-së (jo parashikim punësimi)
   permbledhja: string;
   tri_hapat_e_radhes: string[];
+  /** Si e përballoi presionin (pyetjet me sfidë ose provokim); null nëse s'pati, mungon te raportet e vjetra. */
+  presioni?: {
+    momentet: { nr: number; qasja: "sfide" | "provokim"; pyetja: string; si_u_pergjigj: string }[];
+    permbledhja: string;
+    keshilla: string;
+  } | null;
   pergjigjet: ({ nr: number; lloji: "pyetje" | "vazhdim"; pyetja: string } & VleresimiIPergjigjes)[];
   gatishmeria: {
     id: string | null;

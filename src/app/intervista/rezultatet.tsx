@@ -238,6 +238,45 @@ export default function RezultatetEkrani() {
         );
       })}
 
+      {/* 3b · Si e përballove presionin (vetëm kur intervistuesi të sfidoi ose të provokoi) */}
+      {raporti.presioni && Array.isArray(raporti.presioni.momentet) && raporti.presioni.momentet.length > 0 && (
+        <>
+          <T pesha="trashe" madhesia={18} style={styles.seksioni}>
+            Si e përballove presionin
+          </T>
+          <Karta style={styles.karta}>
+            {raporti.presioni.permbledhja ? (
+              <T madhesia={14.5} style={styles.rreshtat}>
+                {raporti.presioni.permbledhja}
+              </T>
+            ) : null}
+            {raporti.presioni.momentet.map((m) => (
+              <View key={`p${m.nr}`} style={styles.mungon}>
+                <View style={styles.rresht}>
+                  <T pesha="gjysme" madhesia={14}>
+                    Pyetja {m.nr}
+                  </T>
+                  <Chip teksti={m.qasja === "sfide" ? "Sfidë" : "Provokim"} />
+                </View>
+                <T zbehur madhesia={13.5} style={styles.rreshtat}>
+                  {m.si_u_pergjigj}
+                </T>
+              </View>
+            ))}
+            {raporti.presioni.keshilla ? (
+              <View style={[styles.shembulli, { backgroundColor: t.karta2 }]}>
+                <T pesha="trashe" madhesia={12.5} zbehur>
+                  Këshillë
+                </T>
+                <T madhesia={14.5} style={styles.rreshtat}>
+                  {raporti.presioni.keshilla}
+                </T>
+              </View>
+            ) : null}
+          </Karta>
+        </>
+      )}
+
       {/* 4 · Çka mungon */}
       {g.mungon.length > 0 && (
         <>

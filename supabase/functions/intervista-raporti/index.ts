@@ -21,6 +21,7 @@ import {
   type KthesaDB,
   kufizo,
   MODELI_RAPORTI,
+  presioniIRaportit,
   QIRAJA_MS,
   type Roli,
   UUID,
@@ -211,6 +212,8 @@ Deno.serve(async (req: Request) => {
       nota: kufizo(ai.nota, 0, 100),
       permbledhja: ai.permbledhja,
       tri_hapat_e_radhes: ai.tri_hapat_e_radhes.map((h) => h.trim()).filter(Boolean).slice(0, 3),
+      // Si e përballoi presionin; null te intervistat pa sfidë e provokim (dhe te raportet e vjetra mungon fare).
+      presioni: presioniIRaportit(konteksti, kthesat, ai.presioni),
       pergjigjet: kthesat.map((k) => ({
         nr: k.nr,
         lloji: k.lloji,
