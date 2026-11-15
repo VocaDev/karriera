@@ -6,6 +6,8 @@ export type Gjatesia = "shkurter" | "plote";
 export type Roli = "SWE" | "Asistent/PR" | "Tjetër";
 export type GjendjaDB = "aktive" | "mbaroi" | "po_vleresohet" | "perfunduar";
 export type Shprehja = "neutrale" | "buzeqeshje" | "interesim" | "empati";
+/** Kush të interviston (zgjedhja te ekrani i nisjes): Arta (grua) ose Arbër (burrë). */
+export type Intervistuesi = "arta" | "arber";
 
 export const GJUHET: readonly Gjuha[] = ["sq", "en", "de"];
 export const EMRAT_E_GJUHEVE: Record<Gjuha, string> = { sq: "Shqip", en: "English", de: "Deutsch" };
@@ -18,7 +20,19 @@ export const GJATESITE: Record<Gjatesia, { min: number; max: number; emri: strin
 
 export const MAKS_PERGJIGJJA = 4000;
 
-/** Një pyetje e intervistueses (Arta), siç e kthen serveri. */
+export const INTERVISTUESI_FILLESTAR: Intervistuesi = "arta";
+export const INTERVISTUESIT: readonly Intervistuesi[] = ["arta", "arber"];
+
+/** Emri dhe format e tij në shqip; i vetmi vend në app ku shkruhen emrat e intervistuesve. */
+export const PAMJA_E_INTERVISTUESIT: Record<
+  Intervistuesi,
+  { emri: string; gjenitivi: string; roli: string; inicialja: string }
+> = {
+  arta: { emri: "Arta", gjenitivi: "Artës", roli: "intervistuesja", inicialja: "A" },
+  arber: { emri: "Arbër", gjenitivi: "Arbërit", roli: "intervistuesi", inicialja: "A" },
+};
+
+/** Një pyetje e intervistuesit (Arta ose Arbër), siç e kthen serveri. */
 export type Kthesa = {
   nr: number;
   lloji: "pyetje" | "vazhdim";
@@ -37,6 +51,8 @@ export type IntervistaInfo = {
   min: number;
   max: number;
   puna: { id: string; titulli: string; kompania: string } | null;
+  /** Intervistat e vjetra s'e kanë fushën: mbeten "arta". */
+  intervistuesi: Intervistuesi;
 };
 
 export type VleresimiIPergjigjes = {
@@ -61,6 +77,8 @@ export type Raporti = {
   };
   puna: { id: string; titulli: string; kompania: string };
   gjuha: Gjuha;
+  /** Mungon te raportet e vjetra. */
+  intervistuesi?: Intervistuesi;
   modeli: string;
 };
 
@@ -81,6 +99,7 @@ export const eshteObjekt = (v: unknown): v is Record<string, unknown> =>
 const listeMe = (v: unknown, k: (x: unknown) => boolean) => Array.isArray(v) && v.every(k);
 
 export const eshteGjuhe = (v: unknown): v is Gjuha => v === "sq" || v === "en" || v === "de";
+export const eshteIntervistues = (v: unknown): v is Intervistuesi => v === "arta" || v === "arber";
 export const eshteGjatesi = (v: unknown): v is Gjatesia => v === "shkurter" || v === "plote";
 const eshteRol = (v: unknown): v is Roli => v === "SWE" || v === "Asistent/PR" || v === "Tjetër";
 const eshteGjendje = (v: unknown): v is GjendjaDB =>
@@ -121,6 +140,7 @@ export function lexoInfon(v: unknown): IntervistaInfo | null {
     min: eshteNumer(v.min) ? v.min : g.min,
     max: eshteNumer(v.max) ? v.max : g.max,
     puna,
+    intervistuesi: eshteIntervistues(v.intervistuesi) ? v.intervistuesi : INTERVISTUESI_FILLESTAR,
   };
 }
 
