@@ -3,6 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import { Share, StyleSheet, View } from "react-native";
 
+import KerkesatEPunes from "@/components/KerkesatEPunes";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
@@ -27,13 +28,18 @@ function afatiIPunes(afati: string): { data: string; diteMbeten: number } {
   return { data: `${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.${v}`, diteMbeten };
 }
 
-function tekstiIAfatit(puna: Puna): { teksti: string; kaloi: boolean } | null {
-  if (!puna.aktive) return { teksti: "Kjo shpallje s'është më aktive te portali", kaloi: true };
+/** Chip-i i afatit: "Edhe 5 ditë · 27.11", i kuq kur kaloi. `pershkrimi` është për lexuesit e ekranit (data e plotë). */
+function etiketaEAfatit(puna: Puna): { teksti: string; kaloi: boolean; pershkrimi: string } | null {
+  if (!puna.aktive) {
+    return { teksti: "S'është më aktive", kaloi: true, pershkrimi: "Kjo shpallje s'është më aktive te portali" };
+  }
   if (!puna.afati) return null;
   const { data, diteMbeten } = afatiIPunes(puna.afati);
-  if (diteMbeten < 0) return { teksti: `Afati kaloi më ${data}`, kaloi: true };
-  if (diteMbeten === 0) return { teksti: `Afati: sot, ${data}`, kaloi: false };
-  return { teksti: `Afati: ${data} · edhe ${diteMbeten} ditë`, kaloi: false };
+  const shkurt = data.slice(0, 5);
+  if (diteMbeten < 0) return { teksti: `Afati kaloi · ${shkurt}`, kaloi: true, pershkrimi: `Afati kaloi më ${data}` };
+  if (diteMbeten === 0) return { teksti: "Afati: sot", kaloi: false, pershkrimi: `Afati i aplikimit është sot, ${data}` };
+  const ditet = diteMbeten === 1 ? "1 ditë" : `${diteMbeten} ditë`;
+  return { teksti: `Edhe ${ditet} · ${shkurt}`, kaloi: false, pershkrimi: `Afati i aplikimit ${data}, edhe ${ditet}` };
 }
 
 // Detajet e punës (bordi, ekrani 11).
@@ -122,9 +128,12 @@ export default function DetajetEPunes() {
   }
 
   const roli = puna.roli === "Asistent/PR" ? "ZYRË" : puna.roli === "Tjetër" ? "TJETËR" : "SWE";
-  const afati = tekstiIAfatit(puna);
+  const afati = etiketaEAfatit(puna);
   const linku = puna.linku;
   const emriIPortalit = puna.portali ? EMRI_I_PORTALIT[puna.portali] : null;
+  const orari = puna.kerkesat?.orari ?? null;
+  // Shpalljet e portaleve: "Apliko te KosovaJob". Shpalljet e shtuara me link nga përdoruesi: "Hape shpalljen".
+  const butoniKryesor = emriIPortalit ? `Apliko te ${emriIPortalit}` : "Hape shpalljen";
 
   // ⭐ ndryshon menjëherë; nëse serveri refuzon, kthehet si ishte dhe del njoftimi (si te lista).
   async function ndryshoRuajtjen() {
@@ -179,111 +188,97 @@ export default function DetajetEPunes() {
 
       <View style={styles.rresht}>
         <Chip teksti={roli} />
+        {orari && <Chip teksti={orari} />}
+        {afati && (
+          <View accessible accessibilityLabel={afati.pershkrimi} style={[styles.etiketa, { backgroundColor: t.karta2 }]}>
+            <T pesha="gjysme" madhesia={12} ngjyra={afati.kaloi ? t.keq : t.teksti}>
+              {afati.teksti}
+            </T>
+          </View>
+        )}
         {puna.burimi === "perdoruesi" && <Chip teksti="Shtuar nga një përdorues" />}
-        {emriIPortalit && <Chip teksti={`Nga ${emriIPortalit}`} />}
+        {emriIPortalit && <Chip teksti={emriIPortalit} />}
       </View>
-      <T pesha="trashe" madhesia={26} style={styles.titulli}>
+      <T pesha="trashe" madhesia={26} style={styles.titulli} accessibilityRole="header">
         {puna.titulli}
       </T>
       <T zbehur madhesia={15}>
-        {puna.kompania}, {puna.qyteti}
+        {puna.kompania} · {puna.qyteti}
       </T>
-      {afati && (
-        <T pesha="gjysme" madhesia={14} ngjyra={afati.kaloi ? t.keq : t.zbehur}>
-          {afati.teksti}
-        </T>
-      )}
 
       {/* Veprimet (AGENTS.md, Native feel #7): çdo veprim i menysë me shtypje të gjatë është edhe buton këtu. */}
       <View style={styles.veprimet}>
-        {mundRuan && (
-          <Prekshme
-            accessibilityRole="button"
-            accessibilityLabel={eRuajtur ? "E ruajtur. Hiqe nga të ruajturat" : "Ruaje punën"}
-            accessibilityState={{ selected: eRuajtur, busy: dukeRuajtur }}
-            onPress={ndryshoRuajtjen}
-            style={[styles.veprimi, { backgroundColor: eRuajtur ? t.teksti : t.karta, shadowColor: t.hija }]}
-          >
-            <Ikona emri={eRuajtur ? IKONAT.ylli : IKONA_YLLI_BOSH} madhesia={16} ngjyra={eRuajtur ? t.sfondi : t.teksti} />
-            <T pesha="trashe" madhesia={14.5} ngjyra={eRuajtur ? t.sfondi : t.teksti}>
-              {eRuajtur ? "E ruajtur" : "Ruaje"}
-            </T>
-          </Prekshme>
-        )}
-        <Prekshme
-          accessibilityRole="button"
-          accessibilityLabel="Ndaje punën"
-          onPress={() => ndaje(puna)}
-          style={[styles.veprimi, { backgroundColor: t.karta, shadowColor: t.hija }]}
-        >
-          <Ikona emri={IKONA_NDAJE} madhesia={16} />
-          <T pesha="trashe" madhesia={14.5}>
-            Ndaje
-          </T>
-        </Prekshme>
         {linku && (
           <Prekshme
             accessibilityRole="link"
-            accessibilityLabel={emriIPortalit ? `Hape shpalljen te ${emriIPortalit}` : "Hape shpalljen në shfletues"}
-            accessibilityHint="Hapet në shfletuesin brenda app-it"
+            accessibilityLabel={butoniKryesor}
+            accessibilityHint="Hapet shpallja origjinale në shfletuesin brenda app-it"
             onPress={() => hapeNeShfletues(linku)}
-            style={[styles.veprimi, { backgroundColor: t.karta, shadowColor: t.hija }]}
+            style={[styles.butoni, { backgroundColor: t.teksti }]}
           >
-            <Ikona emri={IKONA_SHFLETUESI} madhesia={16} />
-            <T pesha="trashe" madhesia={14.5}>
-              Hape në shfletues
+            <Ikona emri={IKONA_SHFLETUESI} madhesia={18} ngjyra={t.sfondi} />
+            <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
+              {butoniKryesor}
             </T>
           </Prekshme>
         )}
+
+        {/* "A jam gati?" (WP3): AI-ja e krahason CV-në e fundit me këtë shpallje. Rruga është vetëm për kërkuesin. */}
+        {mundRuan && (
+          <Prekshme
+            accessibilityRole="button"
+            accessibilityHint="AI-ja e krahason CV-në tënde me këtë shpallje"
+            onPress={() => router.push({ pathname: "/gati/[id]", params: { id: puna.id } })}
+            style={[styles.butoni, { backgroundColor: t.teksti }]}
+          >
+            <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
+              A jam gati për këtë?
+            </T>
+          </Prekshme>
+        )}
+
+        <View style={styles.dyshja}>
+          {mundRuan && (
+            <Prekshme
+              accessibilityRole="button"
+              accessibilityLabel={eRuajtur ? "E ruajtur. Hiqe nga të ruajturat" : "Ruaje punën"}
+              accessibilityState={{ selected: eRuajtur, busy: dukeRuajtur }}
+              onPress={ndryshoRuajtjen}
+              style={[styles.veprimi, { backgroundColor: eRuajtur ? t.teksti : t.karta, shadowColor: t.hija }]}
+            >
+              <Ikona emri={eRuajtur ? IKONAT.ylli : IKONA_YLLI_BOSH} madhesia={16} ngjyra={eRuajtur ? t.sfondi : t.teksti} />
+              <T pesha="trashe" madhesia={14.5} ngjyra={eRuajtur ? t.sfondi : t.teksti}>
+                {eRuajtur ? "E ruajtur" : "Ruaje"}
+              </T>
+            </Prekshme>
+          )}
+          <Prekshme
+            accessibilityRole="button"
+            accessibilityLabel="Ndaje punën"
+            onPress={() => ndaje(puna)}
+            style={[styles.veprimi, { backgroundColor: t.karta, shadowColor: t.hija }]}
+          >
+            <Ikona emri={IKONA_NDAJE} madhesia={16} />
+            <T pesha="trashe" madhesia={14.5}>
+              Ndaje
+            </T>
+          </Prekshme>
+        </View>
       </View>
 
-      <Karta>
-        <T pesha="trashe" madhesia={14}>
-          Tani: CV
-        </T>
-        <T zbehur madhesia={13}>
-          Ngarko CV-në për të parë sa je gati për këtë punë
-        </T>
-        <Rruga hapi={0} />
-      </Karta>
+      <KerkesatEPunes puna={puna} emriIPortalit={emriIPortalit} />
 
-      {puna.pershkrimi ? (
-        <Karta>
-          <T madhesia={15.5} style={styles.pershkrimi}>
-            {puna.pershkrimi}
-          </T>
-        </Karta>
-      ) : null}
-
-      {puna.aftesite.length > 0 && (
-        <>
-          <T pesha="trashe" madhesia={17} style={styles.seksioni}>
-            Aftësitë që kërkohen
-          </T>
-          <View style={styles.aftesite}>
-            {puna.aftesite.map((a) => (
-              <View key={a} style={[styles.aftesia, { backgroundColor: t.karta, shadowColor: t.hija }]}>
-                <T pesha="gjysme" madhesia={13.5}>
-                  {a}
-                </T>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
-
-      {/* "A jam gati?" (WP3): AI-ja e krahason CV-në e fundit me këtë shpallje. Rruga është vetëm për kërkuesin. */}
+      {/* Ku je në rrugë: vetëm për kërkuesin (punëdhënësi s'ka CV). */}
       {mundRuan && (
-        <Prekshme
-          accessibilityRole="button"
-          accessibilityHint="AI-ja e krahason CV-në tënde me këtë shpallje"
-          onPress={() => router.push({ pathname: "/gati/[id]", params: { id: puna.id } })}
-          style={[styles.butoni, { backgroundColor: t.teksti }]}
-        >
-          <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
-            A jam gati për këtë?
+        <Karta style={styles.rrugaKarta}>
+          <T pesha="trashe" madhesia={14}>
+            Tani: CV
           </T>
-        </Prekshme>
+          <T zbehur madhesia={13}>
+            Ngarko CV-në për të parë sa je gati për këtë punë
+          </T>
+          <Rruga hapi={0} />
+        </Karta>
       )}
     </Faqja>
   );
@@ -295,27 +290,20 @@ const styles = StyleSheet.create({
   skeleti: { gap: 12 },
   kartaSkelet: { borderRadius: 22, padding: 16, gap: 10, marginTop: 4 },
   rresht: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  etiketa: { borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start" },
   titulli: { letterSpacing: -0.5, lineHeight: 31 },
-  pershkrimi: { lineHeight: 22 },
-  seksioni: { marginTop: 6 },
-  aftesite: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  veprimet: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
+  veprimet: { gap: 10, marginTop: 8 },
+  dyshja: { flexDirection: "row", gap: 10 },
   veprimi: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     borderRadius: 999,
     paddingHorizontal: 16,
-    minHeight: 44,
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  aftesia: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    minHeight: 48,
     shadowOpacity: 0.06,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
@@ -326,9 +314,11 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 999,
     paddingVertical: 16,
+    paddingHorizontal: 20,
+    minHeight: 54,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
   },
+  rrugaKarta: { marginTop: 18 },
   butoniVogel: { marginTop: 8, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 26, minHeight: 44, justifyContent: "center" },
 });

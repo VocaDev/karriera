@@ -17,6 +17,7 @@
     "node_modules",
     "supabase/functions",
     "scripts/test-cv-ai.ts",
-    "scripts/provo-portalet.ts"
+    "scripts/provo-portalet.ts",
+    "scripts/provo-kerkesat.ts"
   ]
 }

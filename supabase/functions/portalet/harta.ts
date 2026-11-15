@@ -10,7 +10,28 @@ export const EMRI_I_PORTALIT: Record<Portali, string> = {
   ofertapune: "OfertaPune",
 };
 
-/** Ajo që lexojmë nga portali. "teksti" përdoret vetëm për të gjetur aftësitë: nuk ruhet kurrë (MODELI.md). */
+/**
+ * Çka nxjerr AI-ja nga shpallja (supabase/functions/portalet/kerkesat.ts), me fjalët tona dhe në shqip.
+ * Ruhet te punet.kerkesat (jsonb); i njëjti tip është te src/lib/punet.ts. Mungesa = null ose [], kurrë e sajuar.
+ */
+export type Kerkesat = {
+  permbledhja: string; // 1–2 fjali: çfarë pune është
+  detyrat: string[]; // ≤ 5
+  kerkesat: string[]; // ≤ 6, të detyrueshmet
+  perparesi: string[]; // ≤ 4, të mirëseardhurat
+  arsimi: string | null;
+  pervoja: string | null; // p.sh. "2+ vjet"
+  gjuhet: string[];
+  orari: string | null;
+  paga: string | null;
+  perfitimet: string[]; // ≤ 4
+  aplikimi: string | null; // si aplikohet, pa email e telefon
+};
+
+/**
+ * Ajo që lexojmë nga portali. "teksti" (përshkrimi i shkurtër) dhe "trupi" (teksti i plotë i shpalljes)
+ * përdoren vetëm për aftësitë dhe për nxjerrjen e kërkesave: s'ruhen kurrë (MODELI.md).
+ */
 export type ShpalljaBruto = {
   portali: Portali;
   id_e_jashtme: string;
@@ -22,6 +43,8 @@ export type ShpalljaBruto = {
   kategoria: string | null;
   orari: string | null; // p.sh. "Full Time"
   teksti: string | null;
+  /** Teksti i plotë i shpalljes, i përkohshëm: shkon te AI-ja dhe harrohet. */
+  trupi: string | null;
 };
 
 /** Rreshti që shkon te public.punet (fushat e migrimit 20261114120000_punet_portalet.sql). */
@@ -41,6 +64,7 @@ export type RreshtiPunes = {
   afati: string | null;
   aktive: true;
   pare_me: string;
+  kerkesat: Kerkesat | null; // null derisa AI-ja ta nxjerrë (index.ts)
 };
 
 /** Pa shkronja të mëdha, pa shenja (ë → e, ç → c), vetëm shkronja dhe numra. */
@@ -217,15 +241,47 @@ function dataShqip(iso: string): string {
   return `${d}.${m}.${v}`;
 }
 
-export function permbledhja(roli: Roli, kompania: string, qyteti: string, s: ShpalljaBruto, aftesite: string[]): string {
-  const fjalite = [
-    `${roli === "SWE" ? "Pozitë në zhvillim softueri" : "Pozitë asistence / PR"} te ${kompania}, ${qyteti}.`,
-  ];
-  if (s.orari) fjalite.push(`Orari: ${s.orari}.`);
-  if (s.afati) fjalite.push(`Afati i aplikimit: ${dataShqip(s.afati)}.`);
-  if (aftesite.length) fjalite.push(`Shpallja përmend: ${aftesite.join(", ")}.`);
-  fjalite.push(`Shpallja e plotë dhe aplikimi: te ${EMRI_I_PORTALIT[s.portali]}.`);
-  return fjalite.join(" ").slice(0, 1000);
+/** Përmbledhja e rezervës (pa AI): 1–2 fjali me faktet që kemi. Ekrani i detajeve e përdor vetëm kur s'ka "kerkesat". */
+export function permbledhja(roli: Roli, kompania: string, qyteti: string, s: ShpalljaBruto): string {
+  const fjalia1 = `${roli === "SWE" ? "Punë në zhvillim softueri" : "Punë asistence ose PR"} te ${kompania}, ${qyteti}.`;
+  const pjeset: string[] = [];
+  if (s.orari) pjeset.push(`orari ${s.orari}`);
+  if (s.afati) pjeset.push(`afati i aplikimit ${dataShqip(s.afati)}`);
+  const fjalia2 = pjeset.length ? ` ${pjeset.join(", ").replace(/^./, (c) => c.toUpperCase())}.` : "";
+  return `${fjalia1}${fjalia2}`.slice(0, 1000);
+}
+
+/**
+ * Përshkrimi (kolona "pershkrimi", ≤ 1000) kur AI-ja i nxori kërkesat: përmbledhja, kërkesat dhe përparësitë.
+ * Kështu edhe "A jam gati?" (që lexon "pershkrimi") merr kërkesat e vërteta, jo një frazë të përgjithshme.
+ */
+export function pershkrimiNgaKerkesat(k: Kerkesat): string {
+  const pjeset = [k.permbledhja];
+  if (k.kerkesat.length) pjeset.push(`Kërkohet: ${k.kerkesat.join("; ")}.`);
+  if (k.pervoja) pjeset.push(`Përvoja: ${k.pervoja}.`);
+  if (k.arsimi) pjeset.push(`Arsimi: ${k.arsimi}.`);
+  if (k.perparesi.length) pjeset.push(`Përparësi: ${k.perparesi.join("; ")}.`);
+  let teksti = "";
+  for (const p of pjeset) {
+    const pas = teksti ? `${teksti} ${p}` : p;
+    if (pas.length > 1000) break;
+    teksti = pas;
+  }
+  return teksti;
+}
+
+/** Aftësitë nga rregullat + ato që dalin nga kërkesat e AI-së (pa dublikata, ≤ 10 si kufiri i tabelës). */
+export function bashkoAftesite(roli: Roli, ekzistuese: string[], k: Kerkesat): string[] {
+  const teksti = [...k.kerkesat, ...k.perparesi, ...k.gjuhet, k.pervoja, k.arsimi].filter(Boolean).join("\n");
+  const pare = new Set<string>();
+  const dalja: string[] = [];
+  for (const a of [...ekzistuese, ...gjejAftesite(roli, teksti)]) {
+    const g = normalizo(a);
+    if (pare.has(g)) continue;
+    pare.add(g);
+    dalja.push(a);
+  }
+  return dalja.slice(0, 10);
 }
 
 // ---------------------------------------------------------------- Shpallja → rresht
@@ -250,14 +306,14 @@ export function neRresht(s: ShpalljaBruto, tani = new Date().toISOString(), dita
   const titulli = prej(s.titulli, 3, 120, "Pozitë pune");
   const kompania = prej(s.kompania ?? "", 2, 80, "Kompani e pa emërtuar");
   const qyteti = normalizoQytetin(s.qyteti);
-  const aftesite = gjejAftesite(roli, s.titulli, s.teksti);
+  const aftesite = gjejAftesite(roli, s.titulli, s.teksti, s.trupi);
   return {
     id: `${s.portali}-${s.id_e_jashtme}`,
     titulli,
     kompania,
     qyteti,
     roli,
-    pershkrimi: permbledhja(roli, kompania, qyteti, s, aftesite),
+    pershkrimi: permbledhja(roli, kompania, qyteti, s),
     aftesite,
     burimi: "portal",
     linku: s.linku,
@@ -267,6 +323,7 @@ export function neRresht(s: ShpalljaBruto, tani = new Date().toISOString(), dita
     afati: s.afati,
     aktive: true,
     pare_me: tani,
+    kerkesat: null,
   };
 }
 
