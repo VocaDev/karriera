@@ -6,8 +6,12 @@
 //                                                           └──────────────────────► perfundon
 //   çdo hap ──gabim──► gabim ──riprovo──► hapi që dështoi (përgjigjja s'humbet: mbahet këtu dhe në DB)
 //
-// "pyet" = intervistuesja po e bën pyetjen. Me tekst kalohet menjëherë te "pret_pergjigjen"; me avatarin (09.12)
-// mbetet "pyet" derisa faqja e avatarit të dërgojë "foli_mbaroi" (shih mesazhet.ts), pastaj thirret u_pyet.
+// "pyet" = intervistuesja po e bën pyetjen. Me tekst kalohet menjëherë te "pret_pergjigjen"; me zë (paraqitja
+// "avatar") mbetet "pyet" derisa faqja e avatarit të dërgojë "foli_mbaroi" (shih mesazhet.ts), pastaj thirret u_pyet.
+//
+// Me zë: pret_pergjigjen ──dergo_zerin──► vlereson (pa tekst ende) ──degjova──► vlereson (me transkriptin) ──► si më lart
+//                                                                  └─s_degjova─► pret_pergjigjen (asgjë s'u dëgjua)
+// "paraqitja" ndërron Shkruaj ↔ Fol në çdo çast pa e humbur intervistën.
 import type { GabimIIntervistes } from "./klienti";
 import type { IntervistaInfo, Kthesa, Raporti, RreshtiIBisedes } from "./tipet";
 
@@ -49,6 +53,10 @@ export type Ngjarja =
   | { lloji: "u_ngarkua"; info: IntervistaInfo; biseda: RreshtiIBisedes[] }
   | { lloji: "u_pyet" }
   | { lloji: "dergo"; pergjigja: string }
+  | { lloji: "dergo_zerin" }
+  | { lloji: "degjova"; teksti: string }
+  | { lloji: "s_degjova" }
+  | { lloji: "paraqitja"; paraqitja: Paraqitja }
   | { lloji: "kthesa_erdhi"; kthesa: Kthesa; nrPyetjeve: number }
   | { lloji: "perfundo" }
   | { lloji: "fund"; reagimi: string | null; nrPyetjeve: number }
@@ -90,6 +98,25 @@ const pasPyetjes = (paraqitja: Paraqitja) => (paraqitja === "tekst" ? "pret_perg
 export function intervistaReducer(g: Gjendja, n: Ngjarja): Gjendja {
   const { paraqitja } = g;
   switch (n.lloji) {
+    case "paraqitja": {
+      if (n.paraqitja === paraqitja) return g;
+      // Me shkrim s'ka kush ta thotë pyetjen: radha e kandidatit fillon menjëherë.
+      if (n.paraqitja === "tekst" && g.faza === "pyet") {
+        return { faza: "pret_pergjigjen", paraqitja: "tekst", seanca: g.seanca };
+      }
+      return { ...g, paraqitja: n.paraqitja };
+    }
+    case "dergo_zerin":
+      if (g.faza !== "pret_pergjigjen" || !g.seanca.kthesa) return g;
+      return { faza: "vlereson", paraqitja, seanca: g.seanca, pergjigja: "" };
+    case "degjova": {
+      if (g.faza !== "vlereson" || !g.seanca.kthesa) return g;
+      const nr = g.seanca.kthesa.nr;
+      const biseda = [...g.seanca.biseda.filter((m) => m.id !== `t${nr}`), { id: `t${nr}`, kush: "ti", nr, teksti: n.teksti } as const];
+      return { faza: "vlereson", paraqitja, seanca: { ...g.seanca, biseda }, pergjigja: n.teksti };
+    }
+    case "s_degjova":
+      return g.faza === "vlereson" ? { faza: "pret_pergjigjen", paraqitja, seanca: g.seanca } : g;
     case "u_ngarkua": {
       const seanca = seancaNgaDB(n.info, n.biseda);
       if (n.info.gjendja !== "aktive") return { faza: "perfundon", paraqitja, seanca, mbyllVete: false };
@@ -134,8 +161,10 @@ export function intervistaReducer(g: Gjendja, n: Ngjarja): Gjendja {
       return g.faza === "perfundon" ? { faza: "raporti", paraqitja, seanca: g.seanca, raporti: n.raporti } : g;
     case "gabim": {
       const seanca = g.faza === "gati" ? null : g.seanca;
-      const pergjigja = n.pergjigja ?? (g.faza === "vlereson" ? g.pergjigja : g.faza === "gabim" ? g.pergjigja : null);
-      return { faza: "gabim", paraqitja, seanca, gabimi: n.gabimi, veprimi: n.veprimi, pergjigja };
+      // "" = përgjigje me zë që s'u dëgjua ende: s'ka çka të riprovohet si tekst.
+      const pergjigja = n.pergjigja ?? (g.faza === "vlereson" ? g.pergjigja : g.faza === "gabim" ? g.pergjigja : null) ?? null;
+      const pergjigjaEPlote = pergjigja && pergjigja.trim() ? pergjigja : null;
+      return { faza: "gabim", paraqitja, seanca, gabimi: n.gabimi, veprimi: n.veprimi, pergjigja: pergjigjaEPlote };
     }
     case "riprovo": {
       if (g.faza !== "gabim") return g;

@@ -1,6 +1,6 @@
 # Edge Functions
 
-Ky dosje ka funksionet e CV-së (`cv-review`, `cv-create`), `gati` (README i vet: [gati/README.md](gati/README.md)), tri funksionet e intervistës (`intervista-nis`, `intervista-kthesa`, `intervista-raporti`) dhe `portalet` (më poshtë, pjesa "Portalet"). Rendi i vetëm i go-live për të gjitha është te seksioni 3.
+Ky dosje ka funksionet e CV-së (`cv-review`, `cv-create`), `gati` (README i vet: [gati/README.md](gati/README.md)), katër funksionet e intervistës (`intervista-nis`, `intervista-kthesa`, `intervista-raporti`, `intervista-zeri`) dhe `portalet` (më poshtë, pjesa "Portalet"). Rendi i vetëm i go-live për të gjitha është te seksioni 3.
 
 ## CV: dy funksione
 
@@ -46,17 +46,30 @@ Rendi i vetëm për degën e bashkuar (7 degët e javës 14–15.11). **Migrimet
    6. `supabase/migrations/20261115110000_gatishmeria.sql` (`gatishmeria`, `gati_thirrjet`)
    7. `supabase/migrations/20261115120000_intervistat.sql` (kërkon `gatishmeria`: jep gabim nëse mungon)
    8. `supabase/migrations/20261115140000_punet_kerkesat.sql` (kolona `punet.kerkesat`, jsonb: kërkesat e shpalljes nga AI-ja; app-i e lexon, prandaj para merge-it)
-2. **Sekretet:** `supabase secrets set ANTHROPIC_API_KEY=<çelësi>` (ose Dashboard → Edge Functions → Secrets) dhe `supabase secrets set PORTALET_SEKRETI=<varg i rastësishëm, 32+ shenja>` (vetëm për `portalet`). `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS` dhe `SUPABASE_SECRET_KEYS` i jep platforma vetë.
+   9. `supabase/migrations/20261115130000_intervista_zeri.sql` (minutat e zërit; kërkon `intervistat`)
+2. **Sekretet:** `supabase secrets set ANTHROPIC_API_KEY=<çelësi>` (ose Dashboard → Edge Functions → Secrets) dhe `supabase secrets set PORTALET_SEKRETI=<varg i rastësishëm, 32+ shenja>` (vetëm për `portalet`). Për intervistën me zë: `GROQ_API_KEY` (STT) dhe `GEMINI_API_KEY` (TTS, çelës AI Studio); pa to `intervista-zeri` kthen 503 `zeri_pa_konfigurim` dhe app-i vazhdon me shkrim. `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEYS` dhe `SUPABASE_SECRET_KEYS` i jep platforma vetë.
 3. **Deploy**, pa verifikimin e gateway-it (çelësat e rinj s'janë JWT; funksioni e verifikon vetë përdoruesin ose sekretin), në këtë rend:
    `supabase functions deploy cv-review --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
    `supabase functions deploy gati --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
    `supabase functions deploy intervista-nis --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
    `supabase functions deploy intervista-kthesa --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
    `supabase functions deploy intervista-raporti --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
+   `supabase functions deploy intervista-zeri --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
    `supabase functions deploy portalet --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`
    (`cv-create` s'ka ndryshuar në këtë bashkim; deploy-o vetëm nëse s'është live. `cv-review` ka ndryshuar: kontrata e re me `cv` dhe `sugjerimet`.)
 4. **Prova** me dy llogari demo (`.env.demo`): kërkuesi ngarkon PDF dhe merr analizë; punëdhënësi merr 403; kërkuesi s'e sheh CV-në e tjetrit; analiza e 6-të brenda 24 orëve merr 429. Pastaj `gati` (CV, pa CV → `pa_cv`, punëdhënës 403, thirrja e 11-të 429) dhe intervista nga fillimi në fund (seksionet e tyre më poshtë dhe te `gati/README.md`). Portalet: shih "Go-live" te pjesa e tyre (provë pa shkrim, importi i parë një portal në një kohë, pastaj `supabase/portalet-orari.sql`).
 5. **Pastaj** te `src/lib/vecorite.ts`: CV-ja, "A jam gati?" dhe Intervista bëhen `{ lloji: "gati" }` (me `href`) vetëm pasi rrjedha përkatëse punon në telefon.
+
+## Intervista me zë: intervista-zeri
+
+Plani i plotë: [docs/zeri-ne-app.md](../../docs/zeri-ne-app.md). E njëjta intervistë si me shkrim: logjika e kthesës jeton te `_shared/intervista-kthesa.ts` dhe e përdorin si `intervista-kthesa` ashtu edhe `intervista-zeri`. Ofruesit janë pas dy përshtatësve të ndarë (`_shared/zeri.ts`: `Degjuesi` për STT, `Folesi` për TTS); sot Groq Whisper `whisper-large-v3` (`_shared/zeri-groq.ts`) dhe Gemini `gemini-3.8-flash-tts` (`_shared/zeri-gemini.ts`). Prova e dëgjimit: `_provat/zeri-mostra.ts` (komanda në krye të skedarit).
+
+- **Përgjigjja me zë:** `POST` multipart (`intervista_id`, `nr`, `audio` = WAV) → STT (Groq, `sq` / `en` / `de`) → kthesa (transkripti ruhet te `intervista_kthesat.pergjigja`) → TTS (Gemini, një audio WAV për kthesë). Dalja: `{ degjuar, transkripti, ...dalja e intervista-kthesa, zeri: { fjalite: [{ teksti, audio_base64, mime }] } | null, gabimi_zerit? }`. `degjuar: false` = s'u dëgjua asnjë fjalë (pyetja s'konsumohet).
+- **Zëri i pyetjes aktuale:** `POST { veprimi: "fol", intervista_id, nr }` → `{ zeri: { fjalite } }`; teksti merret nga DB.
+- **Kufijtë:** si `intervista-kthesa` (auth, pronari, intervista aktive, pyetja aktuale), plus 30 minuta zë në 24 orë (`intervista_zeri`), përgjigje deri në 90 s.
+- **Gabimet:** 502 `zeri`, 503 `zeri_pa_konfigurim`, 429 `kufiri_zerit`, 415 format i panjohur; kur kthesa dështon pas STT-së, gabimi mban `transkripti` (app-i e riprovon me `intervista-kthesa`).
+- **Privatësia:** audio s'ruhet kurrë (vetëm në memorie gjatë kërkesës); `intervista_zeri` mban vetëm sekonda dhe shkronja.
+- **Zërat:** Arta `Kore`, Arbër `Charon` (të njëjtët për sq / en / de; gjuha zbulohet nga teksti).
 
 ## 4. Prova lokale e AI-së (pa Supabase)
 

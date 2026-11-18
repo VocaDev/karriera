@@ -20,6 +20,7 @@ import {
   type Gjuha,
 } from "@/lib/intervista/tipet";
 import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
+import { mbeshtetetZeri } from "@/lib/intervista/useRegjistruesi";
 import { Butoni, KartaEGabimit, ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
@@ -30,12 +31,15 @@ import { listoTeRuajturatMePune } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 
-// Zgjidh intervistën (bordi, ekrani 34): puna, gjuha dhe gjatësia. Parametrat: ?puna=<id>&gjuha=sq|en|de
-// (Stërvitja dhe detajet e punës e hapin me to). Intervista sot është me shkrim; zëri dhe avatari vijnë më 09.12.
+// Zgjidh intervistën (bordi, ekrani 34): puna, gjuha, gjatësia dhe Shkruaj · Fol. Parametrat: ?puna=<id>&gjuha=sq|en|de
+// (Stërvitja dhe detajet e punës e hapin me to). Fol = avatari me zë (docs/zeri-ne-app.md); në web vetëm Shkruaj.
 
 type Opsioni = { id: string; titulli: string; kompania: string; qyteti: string; eRuajtur: boolean };
 
 const GJATESITE_RENDI: Gjatesia[] = ["shkurter", "plote"];
+type Menyra = "shkruaj" | "fol";
+const MENYRAT: Menyra[] = ["shkruaj", "fol"];
+const EMRAT_E_MENYRAVE: Record<Menyra, string> = { shkruaj: "Shkruaj", fol: "Fol" };
 const SA_TE_REJA = 8;
 
 /** Të ruajturat (⭐) të parat, pastaj punët më të reja; puna nga parametri del e para edhe nëse s'është te lista. */
@@ -77,6 +81,8 @@ export default function ZgjidhIntervisten() {
     eshteGjuhe(params.gjuha) ? params.gjuha : eshteGjuhe(profili?.gjuha) ? profili.gjuha : "sq",
   );
   const [gjatesia, setGjatesia] = useState<Gjatesia>("shkurter");
+  // Shkruaj si parazgjedhje: Fol varet nga zëri në server (Groq + Gemini) dhe nga leja e mikrofonit.
+  const [menyra, setMenyra] = useState<Menyra>("shkruaj");
   const { intervistuesi, zgjidh: zgjidhIntervistuesin } = useIntervistuesiIZgjedhur();
   const emriIntervistuesit = PAMJA_E_INTERVISTUESIT[intervistuesi].emri;
   const [duke_nisur, setDukeNisur] = useState(false);
@@ -127,7 +133,7 @@ export default function ZgjidhIntervisten() {
     try {
       const n = await nisIntervisten({ punaId: puna.id, gjuha, gjatesia, intervistuesi });
       if (n.rifilluar) njofto("Vazhdon intervistën që kishe nisur", "info");
-      router.replace({ pathname: "/intervista/[id]", params: { id: n.intervista.id } });
+      router.replace({ pathname: "/intervista/[id]", params: { id: n.intervista.id, menyra } });
     } catch (e) {
       prekja.gabim();
       dridhu();
@@ -220,7 +226,7 @@ export default function ZgjidhIntervisten() {
       {opsionet !== null && <ShiritiPaInternet teksti={paInternet("po t'i shfaqim punët që i pe herën e fundit").cfare} />}
       <T zbehur madhesia={14.5} style={styles.hyrja}>
         {emriIntervistuesit}, {PAMJA_E_INTERVISTUESIT[intervistuesi].roli}, të bën pyetje për punën që zgjedh, me CV-në
-        tënde si bazë. Ti përgjigjesh me shkrim.
+        tënde si bazë. Ti përgjigjesh {menyra === "fol" ? "me zë" : "me shkrim"}.
       </T>
 
       <T pesha="trashe" madhesia={17} style={styles.seksioni}>
@@ -232,6 +238,34 @@ export default function ZgjidhIntervisten() {
         Kush të interviston
       </T>
       <ZgjidhIntervistuesin vlera={intervistuesi} onZgjidh={zgjidhIntervistuesin} />
+
+      <T pesha="trashe" madhesia={17} style={styles.seksioni}>
+        Si përgjigjesh
+      </T>
+      {mbeshtetetZeri ? (
+        <>
+          <SegmentedControl
+            values={MENYRAT.map((m) => EMRAT_E_MENYRAVE[m])}
+            selectedIndex={MENYRAT.indexOf(menyra)}
+            onChange={(e) => {
+              const m = MENYRAT[e.nativeEvent.selectedSegmentIndex];
+              if (m) {
+                prekja.zgjedhje();
+                setMenyra(m);
+              }
+            }}
+            appearance={t.errët ? "dark" : "light"}
+            accessibilityLabel="Si përgjigjesh: me shkrim ose me zë"
+          />
+          <T zbehur madhesia={12.5}>
+            {menyra === "fol"
+              ? `${emriIntervistuesit} flet dhe ti përgjigjesh me zë. Mikrofoni hapet vetëm kur e prek; zëri kthehet në tekst dhe s'ruhet. Mund të kalosh te Shkruaj në çdo çast.`
+              : "Pyetjet dhe përgjigjet me shkrim, si në chat. Mund të kalosh te Fol gjatë intervistës."}
+          </T>
+        </>
+      ) : (
+        <T zbehur madhesia={13}>Në shfletues intervista është me shkrim. Me zë dhe avatar, hape në telefon.</T>
+      )}
 
       <T pesha="trashe" madhesia={17} style={styles.seksioni}>
         Gjuha
@@ -273,8 +307,8 @@ export default function ZgjidhIntervisten() {
       <Karta style={styles.info}>
         <Ikona emri={IKONAT.info} madhesia={16} ngjyra={t.zbehur} />
         <T zbehur madhesia={13} style={styles.flex}>
-          Me shkrim tani; me zë dhe avatar vjen më 09.12. Deri në 3 intervista të reja në ditë. Mund të dalësh e ta
-          vazhdosh më vonë.
+          Deri në 3 intervista të reja në ditë dhe 30 minuta zë. Mund të dalësh e ta vazhdosh më vonë, me shkrim ose
+          me zë.
         </T>
       </Karta>
 
@@ -288,7 +322,11 @@ export default function ZgjidhIntervisten() {
           teksti={duke_nisur ? "Po niset…" : "Nis intervistën"}
           duke_punuar={duke_nisur}
           joaktiv={opsionet === null}
-          pershkrimi={puna ? `Intervistë për ${puna.titulli} në ${EMRAT_E_GJUHEVE[gjuha]}, me ${emriIntervistuesit}` : "Zgjidh më parë një punë"}
+          pershkrimi={
+            puna
+              ? `Intervistë ${menyra === "fol" ? "me zë" : "me shkrim"} për ${puna.titulli} në ${EMRAT_E_GJUHEVE[gjuha]}, me ${emriIntervistuesit}`
+              : "Zgjidh më parë një punë"
+          }
           onPress={nis}
           style={styles.butoni}
         />

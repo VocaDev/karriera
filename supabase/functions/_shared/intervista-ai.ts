@@ -119,6 +119,8 @@ export type Konteksti = {
   intervistuesi?: Intervistuesi;
   /** Qasja e çdo pyetjeje (nr = numri i kthesës); private, app-i s'e lexon. Mungon te intervistat e vjetra. */
   qasjet?: QasjaERuajtur[];
+  /** true pasi të paktën një përgjigje erdhi me zë (intervista-zeri e vendos); raporti e di që ka fjalë të njohura gabim. */
+  zeri?: boolean;
 };
 
 export type QasjaERuajtur = { nr: number; qasja: Qasja; arsyeja: string };
@@ -160,6 +162,15 @@ export type KthesaDB = {
   vleresimi: Vleresimi | null;
   pergjigjur_me: string | null;
 };
+
+// ---------- Zëri (hook-u i intervista-zeri) ----------
+// Shtohet në fund të prompt-it vetëm kur përgjigjja erdhi nga njohja e zërit (STT): pa të, prompt-et e tekstit s'ndryshojnë.
+const SHENIMI_I_ZERIT_INTERVISTUESI = `
+
+Kjo përgjigje u tha me zë dhe erdhi nga njohja automatike e zërit: mund të ketë fjalë të gabuara, pa pikësim, gegërisht ose terma në anglisht. Kuptoje kuptimin sa më mirë dhe mos e përmend kurrë transkriptin, mikrofonin ose teknologjinë. Ti flet me zë: fjali të shkurtra, si në të folur, pa kllapa dhe pa shkurtime.`;
+const SHENIMI_I_ZERIT_TRAJNERI = `
+
+Disa përgjigje u thanë me zë dhe erdhën nga njohja automatike e zërit: mos e dëno kandidatin për fjalë të gabuara, pikësim ose dialekt; vlerëso përmbajtjen.`;
 
 // ---------- Gabimet ----------
 /** Gabim që funksioni ia kthen app-it me këtë status dhe këtë mesazh (shqip, pa detaje teknike). */
@@ -541,6 +552,8 @@ export async function gjeneroKthesen(opts: {
   nrPyetjeve: number;
   menyra: Menyra;
   lejohetVazhdim: boolean;
+  /** Përgjigjja e fundit erdhi me zë (intervista-zeri). */
+  meZe?: boolean;
 }): Promise<KthesaAI> {
   const { min, max } = GJATESITE[opts.gjatesia];
   const vazhdimi = opts.lejohetVazhdim
@@ -560,7 +573,7 @@ export async function gjeneroKthesen(opts: {
     KthesaSchema,
     MODELI_KTHESA,
     PERPJEKJA_KTHESA,
-    sistemiIIntervistueses(opts.roli, opts.gjuha, opts.intervistuesi),
+    sistemiIIntervistueses(opts.roli, opts.gjuha, opts.intervistuesi) + (opts.meZe ? SHENIMI_I_ZERIT_INTERVISTUESI : ""),
     prompt,
     1200,
     60_000,
@@ -582,6 +595,8 @@ export async function vleresoPergjigjen(opts: {
   roli: Roli;
   gjuha: Gjuha;
   kthesa: { reagimi: string | null; pyetja: string; pergjigja: string };
+  /** Përgjigjja erdhi me zë (intervista-zeri). */
+  meZe?: boolean;
 }): Promise<Vleresimi> {
   const prompt = `${etiketo("shpallja", `${opts.konteksti.puna.titulli} te ${opts.konteksti.puna.kompania}. Aftësitë: ${opts.konteksti.puna.aftesite.join(", ") || "—"}`)}
 
@@ -593,7 +608,7 @@ Për këtë përgjigje kthe: "cka_ishte_mire" (një fjali), "cka_te_permiresosh"
     VleresimiSchema,
     MODELI_KTHESA,
     PERPJEKJA_KTHESA,
-    sistemiITrajnerit(opts.roli, opts.gjuha, opts.intervistuesi),
+    sistemiITrajnerit(opts.roli, opts.gjuha, opts.intervistuesi) + (opts.meZe ? SHENIMI_I_ZERIT_TRAJNERI : ""),
     prompt,
     1500,
     60_000,
@@ -638,7 +653,7 @@ Kthe:
     RaportiSchema,
     MODELI_RAPORTI,
     PERPJEKJA_RAPORTI,
-    sistemiITrajnerit(opts.roli, opts.gjuha, opts.intervistuesi),
+    sistemiITrajnerit(opts.roli, opts.gjuha, opts.intervistuesi) + (opts.konteksti.zeri === true ? SHENIMI_I_ZERIT_TRAJNERI : ""),
     prompt,
     4000,
     120_000,

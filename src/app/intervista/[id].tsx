@@ -1,5 +1,6 @@
+import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
   Alert,
@@ -20,7 +21,8 @@ import Prekshme from "@/components/Prekshme";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Ikona, Progresi, T } from "@/components/ui";
-import { kushEkaRadhen, type Gjendja, type Mesazhi } from "@/lib/intervista/gjendja";
+import { kushEkaRadhen, type Gjendja, type Mesazhi, type Paraqitja } from "@/lib/intervista/gjendja";
+import { PaneliIZerit } from "@/lib/intervista/PaneliIZerit";
 import {
   INTERVISTUESI_FILLESTAR,
   MAKS_PERGJIGJJA,
@@ -30,13 +32,16 @@ import {
 } from "@/lib/intervista/tipet";
 import { AvatariIntervistuesit, KartaEGabimit } from "@/lib/intervista/ui";
 import { useIntervista } from "@/lib/intervista/useIntervista";
+import { mbeshtetetZeri } from "@/lib/intervista/useRegjistruesi";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { eshteGabimRrjeti, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
-// Intervista me shkrim (bordi, ekrani 14, pa avatarin ende): biseda si chat. Lart gjithmonë shkruan kush e ka radhën.
+// Intervista (bordi, ekrani 14): biseda si chat, me shkrim ose me zë ("Shkruaj · Fol", ?menyra=fol nga ekrani i nisjes).
+// Me zë: PaneliIZerit (avatari, statusi, mikrofoni) rreth së njëjtës bisedë; "Shkruaj · Fol" ndërrohet në çdo çast.
+// Lart gjithmonë shkruan kush e ka radhën.
 // Pa kokën e Stack-ut (gjestet "mbrapa" fiken): dalja bëhet vetëm me "Dil", me konfirmim, që intervista të mos humbë
 // nga një rrëshqitje e gabuar. Përgjigjet ruhen në server, ndaj "Dil" = pauzë: intervista vazhdon nga e njëjta punë.
 
@@ -50,6 +55,7 @@ const MBYLLJA: Record<Gjuha, string> = {
 const PA_INTERNET_PERGJIGJJA = paInternet("përgjigjja jote është ruajtur këtu", false);
 
 const DERGO = { ios: "arrow.up", android: "arrow_upward" };
+const MENYRAT: Paraqitja[] = ["tekst", "avatar"];
 const MAJTAS = { ios: "chevron.left", android: "chevron_left" };
 
 export default function IntervistaEkrani() {
@@ -57,8 +63,11 @@ export default function IntervistaEkrani() {
   const router = useRouter();
   const kufijte = useSafeAreaInsets();
   const njofto = useNjoftim();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { gjendja, dergo, perfundo, riprovo, kaPergjigje } = useIntervista(id);
+  const { id, menyra } = useLocalSearchParams<{ id: string; menyra?: string }>();
+  const { gjendja, dergo, dergoZerin, merrZerin, ndryshoParaqitjen, perfundo, riprovo, uPyet, kaPergjigje } = useIntervista(
+    id,
+    menyra === "fol" && mbeshtetetZeri ? "avatar" : "tekst",
+  );
   // Interneti u kthye pas një leximi të dështuar (hapja e intervistës): rilexon NJË herë për çdo kthim; është vetëm lexim.
   // Dërgimi i përgjigjes s'bëhet vetë: e dërgon përdoruesi me "Provo përsëri".
   const { kaInternet } = useRrjeti(() => {
@@ -66,6 +75,7 @@ export default function IntervistaEkrani() {
   });
   const [teksti, setTeksti] = useState("");
   const lista = useRef<ScrollViewInstance>(null);
+  const meZe = gjendja.paraqitja === "avatar";
 
   const radha = kushEkaRadhen(gjendja);
   const seanca = gjendja.faza === "gati" ? null : gjendja.seanca;
@@ -78,12 +88,23 @@ export default function IntervistaEkrani() {
   const paInternetGabim = gjendja.faza === "gabim" && eshteGabimRrjeti(gjendja.gabimi);
   const vononGabim = gjendja.faza === "gabim" && gjendja.gabimi.kodi === "vonese";
 
+  // Çdo problem me zërin kalon te Shkruaj pa e humbur intervistën (përgjigjet janë në server).
+  const kaloTeShkruaj = useCallback(
+    (mesazhi: string | null) => {
+      ndryshoParaqitjen("tekst");
+      if (mesazhi) njofto(mesazhi, "info");
+    },
+    [ndryshoParaqitjen, njofto],
+  );
+
   // Raporti gati → rezultatet (zëvendëson këtë ekran, që "mbrapa" të mos kthejë në një intervistë të mbaruar).
+  // Me zë, PaneliIZerit e thërret pasi intervistuesi ta ketë mbaruar mbylljen.
+  const hapRezultatet = useCallback(() => {
+    router.replace({ pathname: "/intervista/rezultatet", params: { id } });
+  }, [id, router]);
   useEffect(() => {
-    if (gjendja.faza === "raporti") {
-      router.replace({ pathname: "/intervista/rezultatet", params: { id } });
-    }
-  }, [gjendja.faza, id, router]);
+    if (gjendja.faza === "raporti" && !meZe) hapRezultatet();
+  }, [gjendja.faza, hapRezultatet, meZe]);
 
   // VoiceOver: pyetja e re lexohet sapo vjen radha e kandidatit.
   const nrAktual = gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;
@@ -132,6 +153,64 @@ export default function IntervistaEkrani() {
 
   const pyetjaNr = info ? Math.min(seanca?.nrPyetjeve ?? 1, info.max) : 0;
 
+  // Biseda (transkripti i të dyve): e njëjta me shkrim dhe me zë.
+  const biseda = (
+    <ScrollView
+      ref={lista}
+      style={styles.flex}
+      contentContainerStyle={styles.biseda}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      onContentSizeChange={() => lista.current?.scrollToEnd({ animated: true })}
+    >
+      {gjendja.faza === "gati" && <SkeletiIBisedes />}
+      {seanca?.biseda.map((m) => (
+        <Flluska key={m.id} mesazhi={m} gjuha={info?.gjuha ?? "sq"} intervistuesi={intervistuesi} />
+      ))}
+      {gjendja.faza === "vlereson" && gjendja.pergjigja === "" && <TeDegjoj />}
+      {(gjendja.faza === "vlereson" || (gjendja.faza === "perfundon" && gjendja.mbyllVete)) && <Mendon intervistuesi={intervistuesi} />}
+      {gjendja.faza === "perfundon" && (
+        <View style={styles.rezultatetVijne} accessibilityLiveRegion="polite">
+          <Pulsi>
+            <T pesha="gjysme" madhesia={14.5} style={styles.qendroj}>
+              Po i përgatis rezultatet…
+            </T>
+          </Pulsi>
+          <T zbehur madhesia={13} style={styles.qendroj}>
+            Zakonisht 10–30 sekonda. Mos e mbyll app-in.
+          </T>
+        </View>
+      )}
+      {gjendja.faza === "gabim" && (
+        <KartaEGabimit
+          titulli={
+            paInternetGabim
+              ? PA_INTERNET_PERGJIGJJA.titulli
+              : vononGabim
+                ? VONON.titulli
+                : gjendja.veprimi === "dergo"
+                ? "Përgjigjja s'u dërgua"
+                : gjendja.veprimi === "ngarko"
+                  ? "Intervista s'u hap"
+                  : "Rezultatet s'u përgatitën"
+          }
+          mesazhi={
+            paInternetGabim
+              ? gjendja.veprimi === "dergo" && gjendja.pergjigja
+                ? tekstiIPlote(PA_INTERNET_PERGJIGJJA)
+                : tekstiIPlote(paInternet("intervista nuk u hap", false))
+              : vononGabim
+                ? `${gjendja.gabimi.message} ${VONON.bere}`
+                : gjendja.veprimi === "dergo" && gjendja.pergjigja
+                ? `${gjendja.gabimi.message} Përgjigjja jote s'humbet.`
+                : gjendja.gabimi.message
+          }
+          riprovo={gjendja.gabimi.riprovohet || gjendja.veprimi === "ngarko" ? riprovo : undefined}
+        />
+      )}
+    </ScrollView>
+  );
+
   return (
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: t.sfondi }]}
@@ -168,69 +247,50 @@ export default function IntervistaEkrani() {
           <View style={styles.dil} />
         </View>
         {info && <Progresi vlera={pyetjaNr / info.max} />}
-        <Statusi gjendja={gjendja} radha={radha} emri={pamja.emri} paInternet={!kaInternet} />
+        {mbeshtetetZeri && gjendja.faza !== "perfundon" && gjendja.faza !== "raporti" && (
+          <SegmentedControl
+            values={["Shkruaj", "Fol"]}
+            selectedIndex={MENYRAT.indexOf(gjendja.paraqitja)}
+            onChange={(e) => {
+              const p = MENYRAT[e.nativeEvent.selectedSegmentIndex];
+              if (p && p !== gjendja.paraqitja) {
+                prekja.zgjedhje();
+                ndryshoParaqitjen(p);
+              }
+            }}
+            appearance={t.errët ? "dark" : "light"}
+            accessibilityLabel="Përgjigju me shkrim ose me zë"
+          />
+        )}
+        {!meZe && <Statusi gjendja={gjendja} radha={radha} emri={pamja.emri} paInternet={!kaInternet} />}
       </View>
 
       <View style={styles.shiriti}>
         <ShiritiPaInternet teksti={PA_INTERNET_PERGJIGJJA.cfare} style={styles.shiritiLart} />
       </View>
 
-      <ScrollView
-        ref={lista}
-        style={styles.flex}
-        contentContainerStyle={styles.biseda}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        onContentSizeChange={() => lista.current?.scrollToEnd({ animated: true })}
-      >
-        {gjendja.faza === "gati" && <SkeletiIBisedes />}
-        {seanca?.biseda.map((m) => (
-          <Flluska key={m.id} mesazhi={m} gjuha={info?.gjuha ?? "sq"} intervistuesi={intervistuesi} />
-        ))}
-        {(gjendja.faza === "vlereson" || (gjendja.faza === "perfundon" && gjendja.mbyllVete)) && <Mendon intervistuesi={intervistuesi} />}
-        {gjendja.faza === "perfundon" && (
-          <View style={styles.rezultatetVijne} accessibilityLiveRegion="polite">
-            <Pulsi>
-              <T pesha="gjysme" madhesia={14.5} style={styles.qendroj}>
-                Po i përgatis rezultatet…
-              </T>
-            </Pulsi>
-            <T zbehur madhesia={13} style={styles.qendroj}>
-              Zakonisht 10–30 sekonda. Mos e mbyll app-in.
-            </T>
-          </View>
-        )}
-        {gjendja.faza === "gabim" && (
-          <KartaEGabimit
-            titulli={
-              paInternetGabim
-                ? PA_INTERNET_PERGJIGJJA.titulli
-                : vononGabim
-                  ? VONON.titulli
-                  : gjendja.veprimi === "dergo"
-                  ? "Përgjigjja s'u dërgua"
-                  : gjendja.veprimi === "ngarko"
-                    ? "Intervista s'u hap"
-                    : "Rezultatet s'u përgatitën"
-            }
-            mesazhi={
-              paInternetGabim
-                ? gjendja.veprimi === "dergo" && gjendja.pergjigja
-                  ? tekstiIPlote(PA_INTERNET_PERGJIGJJA)
-                  : tekstiIPlote(paInternet("intervista nuk u hap", false))
-                : vononGabim
-                  ? `${gjendja.gabimi.message} ${VONON.bere}`
-                  : gjendja.veprimi === "dergo" && gjendja.pergjigja
-                  ? `${gjendja.gabimi.message} Përgjigjja jote s'humbet.`
-                  : gjendja.gabimi.message
-            }
-            riprovo={gjendja.gabimi.riprovohet || gjendja.veprimi === "ngarko" ? riprovo : undefined}
-          />
-        )}
-      </ScrollView>
+      {meZe ? (
+        <PaneliIZerit
+          intervistaId={id}
+          gjendja={gjendja}
+          intervistuesi={intervistuesi}
+          kaInternet={kaInternet}
+          dergoZerin={dergoZerin}
+          merrZerin={merrZerin}
+          uPyet={uPyet}
+          kaloTeShkruaj={kaloTeShkruaj}
+          njofto={njofto}
+          onRaportiGati={hapRezultatet}
+          poshte={Math.max(kufijte.bottom, 10)}
+        >
+          {biseda}
+        </PaneliIZerit>
+      ) : (
+        biseda
+      )}
 
       {/* Fusha e përgjigjes: gjithmonë e dukshme gjatë intervistës, "Dërgo" vetëm kur është radha jote. */}
-      {gjendja.faza !== "perfundon" && gjendja.faza !== "raporti" && (
+      {!meZe && gjendja.faza !== "perfundon" && gjendja.faza !== "raporti" && (
         <View
           style={[
             styles.shkruaj,
@@ -261,12 +321,30 @@ export default function IntervistaEkrani() {
           </Prekshme>
         </View>
       )}
-      {teksti.length > MAKS_PERGJIGJJA - 400 && (
+      {!meZe && teksti.length > MAKS_PERGJIGJJA - 400 && (
         <T zbehur madhesia={12} style={[styles.numeruesi, { bottom: Math.max(kufijte.bottom, 10) + 58 }]}>
           {teksti.length}/{MAKS_PERGJIGJJA}
         </T>
       )}
     </KeyboardAvoidingView>
+  );
+}
+
+/** Flluska e kandidatit ndërsa zëri kthehet në tekst. */
+function TeDegjoj() {
+  const t = useTema();
+  return (
+    <View
+      style={[styles.flluska, styles.eJotja, styles.mendon, { backgroundColor: t.karta2 }]}
+      accessible
+      accessibilityLabel="Përgjigjja jote po kthehet në tekst"
+    >
+      <Pulsi>
+        <T madhesia={14} zbehur>
+          Po e shkruaj atë që the…
+        </T>
+      </Pulsi>
+    </View>
   );
 }
 

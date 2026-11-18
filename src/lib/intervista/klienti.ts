@@ -3,6 +3,7 @@
 //   intervista-nis      nis (ose vazhdon) intervistën për një punë → pyetja e parë
 //   intervista-kthesa   dërgon përgjigjen → pyetja tjetër ose fundi
 //   intervista-raporti  raporti përfundimtar + gatishmëria e re (idempotent)
+//   intervista-zeri     përgjigjja me zë (STT → e njëjta kthesë → TTS) dhe zëri i pyetjes aktuale
 //   tabelat             intervistat dhe intervista_kthesat lexohen me RLS (vetëm të miat); app-i s'shkruan aty
 //
 // Çelësi i AI-së s'del kurrë në telefon. Pyetjet dhe përgjigjet s'shkruhen në log.
@@ -14,6 +15,7 @@ import { KOHA_E_AI, meKohe } from "@/lib/rrjeti";
 import { supabase } from "@/lib/supabase";
 
 import { lexoIntervistuesinPer, ruajIntervistuesinPer } from "./intervistuesi";
+import type { FjaliaMeZe } from "./mesazhet";
 import {
   eshteIntervistues,
   eshteObjekt,
@@ -37,6 +39,9 @@ export type KodiIGabimit =
   | "po_perpunohet" // dërgim i dyfishtë, ose raporti po shkruhet
   | "mbaroi" // intervista s'është më aktive
   | "aktive" // raporti u kërkua para fundit
+  | "zeri" // dëgjimi ose zëri dështoi: riprovo ose shkruaj
+  | "zeri_pa_konfigurim" // zëri s'është gati në server: vetëm me shkrim
+  | "kufiri_zerit" // minutat e zërit për sot mbaruan
   | "rrjeti"
   | "vonese" // s'u përgjigj në kohë (VONON)
   | "sesioni"
@@ -48,13 +53,22 @@ export class GabimIIntervistes extends Error {
   readonly status: number | null;
   /** Kur serveri thotë "jashte_radhe", kthen edhe pyetjen aktuale. */
   readonly kthesa: Kthesa | null;
+  /** Përgjigjja me zë u dëgjua, por kthesa dështoi: transkripti s'humbet (riprovohet si tekst). */
+  readonly transkripti: string | null;
 
-  constructor(mesazhi: string, kodi: KodiIGabimit, status: number | null = null, kthesa: Kthesa | null = null) {
+  constructor(
+    mesazhi: string,
+    kodi: KodiIGabimit,
+    status: number | null = null,
+    kthesa: Kthesa | null = null,
+    transkripti: string | null = null,
+  ) {
     super(mesazhi);
     this.name = "GabimIIntervistes";
     this.kodi = kodi;
     this.status = status;
     this.kthesa = kthesa;
+    this.transkripti = transkripti;
   }
 
   /** A ka kuptim butoni "Provo përsëri" me të njëjtën kërkesë. */
@@ -64,12 +78,23 @@ export class GabimIIntervistes extends Error {
       this.kodi === "rrjeti" ||
       this.kodi === "vonese" ||
       this.kodi === "tjeter" ||
-      this.kodi === "po_perpunohet"
+      this.kodi === "po_perpunohet" ||
+      this.kodi === "zeri"
     );
   }
 }
 
-const KODET: readonly string[] = ["kufiri", "ai", "jashte_radhe", "po_perpunohet", "mbaroi", "aktive"];
+const KODET: readonly string[] = [
+  "kufiri",
+  "ai",
+  "jashte_radhe",
+  "po_perpunohet",
+  "mbaroi",
+  "aktive",
+  "zeri",
+  "zeri_pa_konfigurim",
+  "kufiri_zerit",
+];
 
 async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimIIntervistes> {
   if (gabimi instanceof FunctionsHttpError) {
@@ -84,7 +109,8 @@ async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimII
             : status === 401
               ? "sesioni"
               : "tjeter";
-        return new GabimIIntervistes(trupi.error, kodi, status, lexoKthesen(trupi.kthesa));
+        const transkripti = typeof trupi.transkripti === "string" && trupi.transkripti.trim() ? trupi.transkripti : null;
+        return new GabimIIntervistes(trupi.error, kodi, status, lexoKthesen(trupi.kthesa), transkripti);
       }
     } catch {
       // përgjigje pa JSON
@@ -102,22 +128,23 @@ function eshte401(gabimi: unknown): boolean {
   return gabimi instanceof FunctionsHttpError && (gabimi.context as Response).status === 401;
 }
 
-type Funksioni = "intervista-nis" | "intervista-kthesa" | "intervista-raporti";
+type Funksioni = "intervista-nis" | "intervista-kthesa" | "intervista-raporti" | "intervista-zeri";
 
 const VONESA: Record<Funksioni, string> = {
   "intervista-nis": VONON.nisja,
   "intervista-kthesa": VONON.intervista,
   "intervista-raporti": VONON.rezultatet,
+  "intervista-zeri": VONON.intervista,
 };
 
 // Si te lib/cv.ts: 401 = serveri s'e njeh më sesionin → një rifreskim; nëse s'mjafton, dalim nga llogaria.
-async function thirr(emri: Funksioni, body: object, rezerva: string): Promise<unknown> {
+async function thirr(emri: Funksioni, body: object | FormData, rezerva: string, ms = KOHA_E_AI): Promise<unknown> {
   // Ruajtësi i kohës: një lidhje që varet bëhet gabim "rrjeti" (me "Provo përsëri"), jo pritje pa fund.
   // Serveri e njeh përgjigjen e dyfishtë (409), prandaj riprovimi pas kësaj është i sigurt.
   const thirrja = () =>
     meKohe(
       supabase.functions.invoke(emri, { body }),
-      KOHA_E_AI,
+      ms,
       () => new GabimIIntervistes(VONESA[emri], "vonese"),
     );
   let { data, error } = await thirrja();
@@ -193,6 +220,75 @@ export async function perfundoIntervisten(intervistaId: string, nr: number): Pro
     "Intervista s'u mbyll. Provo përsëri.",
   );
   return lexoPasPergjigjes(data);
+}
+
+// ---------- Zëri ----------
+
+function lexoFjalite(v: unknown): FjaliaMeZe[] | null {
+  if (!eshteObjekt(v) || !Array.isArray(v.fjalite)) return null;
+  const fjalite: FjaliaMeZe[] = [];
+  for (const f of v.fjalite) {
+    if (!eshteObjekt(f) || typeof f.teksti !== "string" || typeof f.audio_base64 !== "string") return null;
+    fjalite.push({ teksti: f.teksti, audio_base64: f.audio_base64, mime: typeof f.mime === "string" ? f.mime : "audio/wav" });
+  }
+  return fjalite;
+}
+
+export type PasZerit =
+  | { degjuar: false }
+  | {
+      degjuar: true;
+      transkripti: string;
+      pas: PasPergjigjes;
+      /** null kur zëri i intervistuesit s'u krijua: pyetja shfaqet si tekst. */
+      fjalite: FjaliaMeZe[] | null;
+      gabimiZerit: string | null;
+    };
+
+/**
+ * Dërgon përgjigjen me zë (WAV nga AudioStream) për pyetjen `nr`. Serveri e kthen në tekst dhe e përpunon si një
+ * përgjigje të shkruar. `degjuar: false` = s'u dëgjua asnjë fjalë (pyetja mbetet e njëjta).
+ */
+export async function dergoZerin(intervistaId: string, nr: number, uri: string): Promise<PasZerit> {
+  const forma = new FormData();
+  forma.append("intervista_id", intervistaId);
+  forma.append("nr", String(nr));
+  // React Native e ngarkon skedarin nga `uri` (s'lexohet në JS).
+  forma.append("audio", { uri, name: "pergjigja.wav", type: "audio/wav" } as unknown as Blob);
+  const data = await thirr("intervista-zeri", forma, "Përgjigjja me zë s'u dërgua. Provo përsëri.");
+  if (!eshteObjekt(data)) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "tjeter");
+  if (data.degjuar !== true) return { degjuar: false };
+  const transkripti = typeof data.transkripti === "string" ? data.transkripti : "";
+  return {
+    degjuar: true,
+    transkripti,
+    pas: lexoPasPergjigjes(data),
+    fjalite: lexoFjalite(data.zeri),
+    gabimiZerit: typeof data.gabimi_zerit === "string" ? data.gabimi_zerit : null,
+  };
+}
+
+/** Zëri i pyetjes aktuale (pyetja e parë, ose kur intervista rihapet në Fol). Teksti merret nga serveri. */
+export type PjesaEZerit = "reagimi" | "pyetja" | "mbushesi";
+
+/** Një audio zëri zgjat ~2–6 s te ofruesi; pas kaq pritjeje pyetja mbetet si tekst dhe intervista vazhdon. */
+const KOHA_E_ZERIT = 25_000;
+
+/**
+ * Zëri i pyetjes aktuale `nr`. Me `pjesa`, vetëm reagimi ose vetëm pyetja (app-i i kërkon paralelisht, që reagimi
+ * i shkurtër të nisë më shpejt), ose "mbushesi" (pranimi i shkurtër që luhet sa pret kthesën). Teksti vjen nga serveri.
+ * Lista bosh = s'ka çka të thuhet (p.sh. pyetja e parë pa reagim).
+ */
+export async function zeriIPyetjes(intervistaId: string, nr: number, pjesa?: PjesaEZerit): Promise<FjaliaMeZe[]> {
+  const data = await thirr(
+    "intervista-zeri",
+    { veprimi: "fol", intervista_id: intervistaId, nr, ...(pjesa ? { pjesa } : {}) },
+    "Zëri i pyetjes s'u krijua.",
+    KOHA_E_ZERIT,
+  );
+  const fjalite = eshteObjekt(data) ? lexoFjalite(data.zeri) : null;
+  if (!fjalite) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "zeri");
+  return fjalite;
 }
 
 /** Raporti përfundimtar. Nëse ekziston, serveri e kthen pa thirrur AI-në. Zgjat 10–40 sekonda herën e parë. */
