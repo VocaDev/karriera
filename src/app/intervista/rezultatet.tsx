@@ -201,7 +201,7 @@ export default function RezultatetEkrani() {
             />
             <Butoni
               teksti="Vazhdo intervistën"
-              onPress={() => router.replace({ pathname: "/intervista/[id]", params: { id } })}
+              onPress={() => id && router.replace({ pathname: "/intervista/[id]", params: { id } })}
             />
           </>
         )}
