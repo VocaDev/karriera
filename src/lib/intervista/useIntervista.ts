@@ -9,12 +9,29 @@ import { prekja } from "@/lib/prekja";
 import { gjendjaFillestare, intervistaReducer, type Paraqitja, type Veprimi } from "./gjendja";
 import {
   dergoPergjigjen,
+  dergoZerin as dergoZerinNeServer,
   GabimIIntervistes,
   krijoRaportin,
   lexoIntervisten,
   perfundoIntervisten,
   type PasPergjigjes,
 } from "./klienti";
+import type { FjaliaMeZe } from "./mesazhet";
+
+/** Si përfundoi një përgjigje me zë (ekrani vendos çka i thotë kandidatit). */
+export type RezultatiIZerit =
+  | { lloji: "u_degjua"; gabimiZerit: string | null }
+  | { lloji: "s_degjova" }
+  /** Zëri dështoi para kthesës: pyetja mbetet e njëjta; ekrani tregon mesazhin (dhe për disa kode kalon te Shkruaj). */
+  | { lloji: "gabim_zeri"; gabimi: GabimIIntervistes }
+  /** Gabim tjetër: makina e gjendjeve e tregon me kartën e gabimit, si me shkrim. */
+  | { lloji: "gabim" }
+  | { lloji: "zene" };
+
+/** Çelësi i zërit të gatshëm: "a<nr>" për një pyetje, "mbyllja" për fundin. */
+export type CelesiIZerit = `a${number}` | "mbyllja";
+
+const KODET_E_ZERIT = new Set(["zeri", "zeri_pa_konfigurim", "kufiri_zerit"]);
 
 function siGabim(e: unknown): GabimIIntervistes {
   return e instanceof GabimIIntervistes ? e : new GabimIIntervistes("Diçka shkoi keq. Provo përsëri.", "tjeter");
@@ -23,6 +40,8 @@ function siGabim(e: unknown): GabimIIntervistes {
 export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "tekst") {
   const [gjendja, dispatch] = useReducer(intervistaReducer, paraqitja, gjendjaFillestare);
   const zene = useRef(false); // një thirrje rrjeti njëherësh
+  // Zëri i intervistuesit që erdhi bashkë me kthesën: ruhet PARA dispatch-it, që ekrani ta gjejë pa garë.
+  const zeriGati = useRef(new Map<CelesiIZerit, FjaliaMeZe[]>());
   const aktiv = useRef(true);
 
   useEffect(() => {
@@ -170,10 +189,71 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
     }
   }, [dergoTani, gjendja, kerkoRaportin, raporti]);
 
-  /** Për avatarin (09.12): faqja e njofton që pyetja u tha. Me tekst s'nevojitet. */
+  /**
+   * Përgjigjja me zë: `uri` është WAV-i i regjistruar. Serveri e kthen në tekst dhe e përpunon si përgjigje e shkruar.
+   * Zëri i pyetjes tjetër ruhet te `merrZerin` para se të ndryshojë faza.
+   */
+  const dergoZerin = useCallback(
+    async (uri: string): Promise<RezultatiIZerit> => {
+      if (zene.current || gjendja.faza !== "pret_pergjigjen" || !gjendja.seanca.kthesa) return { lloji: "zene" };
+      const nr = gjendja.seanca.kthesa.nr;
+      zene.current = true;
+      dispatch({ lloji: "dergo_zerin" });
+      try {
+        const r = await dergoZerinNeServer(intervistaId, nr, uri);
+        if (!aktiv.current) return { lloji: "zene" };
+        if (!r.degjuar) {
+          dispatch({ lloji: "s_degjova" });
+          return { lloji: "s_degjova" };
+        }
+        if (r.fjalite) {
+          zeriGati.current.set(r.pas.fund ? "mbyllja" : `a${r.pas.kthesa.nr}`, r.fjalite);
+        }
+        dispatch({ lloji: "degjova", teksti: r.transkripti });
+        pasPergjigjes(r.pas);
+        return { lloji: "u_degjua", gabimiZerit: r.gabimiZerit };
+      } catch (e) {
+        if (!aktiv.current) return { lloji: "zene" };
+        const g = siGabim(e);
+        if (g.kodi === "jashte_radhe" || g.kodi === "mbaroi") {
+          await ngarko();
+          return { lloji: "gabim" };
+        }
+        if (g.transkripti) {
+          // U dëgjua, por kthesa dështoi: transkripti mbetet si përgjigje dhe "Provo përsëri" e dërgon si tekst.
+          prekja.gabim();
+          dispatch({ lloji: "degjova", teksti: g.transkripti });
+          dispatch({ lloji: "gabim", gabimi: g, veprimi: g.kodi === "po_perpunohet" ? "ngarko" : "dergo", pergjigja: g.transkripti });
+          return { lloji: "gabim" };
+        }
+        prekja.gabim();
+        if (KODET_E_ZERIT.has(g.kodi)) {
+          dispatch({ lloji: "s_degjova" });
+          return { lloji: "gabim_zeri", gabimi: g };
+        }
+        dispatch({ lloji: "gabim", gabimi: g, veprimi: g.kodi === "po_perpunohet" ? "ngarko" : "dergo", pergjigja: null });
+        return { lloji: "gabim" };
+      } finally {
+        zene.current = false;
+      }
+    },
+    [gjendja, intervistaId, ngarko, pasPergjigjes],
+  );
+
+  /** Zëri i gatshëm për një pyetje ose për mbylljen; merret vetëm një herë. */
+  const merrZerin = useCallback((celesi: CelesiIZerit): FjaliaMeZe[] | null => {
+    const z = zeriGati.current.get(celesi) ?? null;
+    zeriGati.current.delete(celesi);
+    return z;
+  }, []);
+
+  /** Shkruaj ↔ Fol, në çdo çast. */
+  const ndryshoParaqitjen = useCallback((p: Paraqitja) => dispatch({ lloji: "paraqitja", paraqitja: p }), []);
+
+  /** Faqja e avatarit e njofton që pyetja u tha (ose zëri dështoi): radha e kandidatit. */
   const uPyet = useCallback(() => dispatch({ lloji: "u_pyet" }), []);
 
   const kaPergjigje = gjendja.faza !== "gati" && !!gjendja.seanca?.biseda.some((m) => m.kush === "ti");
 
-  return { gjendja, dergo, perfundo, riprovo, uPyet, kaPergjigje };
+  return { gjendja, dergo, dergoZerin, merrZerin, ndryshoParaqitjen, perfundo, riprovo, uPyet, kaPergjigje };
 }
