@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { merrProfilin, pastroTeDhenatELokale, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
 import { VONON } from "@/lib/mesazhet";
 import { lexoProfilinERuajtur, lexoSesioninERuajtur, ruajProfilin } from "@/lib/profili-kesh";
-import { eshteGabimKohe, eshteGabimRrjeti, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_SESIONIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { pasNdryshimitTeSesionit } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
 
@@ -39,8 +39,6 @@ const Konteksti = createContext<GjendjaESesionit | null>(null);
 
 // Hapja e app-it s'pret më shumë se kaq për profilin: pastaj përdoret ai i ruajtur në telefon (ose del gabimi me "Provo përsëri").
 const KOHA_E_PROFILIT = 8_000;
-// `getSession()` pa internet dhe me token të skaduar riprovon rifreskimin rreth 30 s; s'presim më shumë se kaq.
-const KOHA_E_SESIONIT = 6_000;
 
 type ProfiliILexuar = { uid: string; profili: Profili | null; gabimi: string | null };
 
@@ -114,7 +112,12 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
             ? l
             : iRuajtur
               ? { uid, profili: iRuajtur, gabimi: null }
-              : { uid, profili: null, gabimi: e instanceof Error ? e.message : "Gabim i panjohur" },
+              : {
+                  uid,
+                  profili: null,
+                  // Asnjë tekst teknik te përdoruesi: mesazhi i pa internet / vonesës, ose fjalia e përgjithshme.
+                  gabimi: nga && e instanceof Error ? e.message : "Diçka shkoi keq. Provo përsëri.",
+                },
         );
       });
     return () => {

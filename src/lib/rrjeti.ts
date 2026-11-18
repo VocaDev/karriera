@@ -129,6 +129,9 @@ export function meKohe<T>(premtimi: Promise<T>, ms: number, fjalia: string | (()
   });
 }
 
+/** `getSession()` pa internet dhe me token të skaduar riprovon rifreskimin rreth 30 s; s'presim më shumë se kaq. */
+export const KOHA_E_SESIONIT = 6_000;
+
 /** Kohët e ruajtësit: leximet janë të shkurtra, AI-ja zgjat 10–40 s (me kufi të gjerë). */
 export const KOHA_E_LEXIMIT = 15_000;
 export const KOHA_E_NGARKIMIT = 60_000;

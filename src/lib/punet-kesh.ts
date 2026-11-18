@@ -6,7 +6,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { Puna } from "@/lib/punet";
-import { supabase } from "@/lib/supabase";
+import { merrUidLokal } from "@/lib/profili-kesh";
 
 const VERSIONI = 1;
 const PREFIKSI = "kesh:punet:";
@@ -16,10 +16,9 @@ type Ruajtja = { v: number; punet: Puna[] };
 const eshtePune = (v: unknown): v is Puna =>
   typeof v === "object" && v !== null && typeof (v as Puna).id === "string" && typeof (v as Puna).titulli === "string";
 
-/** Çelësi i këtij përdoruesi, ose null pa sesion (leximi i sesionit është lokal, pa rrjet). */
+/** Çelësi i këtij përdoruesi, ose null pa sesion (merrUidLokal: me kufi kohe, pa pritur rifreskimin pa internet). */
 async function celesi(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  const uid = data.session?.user.id;
+  const uid = await merrUidLokal();
   return uid ? `${PREFIKSI}${uid}` : null;
 }
 

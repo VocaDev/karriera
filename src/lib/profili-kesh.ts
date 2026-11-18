@@ -7,6 +7,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 
 import type { Profili } from "@/lib/hyrja";
+import { VONON } from "@/lib/mesazhet";
+import { KOHA_E_SESIONIT, meKohe } from "@/lib/rrjeti";
+import { supabase } from "@/lib/supabase";
 
 const PREFIKSI = "kesh:profili:";
 const LLOJET = ["kerkues", "punedhenes", "qender"];
@@ -66,6 +69,26 @@ export async function lexoSesioninERuajtur(): Promise<Session | null> {
       : null;
   } catch {
     return null;
+  }
+}
+
+/** Vetëm id-ja e përdoruesit nga sesioni i ruajtur në telefon (pa rrjet), ose null. */
+export async function lexoUidTeRuajtur(): Promise<string | null> {
+  const s = await lexoSesioninERuajtur();
+  return s ? s.user.id : null;
+}
+
+/**
+ * Id-ja e përdoruesit për çelësat lokalë (snapshot, lista e punëve): `getSession()` me kufi kohe; nëse varet
+ * (pa internet, token i skaduar që s'rifreskohet dot) merret nga sesioni i ruajtur. null = s'ka sesion.
+ * Është i vetmi vend ku të dhënat lokale pyesin për id-në: asnjë `getSession()` i pambrojtur te leximet pa internet.
+ */
+export async function merrUidLokal(): Promise<string | null> {
+  try {
+    const { data } = await meKohe(supabase.auth.getSession(), KOHA_E_SESIONIT, VONON.profili);
+    return data.session?.user.id ?? null;
+  } catch {
+    return lexoUidTeRuajtur();
   }
 }
 

@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { AnalizaCV } from "@/lib/cv";
 import type { AftesiaQeKe, AftesiaQeMungon, Gatishmeria } from "@/lib/gati";
 import type { Gjuha, Raporti, RreshtiIBisedes } from "@/lib/intervista/tipet";
-import { supabase } from "@/lib/supabase";
+import { merrUidLokal } from "@/lib/profili-kesh";
 
 const VERSIONI = 1;
 const PREFIKSI = "snapshot:";
@@ -118,11 +118,8 @@ const eshteGati = (v: unknown): v is SnapshotGati =>
 
 // ---------- Ruajtja dhe leximi i një hyrjeje ----------
 
-/** Id-ja e përdoruesit nga sesioni i ruajtur në telefon (pa rrjet), ose null pa sesion. */
-async function uid(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user.id ?? null;
-}
+/** Id-ja e përdoruesit për çelësat lokalë (me kufi kohe; pa internet nga sesioni i ruajtur), ose null pa sesion. */
+const uid = merrUidLokal;
 
 async function shkruaj<D>(pjesa: string, te_dhenat: D): Promise<boolean> {
   try {
