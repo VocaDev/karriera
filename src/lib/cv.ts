@@ -389,6 +389,46 @@ export async function krijoCV(
   return data;
 }
 
+// Çelësat në rend alfabetik: jsonb i Postgres-it i ndryshon çelësat, prandaj krahasojmë forma të qëndrueshme.
+const stabil = (v: unknown): string =>
+  JSON.stringify(v, (_k, x: unknown) =>
+    x && typeof x === "object" && !Array.isArray(x)
+      ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1)))
+      : x,
+  );
+
+const FINESTRA_E_DUBLIKATIT_MS = 5 * 60 * 1000;
+
+/**
+ * Nëse versioni i fundit i krijuar është saktësisht ky (e njëjta CV, format, gjuhë, emër) dhe u ruajt para pak
+ * minutash, ruajtja e mëparshme kishte mbërritur edhe pse s'pamë përgjigje (s'mbaroi në kohë): e kthejmë, s'bëjmë kopje.
+ */
+async function versioniIRuajturTashme(
+  cv: CvStrukturuar,
+  formati: FormatiCV,
+  gjuha: GjuhaCV,
+  emri: string | undefined,
+): Promise<CvRresht | null> {
+  const { data, error } = await supabase
+    .from("cvs")
+    .select(`${FUSHAT_CV}, permbajtja, formati, gjuha`)
+    .eq("burimi", "krijuar")
+    .order("versioni", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null; // s'e dimë: ruajtja e zakonshme vazhdon
+  const r = data as RreshtiCV & { permbajtja: unknown; formati: string; gjuha: string };
+  const eFreskët = Date.now() - new Date(r.krijuar_me).getTime() < FINESTRA_E_DUBLIKATIT_MS;
+  const njejte =
+    r.formati === formati &&
+    r.gjuha === gjuha &&
+    (r.emri_skedarit ?? null) === (emri ? emri.slice(0, 150) : null) &&
+    stabil(r.permbajtja) === stabil(cv);
+  return eFreskët && njejte
+    ? { id: r.id, burimi: r.burimi, emri_skedarit: r.emri_skedarit, versioni: r.versioni, krijuar_me: r.krijuar_me, nota: null }
+    : null;
+}
+
 /** Ruan një CV të krijuar si version i ri. `emri`: si shfaqet te versionet (p.sh. "Rindërtuar nga cv.pdf"). */
 export async function ruajCV(
   cv: CvStrukturuar,
@@ -396,6 +436,8 @@ export async function ruajCV(
   gjuha: GjuhaCV = "sq",
   emri?: string,
 ): Promise<CvRresht> {
+  const tashme = await versioniIRuajturTashme(cv, formati, gjuha, emri);
+  if (tashme) return tashme;
   const { data, error } = await supabase
     .from("cvs")
     .insert({

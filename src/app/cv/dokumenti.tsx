@@ -15,7 +15,7 @@ import { krijoCV, merrCVTeFundit, ruajCV, type CvStrukturuar, type FormatiCV, ty
 import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
 import { prekja } from "@/lib/prekja";
 import { paInternet, PA_INTERNET_SHKURT, VONON } from "@/lib/mesazhet";
-import { KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
+import { KOHA_E_AI, KOHA_E_LEXIMIT, KOHA_E_NGARKIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import { useTema } from "@/lib/tema";
 
 const FORMATET: { id: FormatiCV; emri: string }[] = [
@@ -215,7 +215,7 @@ export default function DokumentiCV() {
     }
     setDukeRuajtur(true);
     try {
-      await meKohe(ruajCV(cv, formati, gjuha), KOHA_E_LEXIMIT, VONON.krijimi);
+      await meKohe(ruajCV(cv, formati, gjuha), KOHA_E_NGARKIMIT, VONON.ruajtja);
       prekja.sukses();
       njofto("Versioni u ruajt", "sukses");
     } catch (e) {

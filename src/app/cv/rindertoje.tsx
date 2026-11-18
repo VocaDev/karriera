@@ -27,7 +27,7 @@ import {
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { paInternet, VONON } from "@/lib/mesazhet";
-import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
+import { KOHA_E_LEXIMIT, KOHA_E_NGARKIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import {
   celesiAftesiseSeRe,
   celesiFushes,
@@ -203,7 +203,7 @@ export default function RindertojeCV() {
     try {
       const gjuha = analiza.gjuha_e_cv === "en" ? "en" : "sq";
       const emri = `Rindërtuar nga ${versioni.emri_skedarit ?? `v${versioni.versioni}`}`;
-      const iRi = await meKohe(ruajCV(rezultati.cv, "ks", gjuha, emri), KOHA_E_LEXIMIT, VONON.krijimi);
+      const iRi = await meKohe(ruajCV(rezultati.cv, "ks", gjuha, emri), KOHA_E_NGARKIMIT, VONON.ruajtja);
       prekja.sukses();
       njofto(`Versioni v${iRi.versioni} u ruajt`, "sukses");
       router.replace({ pathname: "/cv/dokumenti", params: { id: iRi.id } });

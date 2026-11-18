@@ -214,6 +214,18 @@ export default function DetajetEPunes() {
     <Faqja>
       <Stack.Screen options={{ title: puna.kompania }} />
       <ShiritiPaInternet teksti={paInternet("po ta shfaqim punën që e pe herën e fundit").cfare} />
+      {ngaKesh && (
+        <View style={[styles.kopja, { backgroundColor: t.karta2, borderColor: t.vija }]}>
+          <T pesha="gjysme" madhesia={13.5} style={styles.kopjaTeksti}>
+            Po shfaqim kopjen e ruajtur
+          </T>
+          <Prekshme accessibilityRole="button" onPress={lexo} hitSlop={8} style={styles.kopjaButoni}>
+            <T pesha="trashe" madhesia={13.5} ngjyra={t.theksi}>
+              Provo përsëri
+            </T>
+          </Prekshme>
+        </View>
+      )}
 
       <View style={styles.rresht}>
         <Chip teksti={roli} />
@@ -272,7 +284,8 @@ export default function DetajetEPunes() {
         )}
 
         <View style={styles.dyshja}>
-          {mundRuan && (
+          {/* Nga kopja e ruajtur s'dihet a e ke ruajtur me ⭐: butoni fshihet derisa puna të lexohet nga burimi. */}
+          {mundRuan && !ngaKesh && (
             <Prekshme
               accessibilityRole="button"
               accessibilityLabel={eRuajtur ? "E ruajtur. Hiqe nga të ruajturat" : "Ruaje punën"}
@@ -319,6 +332,18 @@ export default function DetajetEPunes() {
 }
 
 const styles = StyleSheet.create({
+  kopja: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 12,
+  },
+  kopjaTeksti: { flex: 1 },
+  kopjaButoni: { minHeight: 44, justifyContent: "center" },
   qendra: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 8 },
   qendroj: { textAlign: "center" },
   skeleti: { gap: 12 },

@@ -18,14 +18,12 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { T } from "@/components/ui";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
-import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
+import { paInternet, VONON } from "@/lib/mesazhet";
 import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { uuidIRi } from "@/lib/uuid";
 import { shenoPunenERe, shtoPunen, type Puna } from "@/lib/punet";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
-
-// Mesazhi "pa internet" i formularit: çka mbetet (të dhënat e plotësuara) dhe çka bën përdoruesi.
-const PA_INTERNET_FORMULARI = tekstiIPlote(paInternet("të dhënat e formularit mbeten aty", false));
 
 const ROLET: Puna["roli"][] = ["SWE", "Asistent/PR", "Tjetër"];
 
@@ -33,7 +31,8 @@ export default function ShtoPunen() {
   const t = useTema();
   const njofto = useNjoftim();
   const { stili: stiliIButonit, dridhu } = useDridhja();
-  const { kaInternet } = useRrjeti();
+  // Id-ja e kësaj pune krijohet një herë për formularin: e njëjta te çdo provë, kështu s'krijohet kopje pas një vonese.
+  const [idEPunes] = useState(uuidIRi);
   const kompaniaRef = useRef<TextInputInstance>(null);
   const qytetiRef = useRef<TextInputInstance>(null);
   const pershkrimiRef = useRef<TextInputInstance>(null);
@@ -46,6 +45,10 @@ export default function ShtoPunen() {
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
   const [provoi, setProvoi] = useState(false);
+  // Interneti u kthye: mesazhi "pa internet" ose "po vonon" largohet; përdoruesi e provon kur të dojë.
+  useRrjeti(() => {
+    setGabimi((g) => (g !== null && (eshteGabimRrjeti(g) || eshteGabimKohe(g)) ? null : g));
+  });
 
   // Të njëjtat kufij si në bazë (check constraints), që gabimi të dalë para se të dërgohet.
   const mungon = {
@@ -64,12 +67,6 @@ export default function ShtoPunen() {
       dridhu();
       return;
     }
-    if (!kaInternet) {
-      // Formulari mbetet i plotësuar: s'humbet asgjë, "Provo përsëri" e dërgon kur të lidhesh.
-      prekja.gabim();
-      setGabimi(PA_INTERNET_FORMULARI);
-      return;
-    }
     setDukeRuajtur(true);
     setGabimi(null);
     try {
@@ -80,7 +77,7 @@ export default function ShtoPunen() {
           qyteti: qyteti.trim(),
           roli,
           pershkrimi: pershkrimi.trim(),
-        }),
+        }, idEPunes),
         KOHA_E_NGARKIMIT,
         VONON.shtimi,
       );

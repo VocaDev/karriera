@@ -6,7 +6,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 
 import { merrProfilin, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
 import { VONON } from "@/lib/mesazhet";
-import { lexoProfilinERuajtur, ruajProfilin } from "@/lib/profili-kesh";
+import { lexoProfilinERuajtur, lexoSesioninERuajtur, ruajProfilin } from "@/lib/profili-kesh";
 import { eshteGabimKohe, eshteGabimRrjeti, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { pasNdryshimitTeSesionit } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
@@ -39,6 +39,8 @@ const Konteksti = createContext<GjendjaESesionit | null>(null);
 
 // Hapja e app-it s'pret më shumë se kaq për profilin: pastaj përdoret ai i ruajtur në telefon (ose del gabimi me "Provo përsëri").
 const KOHA_E_PROFILIT = 8_000;
+// `getSession()` pa internet dhe me token të skaduar riprovon rifreskimin rreth 30 s; s'presim më shumë se kaq.
+const KOHA_E_SESIONIT = 6_000;
 
 type ProfiliILexuar = { uid: string; profili: Profili | null; gabimi: string | null };
 
@@ -49,6 +51,8 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   const [rilexo, setRilexo] = useState(0);
   // Leximi i fundit i profilit dështoi pse s'ka internet / s'u përgjigj: kur kthehet interneti, rilexohet në heshtje.
   const duhetRilexuar = useRef(false);
+  // Sesioni erdhi nga ajo që është ruajtur në telefon (getSession s'u përgjigj): identitet pa internet, jo i rifreskuar.
+  const sesioniPaInternet = useRef(false);
   useRrjeti(() => {
     if (duhetRilexuar.current) setRilexo((n) => n + 1);
   });
@@ -56,12 +60,24 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   // Sesioni ruhet në telefon (AsyncStorage): pas rihapjes së app-it je ende brenda, edhe pa internet.
   useEffect(() => {
     let aktiv = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!aktiv) return;
-      setSesioni(data.session);
-      setSesioniULexua(true);
-    });
+    meKohe(supabase.auth.getSession(), KOHA_E_SESIONIT, VONON.profili)
+      .then(({ data }) => {
+        if (!aktiv) return;
+        setSesioni(data.session);
+        setSesioniULexua(true);
+      })
+      .catch(async () => {
+        // Varet (pa internet, token i skaduar): sesioni i ruajtur në telefon. Pa të: hyrja, pa pritje shtesë.
+        const iRuajtur = await lexoSesioninERuajtur();
+        if (!aktiv) return;
+        sesioniPaInternet.current = iRuajtur !== null;
+        setSesioni(iRuajtur);
+        setSesioniULexua(true);
+      });
     const { data } = supabase.auth.onAuthStateChange((ngjarja, sesioniIRi) => {
+      // Pas ~30 s auth-js njofton INITIAL_SESSION bosh (s'rifreskoi dot pa internet): kjo s'është dalje, mbetemi brenda.
+      if (!sesioniIRi && ngjarja === "INITIAL_SESSION" && sesioniPaInternet.current) return;
+      sesioniPaInternet.current = false; // një ngjarje e vërtetë (rifreskim, hyrje, dalje) e zëvendëson identitetin e ruajtur
       pasNdryshimitTeSesionit(ngjarja); // dalje që s'e bëmë ne = sesioni mbaroi: hyrja tregon "Hyr përsëri"
       setSesioni(sesioniIRi);
       setSesioniULexua(true);
@@ -77,10 +93,11 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!uid) return;
     let aktiv = true;
-    meKohe(merrProfilin(), KOHA_E_PROFILIT, VONON.profili)
+    // Me identitet të ruajtur (pa internet) s'presim 8 s për një lexim që s'do të vijë: 3 s dhe profili i ruajtur.
+    meKohe(merrProfilin(), sesioniPaInternet.current ? 3_000 : KOHA_E_PROFILIT, VONON.profili)
       .then((profili) => {
         duhetRilexuar.current = false;
-        if (profili) ruajProfilin(profili);
+        if (profili && aktiv) ruajProfilin(profili);
         if (aktiv) setLexuar({ uid, profili, gabimi: profili ? null : "Profili s'u gjet." });
       })
       .catch(async (e: unknown) => {

@@ -22,8 +22,8 @@ import { PAMJA_E_INTERVISTUESIT } from "@/lib/intervista/tipet";
 import { ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
-import { paInternet } from "@/lib/mesazhet";
-import { KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { paInternet, VONON } from "@/lib/mesazhet";
+import { eshteGabimKohe, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 
@@ -83,6 +83,13 @@ export default function CilesimetEkrani() {
   const [roli, setRoli] = useState<RoliSynuar | null>(profili?.roli_synuar ?? null);
   const [gjuha, setGjuha] = useState<Gjuha>(profili?.gjuha ?? "sq");
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
+  // Kur profili ndryshon (p.sh. u rilexua pas një vonese), zgjedhjet në ekran marrin vlerat e tij.
+  const [profiliParaprak, setProfiliParaprak] = useState(profili);
+  if (profili && profili !== profiliParaprak) {
+    setProfiliParaprak(profili);
+    setRoli(profili.roli_synuar);
+    setGjuha(profili.gjuha);
+  }
   const { intervistuesi, zgjidh: zgjidhIntervistuesin } = useIntervistuesiIZgjedhur();
   const { kaInternet } = useRrjeti();
 
@@ -99,13 +106,19 @@ export default function CilesimetEkrani() {
     }
     setDukeRuajtur(true);
     try {
-      rifreskoProfilin(await meKohe(ndryshoProfilin(ndryshim), KOHA_E_LEXIMIT));
+      rifreskoProfilin(await meKohe(ndryshoProfilin(ndryshim), KOHA_E_NGARKIMIT, VONON.profili));
       prekja.sukses();
       njofto(mesazhi, "sukses");
     } catch (e) {
-      kthe();
       prekja.gabim();
-      njofto(e instanceof Error ? e.message : "S'u ruajt. Provo përsëri.", "gabim");
+      if (eshteGabimKohe(e)) {
+        // Ruajtja mund të ketë mbërritur: s'e kthejmë zgjedhjen, e rilexojmë profilin dhe ekrani merr çka ka vërtet.
+        rifreskoProfilin();
+        njofto(`${VONON.titulli}. Po kontrollojmë çka u ruajt.`, "info");
+      } else {
+        kthe();
+        njofto(e instanceof Error ? e.message : "S'u ruajt. Provo përsëri.", "gabim");
+      }
     } finally {
       setDukeRuajtur(false);
     }

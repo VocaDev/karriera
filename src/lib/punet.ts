@@ -121,13 +121,21 @@ export function merrPunenERe(): string | null {
 
 // Shton një shpallje. RLS-i (punet_shto) e lejon vetëm për punëdhënësin dhe qendrën, me burimi = "perdoruesi";
 // pronari_id nuk dërgohet: serveri e vendos vetë (default auth.uid()).
-export async function shtoPunen(puna: PunaERe): Promise<Puna> {
+// `id`: UUID që e krijon formulari një herë (RLS e pranon vetëm në formën e UUID-së). Pas një "s'mbaroi në kohë" prova e
+// dytë dërgon të njëjtën id: nëse e para kishte mbërritur, 23505 = e shtuar tashmë, dhe kthejmë atë rresht, jo kopje.
+export async function shtoPunen(puna: PunaERe, id?: string): Promise<Puna> {
   const { data, error } = await supabase
     .from("punet")
-    .insert({ ...puna, burimi: "perdoruesi" })
+    .insert({ ...(id ? { id } : {}), ...puna, burimi: "perdoruesi" })
     .select(FUSHAT)
     .single();
-  if (error) throw new Error(mesazhiIGabimit(error));
+  if (error) {
+    if (error.code === "23505" && id) {
+      const eShtuar = await gjePunen(id);
+      if (eShtuar) return eShtuar;
+    }
+    throw new Error(mesazhiIGabimit(error));
+  }
   return nePune(data);
 }
 

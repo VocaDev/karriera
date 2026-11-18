@@ -4,6 +4,8 @@
 // interneti, profili rilexohet në heshtje dhe e zëvendëson (sesioni.tsx). Dalja e fshin (hyrja.ts → dil).
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import type { Session } from "@supabase/supabase-js";
+
 import type { Profili } from "@/lib/hyrja";
 
 const PREFIKSI = "kesh:profili:";
@@ -40,6 +42,28 @@ export async function lexoProfilinERuajtur(uid: string): Promise<Profili | null>
     const teksti = await AsyncStorage.getItem(PREFIKSI + uid);
     const v: unknown = teksti ? JSON.parse(teksti) : null;
     return eshteProfil(v, uid) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sesioni siç e ka shkruar supabase-js në telefon (`sb-<projekti>-auth-token`). Kur `getSession()` varet pa internet
+ * (token i skaduar që s'rifreskohet dot), e lexojmë vetë: `user.id` është identiteti pa internet. null = s'ka sesion.
+ */
+export async function lexoSesioninERuajtur(): Promise<Session | null> {
+  try {
+    const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    if (!url) return null;
+    const projekti = new URL(url).hostname.split(".")[0];
+    const teksti = await AsyncStorage.getItem(`sb-${projekti}-auth-token`);
+    const v: unknown = teksti ? JSON.parse(teksti) : null;
+    if (typeof v !== "object" || v === null) return null;
+    const s = v as Partial<Session>;
+    const uid = (s.user as { id?: unknown } | undefined)?.id;
+    return typeof uid === "string" && typeof s.access_token === "string" && typeof s.refresh_token === "string"
+      ? (s as Session)
+      : null;
   } catch {
     return null;
   }

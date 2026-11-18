@@ -173,9 +173,23 @@ export default function ProfiliIm() {
             </T>
           </View>
           {gabimi && teRuajturat === null ? (
-            <T madhesia={13.5} accessibilityLiveRegion="polite">
-              {pamjaEGabimit(gabimi, "S'u lexuan të ruajturat", "s'kemi ende punë të ruajtura për t'i shfaqur").teksti}
-            </T>
+            <>
+              <T madhesia={13.5} accessibilityLiveRegion="polite">
+                {pamjaEGabimit(gabimi, "S'u lexuan të ruajturat", "s'kemi ende punë të ruajtura për t'i shfaqur").teksti}
+              </T>
+              <Prekshme
+                accessibilityRole="button"
+                onPress={() => {
+                  setGabimi(null);
+                  lexo();
+                }}
+                style={styles.provo}
+              >
+                <T pesha="trashe" madhesia={14} ngjyra={t.theksi}>
+                  Provo përsëri
+                </T>
+              </Prekshme>
+            </>
           ) : teRuajturat === null ? (
             <SkeletiITeRuajturave />
           ) : teRuajturat.length === 0 ? (
@@ -218,6 +232,7 @@ const styles = StyleSheet.create({
   lista: { padding: 0 },
   listaBrenda: { borderRadius: 22, overflow: "hidden" },
   rreshtiLista: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
+  provo: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
   skeleti: { gap: 16, paddingTop: 4 },
   skeletiRreshti: { gap: 7 },
   teRuajturat: { gap: 10 },

@@ -13,7 +13,7 @@ import { krijoCV, ruajCV } from "@/lib/cv";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
-import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 const PYETJET = [
@@ -77,7 +77,7 @@ export default function NdertojeCV() {
     setDeshtimi(null);
     try {
       const cv = await meKohe(krijoCV({ pergjigjet }, "ks", "sq"), KOHA_E_AI, VONON.krijimi);
-      const versioni = await meKohe(ruajCV(cv, "ks", "sq"), KOHA_E_LEXIMIT, VONON.krijimi);
+      const versioni = await meKohe(ruajCV(cv, "ks", "sq"), KOHA_E_NGARKIMIT, VONON.ruajtja);
       prekja.sukses();
       njofto("CV-ja u krijua", "sukses");
       router.replace({ pathname: "/cv/dokumenti", params: { id: versioni.id } });

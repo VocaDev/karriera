@@ -45,6 +45,7 @@ export const VONON = {
   leximi: "Leximi nuk mbaroi në kohë. Çka pe herën e fundit mbetet aty.",
   nisja: "Hapja e intervistës nuk mbaroi në kohë. Asgjë nuk u humb.",
   rezultatet: "Rezultatet e intervistës nuk mbaruan në kohë. Përgjigjet e tua janë ruajtur.",
+  ruajtja: "Ruajtja e CV-së nuk mbaroi në kohë. Mos u shqetëso: prekja e dytë s'e ruan dy herë.",
   shtimi: "Shtimi i punës nuk mbaroi në kohë. Të dhënat e formularit mbeten aty.",
   profili: "Hapja e profilit nuk mbaroi në kohë. Llogaria jote është e sigurt.",
   pergjithshme: "Kërkesa nuk mbaroi në kohë. Asgjë nga ç'ke bërë nuk humbi.",
