@@ -21,6 +21,9 @@ import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
 import { PAMJA_E_INTERVISTUESIT } from "@/lib/intervista/tipet";
 import { ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
+import { paInternet } from "@/lib/mesazhet";
+import { KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 
@@ -81,14 +84,22 @@ export default function CilesimetEkrani() {
   const [gjuha, setGjuha] = useState<Gjuha>(profili?.gjuha ?? "sq");
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
   const { intervistuesi, zgjidh: zgjidhIntervistuesin } = useIntervistuesiIZgjedhur();
+  const { kaInternet } = useRrjeti();
 
   if (!profili || !roli) return null;
 
   async function ruaj(ndryshim: { roli_synuar?: RoliSynuar; gjuha?: Gjuha }, mesazhi: string, kthe: () => void) {
     if (duke_ruajtur || !profili) return;
+    if (!kaInternet) {
+      // Zgjedhja kthehet siç ishte (nuk shfaqim diçka që s'u ruajt) dhe përdoruesi e di pse.
+      kthe();
+      prekja.gabim();
+      njofto(paInternet("ndryshimi s'u ruajt", false).cfare, "gabim");
+      return;
+    }
     setDukeRuajtur(true);
     try {
-      rifreskoProfilin(await ndryshoProfilin(ndryshim));
+      rifreskoProfilin(await meKohe(ndryshoProfilin(ndryshim), KOHA_E_LEXIMIT));
       prekja.sukses();
       njofto(mesazhi, "sukses");
     } catch (e) {
@@ -102,6 +113,7 @@ export default function CilesimetEkrani() {
 
   return (
     <Faqja>
+      <ShiritiPaInternet teksti={paInternet("ndryshimet s'mund të ruhen tani", false).cfare} />
       <Grupi
         titulli="Roli për të cilin përgatitesh"
         shenimi={`${EMRAT_E_ROLEVE[roli].titulli}: ${EMRAT_E_ROLEVE[roli].pershkrimi}. Ndryshon pyetjet e intervistës dhe krahasimin me punët.`}

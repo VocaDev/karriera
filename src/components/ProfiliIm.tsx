@@ -7,9 +7,12 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import ButoniDil from "@/components/ButoniDil";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { IKONAT, Ikona, Karta, T, Titulli } from "@/components/ui";
 import { EMRAT_E_GJUHEVE, EMRAT_E_LLOJEVE, EMRAT_E_ROLEVE } from "@/lib/hyrja";
+import { paInternet } from "@/lib/mesazhet";
+import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import { listoTeRuajturatMePune, type PunaERuajtur } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
@@ -82,23 +85,27 @@ export default function ProfiliIm() {
   const kerkues = profili?.lloji === "kerkues";
   const [teRuajturat, setTeRuajturat] = useState<PunaERuajtur[] | null>(null);
   const [gabimi, setGabimi] = useState<string | null>(null);
+  // Lexon të ruajturat; kthen funksionin që e injoron përgjigjen nëse ekrani u largua.
+  const lexo = useCallback(() => {
+    if (!kerkues) return undefined;
+    let aktiv = true;
+    meKohe(listoTeRuajturatMePune(), KOHA_E_LEXIMIT)
+      .then((lista) => {
+        if (!aktiv) return;
+        setTeRuajturat(lista);
+        setGabimi(null);
+      })
+      .catch((e: unknown) => aktiv && setGabimi(e instanceof Error ? e.message : "Gabim i panjohur"));
+    return () => {
+      aktiv = false;
+    };
+  }, [kerkues]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!kerkues) return;
-      let aktiv = true;
-      listoTeRuajturatMePune()
-        .then((lista) => {
-          if (!aktiv) return;
-          setTeRuajturat(lista);
-          setGabimi(null);
-        })
-        .catch((e: unknown) => aktiv && setGabimi(e instanceof Error ? e.message : "Gabim i panjohur"));
-      return () => {
-        aktiv = false;
-      };
-    }, [kerkues]),
-  );
+  useFocusEffect(lexo);
+  // Interneti u kthye: të ruajturat rilexohen vetë (lista e fundit mbetet në ekran nëse leximi dështon).
+  useRrjeti(() => {
+    lexo();
+  });
 
   if (!profili) return null;
   const ikona = profili.lloji === "kerkues" ? IKONAT.personi : profili.lloji === "qender" ? IKONAT.shkolla : IKONAT.canta;
@@ -112,6 +119,7 @@ export default function ProfiliIm() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <LinearGradient colors={[t.theksiButë, t.sfondi]} locations={[0, 1]} style={styles.gradienti} pointerEvents="none" />
+      {teRuajturat !== null && <ShiritiPaInternet teksti={paInternet("po t'i shfaqim punët e ruajtura që i pe herën e fundit").cfare} />}
       {/* Punëdhënësi dhe qendra s'kanë kokë të sistemit (tab-at e tyre janë pa Stack): titulli mbetet në faqe. */}
       {!kerkues && <Titulli>Profili</Titulli>}
 
@@ -164,9 +172,9 @@ export default function ProfiliIm() {
               Të ruajturat{teRuajturat ? ` (${teRuajturat.length})` : ""}
             </T>
           </View>
-          {gabimi ? (
-            <T madhesia={13.5} ngjyra={t.keq}>
-              {gabimi}
+          {gabimi && teRuajturat === null ? (
+            <T madhesia={13.5} accessibilityLiveRegion="polite">
+              {pamjaEGabimit(gabimi, "S'u lexuan të ruajturat", "s'kemi ende punë të ruajtura për t'i shfaqur").teksti}
             </T>
           ) : teRuajturat === null ? (
             <SkeletiITeRuajturave />

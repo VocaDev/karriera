@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Chip, Faqja, Ikona, IKONAT, Karta, T, Titulli } from "@/components/ui";
 import {
   analizaPerCV,
@@ -25,6 +26,8 @@ import {
 } from "@/lib/cv";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { paInternet, VONON } from "@/lib/mesazhet";
+import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import {
   celesiAftesiseSeRe,
   celesiFushes,
@@ -68,12 +71,19 @@ export default function RindertojeCV() {
   const [duke, setDuke] = useState<string | null>(null); // çelësi i rreshtit që po ndryshohet
   const [dukeRuajtur, setDukeRuajtur] = useState(false);
   const [provoiRuajtjen, setProvoiRuajtjen] = useState(false);
+  // Interneti u kthye pas një leximi të dështuar: rilexohet vetë.
+  const { kaInternet } = useRrjeti(() => {
+    if (gjendja.lloji === "gabim") {
+      setGjendja({ lloji: "duke" });
+      setProvimi((v) => v + 1);
+    }
+  });
 
   useEffect(() => {
     if (!id) return; // pa id: ekrani i gabimit më poshtë
     const cvId = id;
     let aktiv = true;
-    Promise.all([analizaPerCV(cvId), listoVersionet()])
+    meKohe(Promise.all([analizaPerCV(cvId), listoVersionet()]), KOHA_E_LEXIMIT)
       .then(([ruajtur, versionet]) => {
         if (!aktiv) return;
         const versioni = versionet.find((v) => v.id === cvId);
@@ -119,12 +129,16 @@ export default function RindertojeCV() {
       <Faqja>
         <View style={styles.qender}>
           <Ikona emri={IKONAT.alarm} madhesia={34} ngjyra={t.keq} />
-          <Titulli>S&apos;u hap rindërtimi</Titulli>
-          <T zbehur style={styles.qenderTekst}>
+          <Titulli>
+            {gjendja.lloji === "gabim"
+              ? pamjaEGabimit(gjendja.mesazhi, "S'u hap rindërtimi", "s'kemi ende CV për ta rindërtuar", true, "ekrani").titulli
+              : "S'u hap rindërtimi"}
+          </Titulli>
+          <T zbehur style={styles.qenderTekst} accessibilityLiveRegion="polite">
             {!id
               ? "Mungon CV-ja që duhet rindërtuar."
               : gjendja.lloji === "gabim"
-                ? gjendja.mesazhi
+                ? pamjaEGabimit(gjendja.mesazhi, "S'u hap rindërtimi", "s'kemi ende CV për ta rindërtuar", true, "ekrani").teksti
                 : "Kjo analizë u bë para se të vinte \"Shtoje në CV\". Analizoje përsëri për ta rindërtuar CV-në."}
           </T>
           {gjendja.lloji === "gabim" && id ? (
@@ -173,6 +187,12 @@ export default function RindertojeCV() {
 
   async function ruaje() {
     if (dukeRuajtur || !rezultati) return;
+    if (!kaInternet) {
+      // Ndryshimet e tua mbeten në telefon (zgjedhjet ruhen aty); ruajtja si version i ri kërkon internet.
+      prekja.gabim();
+      njofto(paInternet("ndryshimet e tua mbeten këtu", false).cfare, "gabim");
+      return;
+    }
     if (mbetenPlaceholder || !kaEmer) {
       setProvoiRuajtjen(true);
       prekja.gabim();
@@ -183,7 +203,7 @@ export default function RindertojeCV() {
     try {
       const gjuha = analiza.gjuha_e_cv === "en" ? "en" : "sq";
       const emri = `Rindërtuar nga ${versioni.emri_skedarit ?? `v${versioni.versioni}`}`;
-      const iRi = await ruajCV(rezultati.cv, "ks", gjuha, emri);
+      const iRi = await meKohe(ruajCV(rezultati.cv, "ks", gjuha, emri), KOHA_E_LEXIMIT, VONON.krijimi);
       prekja.sukses();
       njofto(`Versioni v${iRi.versioni} u ruajt`, "sukses");
       router.replace({ pathname: "/cv/dokumenti", params: { id: iRi.id } });
@@ -257,6 +277,7 @@ export default function RindertojeCV() {
   return (
     <View style={styles.flex}>
       <Faqja me_fusha>
+        <ShiritiPaInternet teksti={paInternet("ndryshimet e tua mbeten këtu", false).cfare} />
         <View style={styles.krye}>
           <T zbehur pesha="gjysme" madhesia={12}>
             RINDËRTO CV-NË

@@ -5,14 +5,20 @@ import Animated, { FadeIn, LinearTransition, useReducedMotion } from "react-nati
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { KartaSkelet } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, T, Titulli } from "@/components/ui";
 import { merrNumratEQendres, type NumratEQendres } from "@/lib/hyrja";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { paInternet, PA_INTERNET_SHKURT } from "@/lib/mesazhet";
+import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import { fshiPunen, listoPunetEMia, merrPunenERe, type Puna } from "@/lib/punet";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
+
+const PA_INTERNET_ME_LISTE = paInternet("po t'i shfaqim punët që i pe herën e fundit");
+const PA_INTERNET_PA_LISTE = "s'kemi ende punë të ruajtura për t'i shfaqur";
 
 const LEVIZJA = LinearTransition.duration(KOHA.mesme).easing(LEHTESIMI.levizje);
 const HYRJA = FadeIn.duration(320).easing(LEHTESIMI.hyrje);
@@ -33,16 +39,18 @@ export default function PunetEMia() {
   const ngarko = useCallback(async () => {
     if (!profili) return false;
     try {
-      const [teMiat, n] = await Promise.all([
-        listoPunetEMia(),
-        profili.lloji === "qender" ? merrNumratEQendres() : Promise.resolve(null),
+      // allSettled: numrat e qendrës që dështojnë s'e rrëzojnë listën e punëve (dhe anasjelltas).
+      const [teMiat, n] = await Promise.allSettled([
+        meKohe(listoPunetEMia(), KOHA_E_LEXIMIT),
+        profili.lloji === "qender" ? meKohe(merrNumratEQendres(), KOHA_E_LEXIMIT) : Promise.resolve(null),
       ]);
+      if (teMiat.status === "rejected") throw teMiat.reason;
       const iRi = merrPunenERe();
-      setPunet(teMiat);
-      setNumrat(n);
+      setPunet(teMiat.value);
+      if (n.status === "fulfilled") setNumrat(n.value); // numrat e vjetër mbeten nëse ky lexim dështoi
       setGabimi(null);
       if (iRi) setEPunesSeRe(iRi);
-      return true;
+      return n.status === "fulfilled";
     } catch (e) {
       setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
       return false;
@@ -55,7 +63,18 @@ export default function PunetEMia() {
     }, [ngarko]),
   );
 
+  // Interneti u kthye: rifreskon vetë.
+  const { kaInternet } = useRrjeti(() => {
+    ngarko();
+  });
+
   async function rifresko() {
+    if (!kaInternet) {
+      // Pa internet s'ka çka të pritet: asnjë rrotë, vetëm njoftimi; lista e fundit mbetet në ekran.
+      prekja.gabim();
+      njofto(PA_INTERNET_ME_LISTE.cfare, "gabim");
+      return;
+    }
     setRifreskim(true);
     const ok = await ngarko();
     setRifreskim(false);
@@ -90,6 +109,7 @@ export default function PunetEMia() {
         contentContainerStyle={styles.faqja}
         refreshControl={<RefreshControl refreshing={rifreskim} onRefresh={rifresko} tintColor={t.zbehur} />}
       >
+        {punet !== null && <ShiritiPaInternet teksti={PA_INTERNET_ME_LISTE.cfare} />}
         <View style={styles.koka}>
           <T zbehur madhesia={14}>
             {profili?.organizata || profili?.emri || ""}
@@ -143,13 +163,13 @@ export default function PunetEMia() {
         )}
 
         {punet === null ? (
-          gabimi ? (
+          gabimi || !kaInternet ? (
             <View style={styles.qender}>
               <T pesha="trashe" madhesia={16}>
-                S&apos;u lexuan punët
+                {pamjaEGabimit(gabimi ?? PA_INTERNET_SHKURT, "S'u lexuan punët", PA_INTERNET_PA_LISTE).titulli}
               </T>
-              <T zbehur madhesia={14} style={styles.tekstNeQender}>
-                {gabimi}
+              <T zbehur madhesia={14} style={styles.tekstNeQender} accessibilityLiveRegion="polite">
+                {pamjaEGabimit(gabimi ?? PA_INTERNET_SHKURT, "S'u lexuan punët", PA_INTERNET_PA_LISTE).teksti}
               </T>
               <Prekshme
                 onPress={rifresko}

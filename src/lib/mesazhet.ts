@@ -18,12 +18,12 @@ export const FILLIMI_PA_INTERNET = "S'ke lidhje me internetin";
  * "S'ke lidhje me internetin, prandaj <çka mbetet në ekran>." + çka bën. `vetvetiu`: ekrani rifreskohet vetë
  * kur kthehet interneti (listat); përndryshe përdoruesi prek "Provo përsëri".
  */
-export function paInternet(mbetet: string, vetvetiu = true): Mesazhi {
+export function paInternet(mbetet: string, vetvetiu = true, kush = "lista"): Mesazhi {
   return {
     titulli: "Pa internet",
     cfare: `${FILLIMI_PA_INTERNET}, prandaj ${mbetet}.`,
     bere: vetvetiu
-      ? 'Lidhu me internet dhe lista rifreskohet vetë, ose prek "Provo përsëri".'
+      ? `Lidhu me internet dhe ${kush} rifreskohet vetë, ose prek "Provo përsëri".`
       : 'Lidhu me internet dhe prek "Provo përsëri".',
   };
 }
@@ -45,6 +45,8 @@ export const VONON = {
   leximi: "Leximi nuk mbaroi në kohë. Çka pe herën e fundit mbetet aty.",
   nisja: "Hapja e intervistës nuk mbaroi në kohë. Asgjë nuk u humb.",
   rezultatet: "Rezultatet e intervistës nuk mbaruan në kohë. Përgjigjet e tua janë ruajtur.",
+  shtimi: "Shtimi i punës nuk mbaroi në kohë. Të dhënat e formularit mbeten aty.",
+  profili: "Hapja e profilit nuk mbaroi në kohë. Llogaria jote është e sigurt.",
   pergjithshme: "Kërkesa nuk mbaroi në kohë. Asgjë nga ç'ke bërë nuk humbi.",
 } as const;
 

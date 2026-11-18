@@ -5,7 +5,7 @@ import { useNetworkState } from "expo-network";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { eshtePaInternet } from "@/lib/hyrja-offline";
-import { eshteTekstVonese, FILLIMI_PA_INTERNET, VONON } from "@/lib/mesazhet";
+import { eshteTekstVonese, FILLIMI_PA_INTERNET, paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
 
 // Debounce: një humbje e shkurtër e sinjalit (ashensor, ndërrimi Wi-Fi ↔ 4G) s'duhet të ndezë shiritin;
 // kthimi i internetit pranohet më shpejt, që ekrani të rifreskohet pa vonesë.
@@ -84,6 +84,27 @@ export function eshteGabimKohe(gabimi: unknown): boolean {
   if (gabimi instanceof GabimKohe || gabimi instanceof FunctionsRelayError) return true;
   if (typeof gabimi === "string") return eshteTekstVonese(gabimi);
   return typeof gabimi === "object" && gabimi !== null && eshteTekstVonese((gabimi as { message?: string }).message ?? "");
+}
+
+/**
+ * Titulli dhe teksti për një lexim që dështoi, sipas shkakut: pa internet, po vonon, ose gabimi i zakonshëm.
+ * `mbetet`: çka ka ekrani tani ("po t'i shfaqim punët që i pe herën e fundit" ose "s'kemi ende punë…").
+ * `vetvetiu`/`kush`: si te `paInternet` (ekrani rifreskohet vetë kur kthehet interneti).
+ */
+export function pamjaEGabimit(
+  gabimi: unknown,
+  titulliIZakonshem: string,
+  mbetet: string,
+  vetvetiu = true,
+  kush = "lista",
+): { titulli: string; teksti: string } {
+  const mesazhi = typeof gabimi === "string" ? gabimi : gabimi instanceof Error ? gabimi.message : "Gabim i panjohur";
+  if (eshteGabimRrjeti(gabimi)) {
+    const m = paInternet(mbetet, vetvetiu, kush);
+    return { titulli: m.titulli, teksti: tekstiIPlote(m) };
+  }
+  if (eshteGabimKohe(gabimi)) return { titulli: VONON.titulli, teksti: `${mesazhi} ${VONON.bere}` };
+  return { titulli: titulliIZakonshem, teksti: mesazhi };
 }
 
 /**

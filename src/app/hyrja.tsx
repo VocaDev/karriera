@@ -13,6 +13,7 @@ import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type TeDhenatERegjistrimit } fr
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { HYR_PERSERI } from "@/lib/mesazhet";
+import { pamjaEGabimit } from "@/lib/rrjeti";
 import { useSesioni } from "@/lib/sesioni";
 import { useSesioniSkaduar } from "@/lib/sesioni-skaduar";
 import { useTema } from "@/lib/tema";
@@ -178,16 +179,17 @@ export default function Hyrja() {
   // Kërkues i ri (ose i vjetër pa rol): zgjedh rolin dhe gjuhën e intervistës para se të hyjë në app.
   if (sesioni && profiliPaRol) return <Fillimi profili={profiliPaRol} />;
 
-  // Ke hyrë, por profili s'u lexua (p.sh. pa internet): mos e ngec përdoruesin.
+  // Ke hyrë, por profili s'u lexua (p.sh. pa internet) dhe s'ka asnjë të ruajtur në telefon: mos e ngec përdoruesin.
+  const pamjaProfilit = pamjaEGabimit(gabimiIProfilit ?? "", "S'u lexua profili yt", "s'mund ta hapim profilin tënd tani", true, "ekrani");
   if (sesioni && gabimiIProfilit) {
     return (
       <View style={[styles.flex, styles.qender, { backgroundColor: t.sfondi }]}>
         <Karta style={styles.karta}>
           <T pesha="trashe" madhesia={17}>
-            S&apos;u lexua profili yt
+            {pamjaProfilit.titulli}
           </T>
-          <T zbehur madhesia={14}>
-            {gabimiIProfilit}
+          <T zbehur madhesia={14} accessibilityLiveRegion="polite">
+            {pamjaProfilit.teksti}
           </T>
           <ButoniKryesor teksti="Provo përsëri" onPress={() => rifreskoProfilin()} />
           <Prekshme onPress={() => dil().catch(() => {})} accessibilityRole="button" style={styles.lidhja}>

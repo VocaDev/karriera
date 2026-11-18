@@ -9,10 +9,13 @@ import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Faqja, Ikona, IKONAT, Karta, T, Titulli } from "@/components/ui";
 import { krijoCV, merrCVTeFundit, ruajCV, type CvStrukturuar, type FormatiCV, type GjuhaCV } from "@/lib/cv";
 import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
 import { prekja } from "@/lib/prekja";
+import { paInternet, PA_INTERNET_SHKURT, VONON } from "@/lib/mesazhet";
+import { KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import { useTema } from "@/lib/tema";
 
 const FORMATET: { id: FormatiCV; emri: string }[] = [
@@ -132,10 +135,17 @@ export default function DokumentiCV() {
   const [dukeGjeneruar, setDukeGjeneruar] = useState(false);
   const [dukeRuajtur, setDukeRuajtur] = useState(false);
   const [cvId, setCvId] = useState<string | null>(null); // versioni i hapur (për "Analizo këtë version")
+  const [provimi, setProvimi] = useState(0); // rritet te "Provo përsëri" pas një gabimi leximi
+  const { kaInternet } = useRrjeti(() => {
+    if (gjendja.lloji === "gabim") {
+      setGjendja({ lloji: "duke" });
+      setProvimi((v) => v + 1);
+    }
+  });
 
   useEffect(() => {
     let aktiv = true;
-    merrCVTeFundit(id)
+    meKohe(merrCVTeFundit(id), KOHA_E_LEXIMIT)
       .then((r) => {
         if (!aktiv) return;
         setGjendja({ lloji: "gati", cv: r?.cv ?? null });
@@ -151,17 +161,22 @@ export default function DokumentiCV() {
     return () => {
       aktiv = false;
     };
-  }, [id]);
+  }, [id, provimi]);
 
   const cv = gjendja.lloji === "gati" ? gjendja.cv : null;
 
   // Formati ose gjuha e re = AI-ja e rishkruan CV-në (cv-create), pa shtuar fakte.
   async function rishkruaj(formatRi: FormatiCV, gjuhaRe: GjuhaCV) {
     if (!cv || dukeGjeneruar || (formatRi === formati && gjuhaRe === gjuha)) return;
+    if (!kaInternet) {
+      prekja.gabim();
+      njofto(PA_INTERNET_SHKURT, "gabim");
+      return;
+    }
     prekja.zgjedhje();
     setDukeGjeneruar(true);
     try {
-      const cvRi = await krijoCV({ cv }, formatRi, gjuhaRe);
+      const cvRi = await meKohe(krijoCV({ cv }, formatRi, gjuhaRe), KOHA_E_AI, VONON.krijimi);
       setGjendja({ lloji: "gati", cv: cvRi });
       setFormati(formatRi);
       setGjuha(gjuhaRe);
@@ -193,9 +208,14 @@ export default function DokumentiCV() {
 
   async function ruaje() {
     if (!cv) return;
+    if (!kaInternet) {
+      prekja.gabim();
+      njofto(paInternet("CV-ja jote mbetet këtu", false).cfare, "gabim");
+      return;
+    }
     setDukeRuajtur(true);
     try {
-      await ruajCV(cv, formati, gjuha);
+      await meKohe(ruajCV(cv, formati, gjuha), KOHA_E_LEXIMIT, VONON.krijimi);
       prekja.sukses();
       njofto("Versioni u ruajt", "sukses");
     } catch (e) {
@@ -222,7 +242,28 @@ export default function DokumentiCV() {
       <Faqja>
         <Titulli>CV-ja ime</Titulli>
         <Karta style={styles.bosh}>
-          <T>{gjendja.lloji === "gabim" ? gjendja.mesazhi : "Ende s'ke krijuar asnjë CV me AI."}</T>
+          {gjendja.lloji === "gabim" ? (
+            <>
+              <T pesha="trashe">
+                {pamjaEGabimit(gjendja.mesazhi, "S'u hap CV-ja", "s'kemi ende CV të ruajtur për ta shfaqur", true, "ekrani").titulli}
+              </T>
+              <T accessibilityLiveRegion="polite">
+                {pamjaEGabimit(gjendja.mesazhi, "S'u hap CV-ja", "s'kemi ende CV të ruajtur për ta shfaqur", true, "ekrani").teksti}
+              </T>
+              <Prekshme
+                onPress={() => {
+                  setGjendja({ lloji: "duke" });
+                  setProvimi((v) => v + 1);
+                }}
+                accessibilityRole="button"
+                style={[styles.butonDyte, { borderColor: t.vija }]}
+              >
+                <T pesha="trashe">Provo përsëri</T>
+              </Prekshme>
+            </>
+          ) : (
+            <T>Ende s&apos;ke krijuar asnjë CV me AI.</T>
+          )}
           <Prekshme
             onPress={() => router.replace("/cv/ndertoje")}
             accessibilityRole="button"
@@ -244,6 +285,7 @@ export default function DokumentiCV() {
 
   return (
     <Faqja>
+      <ShiritiPaInternet teksti={paInternet("po ta shfaqim CV-në që e pe herën e fundit").cfare} />
       <Titulli>CV-ja ime</Titulli>
       <T zbehur>
         {CV_PAS_DEMO_DAY_HAPUR

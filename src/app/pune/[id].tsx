@@ -6,9 +6,13 @@ import { Share, StyleSheet, View } from "react-native";
 import KerkesatEPunes from "@/components/KerkesatEPunes";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import { prekja } from "@/lib/prekja";
+import { paInternet } from "@/lib/mesazhet";
+import { lexoListenEPunes } from "@/lib/punet-kesh";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import { EMRI_I_PORTALIT, gjePunen, type Puna } from "@/lib/punet";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
@@ -57,28 +61,52 @@ export default function DetajetEPunes() {
   const [eRuajtur, setERuajtur] = useState(false);
   const [dukeRuajtur, setDukeRuajtur] = useState(false);
 
+  const [ngaKesh, setNgaKesh] = useState(false); // puna u hap nga lista e ruajtur në telefon (pa internet)
+
   const lexo = useCallback(() => {
-    Promise.all([gjePunen(id), mundRuan ? listoTeRuajturat() : Promise.resolve(new Set<string>())])
+    Promise.all([
+      meKohe(gjePunen(id), KOHA_E_LEXIMIT),
+      // ⭐ është shtesë: pa internet mbetet siç ishte (e panjohur), puna shfaqet gjithsesi
+      mundRuan ? meKohe(listoTeRuajturat(), KOHA_E_LEXIMIT).catch(() => null) : Promise.resolve(new Set<string>()),
+    ])
       .then(([p, yjet]) => {
         setGabimi(null);
+        setNgaKesh(false);
         setPuna(p);
-        setERuajtur(yjet.has(id));
+        if (yjet) setERuajtur(yjet.has(id));
       })
-      .catch((e) => setGabimi(e instanceof Error ? e.message : "Gabim i panjohur"));
+      .catch(async (e: unknown) => {
+        // Pa internet ose pa përgjigje në kohë: puna nga lista e ruajtur e kësaj llogarie, nëse e kemi.
+        if (eshteGabimRrjeti(e) || eshteGabimKohe(e)) {
+          const iRuajtur = (await lexoListenEPunes())?.find((p) => p.id === id);
+          if (iRuajtur) {
+            setGabimi(null);
+            setNgaKesh(true);
+            setPuna(iRuajtur);
+            return;
+          }
+        }
+        setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
+      });
   }, [id, mundRuan]);
 
   useEffect(() => {
     lexo();
   }, [lexo]);
 
+  // Interneti u kthye: nga kopja e ruajtur ose nga gabimi, puna rilexohet nga burimi.
+  useRrjeti(() => {
+    if (ngaKesh || gabimi) lexo();
+  });
+
   if (gabimi) {
     return (
       <View style={[styles.qendra, { backgroundColor: t.sfondi }]}>
         <T pesha="trashe" madhesia={16}>
-          S&apos;u lexua puna
+          {pamjaEGabimit(gabimi, "S'u lexua puna", "s'kemi ende këtë punë të ruajtur për ta shfaqur").titulli}
         </T>
-        <T zbehur madhesia={14} style={styles.qendroj}>
-          {gabimi}
+        <T zbehur madhesia={14} style={styles.qendroj} accessibilityLiveRegion="polite">
+          {pamjaEGabimit(gabimi, "S'u lexua puna", "s'kemi ende këtë punë të ruajtur për ta shfaqur").teksti}
         </T>
         <Prekshme
           accessibilityRole="button"
@@ -185,6 +213,7 @@ export default function DetajetEPunes() {
   return (
     <Faqja>
       <Stack.Screen options={{ title: puna.kompania }} />
+      <ShiritiPaInternet teksti={paInternet("po ta shfaqim punën që e pe herën e fundit").cfare} />
 
       <View style={styles.rresht}>
         <Chip teksti={roli} />

@@ -2,9 +2,12 @@
 // kush s'ka hyrë sheh vetëm hyrjen, secili lloj llogarie sheh vetëm ekranet e veta.
 // Roja vetëm fsheh ekranet; të dhënat i mbron RLS-i në server.
 import type { Session } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { merrProfilin, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
+import { VONON } from "@/lib/mesazhet";
+import { lexoProfilinERuajtur, ruajProfilin } from "@/lib/profili-kesh";
+import { eshteGabimKohe, eshteGabimRrjeti, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { pasNdryshimitTeSesionit } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
 
@@ -34,6 +37,9 @@ type GjendjaESesionit = {
 
 const Konteksti = createContext<GjendjaESesionit | null>(null);
 
+// Hapja e app-it s'pret më shumë se kaq për profilin: pastaj përdoret ai i ruajtur në telefon (ose del gabimi me "Provo përsëri").
+const KOHA_E_PROFILIT = 8_000;
+
 type ProfiliILexuar = { uid: string; profili: Profili | null; gabimi: string | null };
 
 export function SesioniProvider({ children }: { children: ReactNode }) {
@@ -41,6 +47,11 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   const [sesioniULexua, setSesioniULexua] = useState(false);
   const [lexuar, setLexuar] = useState<ProfiliILexuar | null>(null);
   const [rilexo, setRilexo] = useState(0);
+  // Leximi i fundit i profilit dështoi pse s'ka internet / s'u përgjigj: kur kthehet interneti, rilexohet në heshtje.
+  const duhetRilexuar = useRef(false);
+  useRrjeti(() => {
+    if (duhetRilexuar.current) setRilexo((n) => n + 1);
+  });
 
   // Sesioni ruhet në telefon (AsyncStorage): pas rihapjes së app-it je ende brenda, edhe pa internet.
   useEffect(() => {
@@ -66,17 +77,25 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!uid) return;
     let aktiv = true;
-    merrProfilin()
+    meKohe(merrProfilin(), KOHA_E_PROFILIT, VONON.profili)
       .then((profili) => {
+        duhetRilexuar.current = false;
+        if (profili) ruajProfilin(profili);
         if (aktiv) setLexuar({ uid, profili, gabimi: profili ? null : "Profili s'u gjet." });
       })
-      .catch((e: unknown) => {
+      .catch(async (e: unknown) => {
+        const nga = eshteGabimRrjeti(e) || eshteGabimKohe(e);
+        duhetRilexuar.current = nga;
+        // Pa internet ose pa përgjigje në kohë: profili i ruajtur i kësaj llogarie, që përdoruesi të hyjë në app.
+        const iRuajtur = nga ? await lexoProfilinERuajtur(uid) : null;
         if (!aktiv) return;
-        // Një rilexim që dështon (pa internet) nuk e heq profilin që e kemi: përdoruesi mbetet ku është.
+        // Një rilexim që dështon nuk e heq profilin që e kemi: përdoruesi mbetet ku është.
         setLexuar((l) =>
           l?.uid === uid && l.profili
             ? l
-            : { uid, profili: null, gabimi: e instanceof Error ? e.message : "Gabim i panjohur" },
+            : iRuajtur
+              ? { uid, profili: iRuajtur, gabimi: null }
+              : { uid, profili: null, gabimi: e instanceof Error ? e.message : "Gabim i panjohur" },
         );
       });
     return () => {

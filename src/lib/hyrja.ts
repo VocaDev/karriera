@@ -2,6 +2,7 @@
 // Roli (lloji) jeton te tabela profiles dhe e mbron RLS-i; nuk lexohet kurrë nga user_metadata.
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
 import { HYR_PERSERI } from "@/lib/mesazhet";
+import { pastroProfilinERuajtur } from "@/lib/profili-kesh";
 import { pastroKeshinEPuneve } from "@/lib/punet-kesh";
 import { shenoDaljenVullnetare } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
@@ -86,6 +87,7 @@ export async function dil(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(mesazhiIGabimit(error));
   await pastroKeshinEPuneve(); // lista e ruajtur e punëve s'mbetet në telefon pas daljes
+  await pastroProfilinERuajtur(); // as profili i ruajtur
 }
 
 /** Profili im. Pa filtër në kod: RLS-i (profili_lexo) kthen vetëm rreshtin tim. */

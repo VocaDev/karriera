@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import RreshtiVecorise, { hapetVecoria } from "@/components/RreshtiVecorise";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { TabScroll } from "@/components/TabEkrani";
@@ -11,6 +12,8 @@ import { IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import { listoVersionet, type CvRresht } from "@/lib/cv";
 import { kontrolletEFundit, type KontrollEFundit } from "@/lib/gati";
 import { prekja } from "@/lib/prekja";
+import { paInternet, PA_INTERNET_SHKURT } from "@/lib/mesazhet";
+import { KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { listoPunet, type Puna } from "@/lib/punet";
 import { listoTeRuajturat } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
@@ -53,15 +56,16 @@ export default function Sot() {
   // Lexon burimet nga Supabase (RLS kthen vetëm të miat). Kthen true nëse të gjitha u lexuan.
   const ngarko = useCallback(async (): Promise<boolean> => {
     const [c, r, p, g] = await Promise.allSettled([
-      listoVersionet(),
-      listoTeRuajturat(),
-      listoPunet(),
-      kontrolletEFundit(3),
+      meKohe(listoVersionet(), KOHA_E_LEXIMIT),
+      meKohe(listoTeRuajturat(), KOHA_E_LEXIMIT),
+      meKohe(listoPunet(), KOHA_E_LEXIMIT),
+      meKohe(kontrolletEFundit(3), KOHA_E_LEXIMIT),
     ]);
-    setCvt(c.status === "fulfilled" ? { ok: true, v: c.value } : { ok: false });
-    setTeRuajturat(r.status === "fulfilled" ? { ok: true, v: r.value.size } : { ok: false });
-    setPunet(p.status === "fulfilled" ? { ok: true, v: p.value } : { ok: false });
-    setKontrollet(g.status === "fulfilled" ? { ok: true, v: g.value } : { ok: false });
+    // Një burim që dështon (p.sh. pa internet) e lë atë që e kishim lexuar më parë: ekrani s'zbrazet.
+    setCvt((m) => (c.status === "fulfilled" ? { ok: true, v: c.value } : m?.ok ? m : { ok: false }));
+    setTeRuajturat((m) => (r.status === "fulfilled" ? { ok: true, v: r.value.size } : m?.ok ? m : { ok: false }));
+    setPunet((m) => (p.status === "fulfilled" ? { ok: true, v: p.value } : m?.ok ? m : { ok: false }));
+    setKontrollet((m) => (g.status === "fulfilled" ? { ok: true, v: g.value } : m?.ok ? m : { ok: false }));
     return (
       c.status === "fulfilled" && r.status === "fulfilled" && p.status === "fulfilled" && g.status === "fulfilled"
     );
@@ -73,8 +77,19 @@ export default function Sot() {
     }, [ngarko]),
   );
 
+  // Interneti u kthye: rifreskon vetë.
+  const { kaInternet } = useRrjeti(() => {
+    ngarko();
+  });
+
   // Tërheqja poshtë: rrotullimi i sistemit qëndron sa zgjat leximi i vërtetë.
   async function rifresko() {
+    if (!kaInternet) {
+      // Pa internet s'ka çka të pritet: asnjë rrotë, vetëm njoftimi; ç'kemi në ekran mbetet.
+      prekja.gabim();
+      njofto(paInternet("po t'i shfaqim të dhënat që i pe herën e fundit").cfare, "gabim");
+      return;
+    }
     setRifreskim(true);
     const ok = await ngarko();
     setRifreskim(false);
@@ -97,14 +112,14 @@ export default function Sot() {
 
   let nenCV: string | undefined;
   if (cvt === null) nenCV = "Po lexohet…";
-  else if (versionet === null) nenCV = "S'u lexua. Tërhiqe poshtë për të provuar përsëri.";
+  else if (versionet === null) nenCV = kaInternet ? "S'u lexua. Tërhiqe poshtë për të provuar përsëri." : PA_INTERNET_SHKURT;
   else if (versionet.length === 0) nenCV = "Ende pa CV · ngarkoje ose ndërtoje";
   else if (iAnalizuar) nenCV = `v${iAnalizuar.versioni} · analizuar · ${iAnalizuar.nota}/100 (vlerësim i AI-së)`;
   else nenCV = `v${versionet[0].versioni} · pa analizë ende`;
 
   let nenPunet: string | undefined;
   if (teRuajturat === null) nenPunet = "Po lexohet…";
-  else if (ruajtura === null) nenPunet = "S'u lexua. Tërhiqe poshtë për të provuar përsëri.";
+  else if (ruajtura === null) nenPunet = kaInternet ? "S'u lexua. Tërhiqe poshtë për të provuar përsëri." : PA_INTERNET_SHKURT;
   else if (ruajtura === 0) nenPunet = "Asnjë e ruajtur · prek ☆ te një punë";
   else nenPunet = `${ruajtura} ${ruajtura === 1 ? "e ruajtur" : "të ruajtura"} me ⭐`;
 
@@ -135,6 +150,9 @@ export default function Sot() {
 
   return (
     <TabScroll onRefresh={rifresko} refreshing={rifreskim}>
+      {(cvt?.ok || teRuajturat?.ok || punet?.ok || kontrollet?.ok) && (
+        <ShiritiPaInternet teksti={paInternet("po t'i shfaqim të dhënat që i pe herën e fundit").cfare} />
+      )}
       <T zbehur madhesia={14}>
         {dataSot()}
         {profili?.emri ? ` · ${profili.emri}` : ""}

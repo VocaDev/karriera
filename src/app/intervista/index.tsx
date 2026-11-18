@@ -6,6 +6,7 @@ import Animated from "react-native-reanimated";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { nisIntervisten } from "@/lib/intervista/klienti";
@@ -22,6 +23,8 @@ import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
 import { Butoni, KartaEGabimit, ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { paInternet, tekstiIPlote } from "@/lib/mesazhet";
+import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
 import { gjePunen, listoPunet } from "@/lib/punet";
 import { listoTeRuajturatMePune } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
@@ -80,9 +83,16 @@ export default function ZgjidhIntervisten() {
   const [gabimi, setGabimi] = useState<string | null>(null);
 
   const [rilexo, setRilexo] = useState(0);
+  // Interneti u kthye pas një leximi të dështuar: lista e punëve rilexohet vetë.
+  const { kaInternet } = useRrjeti(() => {
+    if (gabimiListes) {
+      setGabimiListes(null);
+      setRilexo((n) => n + 1);
+    }
+  });
   useEffect(() => {
     let aktiv = true;
-    lexoOpsionet(params.puna)
+    meKohe(lexoOpsionet(params.puna), KOHA_E_LEXIMIT)
       .then((lista) => {
         if (!aktiv) return;
         setGabimiListes(null);
@@ -105,6 +115,13 @@ export default function ZgjidhIntervisten() {
       setGabimi("Zgjidh një punë për intervistën.");
       return;
     }
+    if (!kaInternet) {
+      // Zgjedhjet (puna, gjuha, intervistuesi) mbeten: "Fillo" provohet kur të lidhesh.
+      prekja.gabim();
+      dridhu();
+      setGabimi(tekstiIPlote(paInternet("zgjedhjet e tua mbeten aty", false)));
+      return;
+    }
     setGabimi(null);
     setDukeNisur(true);
     try {
@@ -123,8 +140,8 @@ export default function ZgjidhIntervisten() {
     opsionet === null ? (
       gabimiListes ? (
         <KartaEGabimit
-          titulli="Punët s'u lexuan"
-          mesazhi={gabimiListes}
+          titulli={pamjaEGabimit(gabimiListes, "Punët s'u lexuan", "s'kemi ende punë për t'i shfaqur").titulli}
+          mesazhi={pamjaEGabimit(gabimiListes, "Punët s'u lexuan", "s'kemi ende punë për t'i shfaqur").teksti}
           riprovo={() => {
             setGabimiListes(null);
             setRilexo((n) => n + 1);
@@ -200,6 +217,7 @@ export default function ZgjidhIntervisten() {
 
   return (
     <Faqja>
+      {opsionet !== null && <ShiritiPaInternet teksti={paInternet("po t'i shfaqim punët që i pe herën e fundit").cfare} />}
       <T zbehur madhesia={14.5} style={styles.hyrja}>
         {emriIntervistuesit}, {PAMJA_E_INTERVISTUESIT[intervistuesi].roli}, të bën pyetje për punën që zgjedh, me CV-në
         tënde si bazë. Ti përgjigjesh me shkrim.
