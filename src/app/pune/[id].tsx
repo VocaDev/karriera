@@ -216,7 +216,7 @@ export default function DetajetEPunes() {
     prekja.lehte();
     Alert.alert(
       "Ta fshijmë këtë punë?",
-      "Fshihet edhe rezultati i “A jam gati?” për të. Kjo s'kthehet mbrapsht.",
+      "Fshihet edhe rezultati i “A jam gati?” për të. Intervistat për këtë punë mbeten te Rezultatet, por pa lidhjen me punën. Kjo s'kthehet mbrapsht.",
       [
         { text: "Anulo", style: "cancel" },
         { text: "Fshije", style: "destructive", onPress: fshije },

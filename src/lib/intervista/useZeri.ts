@@ -209,7 +209,7 @@ export function useZeri(opts: {
         dergoPjesen("mbyllja", 0, mbyllja, "buzeqeshje", false, false);
       }
     }
-  }, [dergoPjesen, faqjaGati, gjendja, intervistaId, kaloTeShkruaj, merrZerin, njofto, pamja.gjenitivi, pjesaMbaroi]);
+  }, [avatari, dergoPjesen, faqjaGati, gjendja, intervistaId, kaloTeShkruaj, merrZerin, njofto, pamja.gjenitivi, pjesaMbaroi]);
 
   // Pranimi i shkurtër merret një herë për intervistë, sapo dihet pyetja aktuale (një thirrje e vetme).
   const nrAktual = gjendja.faza === "pyet" || gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;

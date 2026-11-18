@@ -3,7 +3,7 @@
 -- Ekzekutohet PAS 20261114120000_punet_portalet.sql dhe 20261115140000_punet_kerkesat.sql. Mund të ekzekutohet disa herë.
 -- Varet edhe nga supabase/j6-hyrja-rls.sql (JASHTË migrations/): profiles, lloji_im(), punet.pronari_id,
 -- punet_e_ruajtura dhe policy-t punet_ndrysho / punet_fshi vijnë prej aty.
--- NUK është aplikuar ende (18.11): pret OK-në e Gentit. Testi me dy llogari është në fund (i komentuar).
+-- U aplikua live më 18.11 (me OK-në e Gentit). Testi me dy llogari është në fund (i komentuar).
 --
 -- Çka ndryshon:
 --   1. punet.private (boolean). true = punë e shtuar nga kërkuesi me link: e lexon VETËM pronari.
