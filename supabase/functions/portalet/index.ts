@@ -256,9 +256,19 @@ Deno.serve(async (req) => {
 
   if (perTeShkruar.length) {
     // id = "<portali>-<id_e_jashtme>": e njëjta shpallje përditësohet, s'dyfishohet. krijuar_me s'dërgohet (mbetet e para).
-    const { error } = await admin.from("punet").upsert(perTeShkruar, { onConflict: "id" });
+    // Një id portali e zënë nga një rresht jo-portal (p.sh. i shtuar nga app-i) s'mbishkruhet: ai rresht ka pronar.
+    const { data: teZena, error: gabimZene } = await admin
+      .from("punet")
+      .select("id")
+      .in("id", perTeShkruar.map((r) => r.id))
+      .neq("burimi", "portal");
+    if (gabimZene) return json({ ...raporti, error: `Kontrolli i id-ve: ${gabimZene.message}` }, 500);
+    const zene = new Set((teZena ?? []).map((r) => r.id as string));
+    if (zene.size) console.warn(`[portalet] ${zene.size} id portali të zëna nga rreshta jo-portal, u anashkaluan`);
+    const perUpsert = perTeShkruar.filter((r) => !zene.has(r.id));
+    const { error } = await admin.from("punet").upsert(perUpsert, { onConflict: "id" });
     if (error) return json({ ...raporti, error: `Shkrimi: ${error.message}` }, 500);
-    raporti.shkruar = perTeShkruar.length;
+    raporti.shkruar = perUpsert.length;
   }
 
   if (teNjohura.length) {

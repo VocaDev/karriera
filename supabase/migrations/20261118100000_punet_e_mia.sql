@@ -1,6 +1,8 @@
 -- 18.11 · J7 · "Sill linkun tënd": kërkuesi ngjit linkun e një shpalljeje që e gjeti diku tjetër dhe ajo bëhet
 -- një punë PRIVATE: e sheh vetëm ai, dhe e përdor për "A jam gati?" dhe intervistën.
 -- Ekzekutohet PAS 20261114120000_punet_portalet.sql dhe 20261115140000_punet_kerkesat.sql. Mund të ekzekutohet disa herë.
+-- Varet edhe nga supabase/j6-hyrja-rls.sql (JASHTË migrations/): profiles, lloji_im(), punet.pronari_id,
+-- punet_e_ruajtura dhe policy-t punet_ndrysho / punet_fshi vijnë prej aty.
 -- NUK është aplikuar ende (18.11): pret OK-në e Gentit. Testi me dy llogari është në fund (i komentuar).
 --
 -- Çka ndryshon:
@@ -10,6 +12,7 @@
 --      (aq sa lexon "gati"); te rreshtat e tjerë kufiri mbetet 1000.
 --   3. RLS: kërkuesi shton vetëm punë private në emrin e vet; leximi i kërkuesit s'i përfshin më punët private të të tjerëve.
 --      Punëdhënësi dhe qendra s'mund të shtojnë punë private. Fshirja dhe ndryshimi mbeten "vetëm të miat" (J6).
+--      Çdo shtim nga app-i (kërkues ose punëdhënës) ka id në formën e UUID-së: s'zihet dot id-ja e një shpalljeje portali.
 --   4. Një link një herë për llogari (indeks unik), dhe maksimumi 50 punë private për llogari.
 --   5. ⭐ ruhet vetëm një punë që e sheh (mos të ruhet me id një punë private e dikujt tjetër).
 --   6. punet_portali_vlera_check: kontrolli i vlerës së "portali" që ra gabimisht te 20261114120000
@@ -37,6 +40,7 @@ alter table public.punet
       burimi = 'perdoruesi'
       and pronari_id is not null
       and kerkesat is null
+      and linku is not null -- pa këtë, NULL ~ '...' jep NULL dhe check-u kalon
       -- https://emer.domen[:port][/...]: emri mbaron me një TLD me shkronja (ose xn--), kështu që IP-të dhe localhost s'kalojnë.
       -- Pa "@" (s'ka user:pass@host) dhe pa hapësira.
       and linku ~* '^https://[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,63}|xn--[a-z0-9-]{1,59})(:[0-9]{1,5})?([/?#][^[:space:]]*)?$'
@@ -77,12 +81,15 @@ create policy "punet_lexo" on public.punet
   for select to authenticated
   using ((public.lloji_im() = 'kerkues' and not private) or pronari_id = auth.uid());
 
--- Shtim nga punëdhënësi/qendra: si në J6, por kurrë privat.
+-- Shtim nga punëdhënësi/qendra: si në J6, por kurrë privat, dhe id vetëm në formën e UUID-së.
+-- Rreshtat "portal" kanë id të parashikueshme ("kosovajob-123") dhe importi bën upsert sipas id-së: pa këtë,
+-- punëdhënësi e zë id-në para importit dhe shpallja e portalit bëhet "e tij" (mund ta ndryshojë). App-i s'e dërgon id-në.
 drop policy if exists "punet_shto" on public.punet;
 create policy "punet_shto" on public.punet
   for insert to authenticated
   with check (
     pronari_id = auth.uid() and burimi = 'perdoruesi' and not private
+    and id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     and public.lloji_im() in ('punedhenes', 'qender')
   );
 
@@ -113,11 +120,16 @@ create unique index if not exists punet_private_linku_uq
   on public.punet (pronari_id, linku) where private;
 
 -- Kufiri: 50 punë private për llogari (mbron bazën nga mbushja). security invoker: numëron me RLS-in e thirrësit,
--- dhe pronari i sheh të gjitha punët e veta private.
+-- dhe pronari i sheh të gjitha punët e veta private. Bllokimi (deri në fund të transaksionit) i rendit dy shtime
+-- të njëkohshme të së njëjtës llogari, që të mos kalojnë të dyja numërimin 49.
 create or replace function public.kufiri_punet_private()
 returns trigger language plpgsql set search_path = '' as $$
 begin
-  if new.private and (
+  if not new.private then
+    return new;
+  end if;
+  perform pg_advisory_xact_lock(hashtext('punet_private:' || new.pronari_id::text));
+  if (
     select count(*) from public.punet p where p.pronari_id = new.pronari_id and p.private
   ) >= 50 then
     raise exception 'Ke arritur kufirin: 50 punë të shtuara me link. Fshi disa që s''të duhen më.'
@@ -165,10 +177,12 @@ notify pgrst, 'reload schema';
 
 begin;
 
--- Dy kërkues test (trigger-i krijo_profilin u krijon profilin "kerkues"). roli_synuar, nëse kolona ekziston, s'ka rëndësi këtu.
+-- Dy kërkues test (trigger-i krijo_profilin u krijon profilin "kerkues") dhe një punëdhënës (C).
+-- roli_synuar, nëse kolona ekziston, s'ka rëndësi këtu.
 insert into auth.users (id, email, aud, role, raw_user_meta_data) values
   ('00000000-0000-4000-8000-00000000000a', 'test-a@karriera.invalid', 'authenticated', 'authenticated', '{"lloji":"kerkues"}'),
-  ('00000000-0000-4000-8000-00000000000b', 'test-b@karriera.invalid', 'authenticated', 'authenticated', '{"lloji":"kerkues"}');
+  ('00000000-0000-4000-8000-00000000000b', 'test-b@karriera.invalid', 'authenticated', 'authenticated', '{"lloji":"kerkues"}'),
+  ('00000000-0000-4000-8000-00000000000c', 'test-c@karriera.invalid', 'authenticated', 'authenticated', '{"lloji":"punedhenes"}');
 
 set local role authenticated;
 
@@ -253,6 +267,28 @@ begin
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'TESTI DËSHTOI: A s''e fshiu punën e vet'; end if;
   raise notice 'OK 9: A e fshin punën e vet private';
+end $$;
+
+-- C (punëdhënës): s'e zë dot id-në e një shpalljeje të portalit, s'shton punë private; shtimi i zakonshëm punon.
+set local request.jwt.claims = '{"sub":"00000000-0000-4000-8000-00000000000c","role":"authenticated"}';
+do $$ begin
+  begin
+    insert into public.punet (id, titulli, kompania, qyteti, burimi)
+      values ('kosovajob-999998', 'Test Developer', 'Test Sh.p.k.', 'Prishtinë', 'perdoruesi');
+    raise exception 'TESTI DËSHTOI: punëdhënësi zuri një id portali';
+  exception when insufficient_privilege then raise notice 'OK 10: punëdhënësi s''zë id portali';
+  end;
+
+  begin
+    insert into public.punet (titulli, kompania, qyteti, burimi, private, linku)
+      values ('Test Developer', 'Test Sh.p.k.', 'Prishtinë', 'perdoruesi', true, 'https://shembull.com/pune/4');
+    raise exception 'TESTI DËSHTOI: punëdhënësi shtoi një punë private';
+  exception when insufficient_privilege then raise notice 'OK 11: punëdhënësi s''shton punë private';
+  end;
+
+  insert into public.punet (titulli, kompania, qyteti, burimi)
+    values ('Test Developer', 'Test Sh.p.k.', 'Prishtinë', 'perdoruesi');
+  raise notice 'OK 12: punëdhënësi shton punë të zakonshme (id UUID nga default-i)';
 end $$;
 
 reset role;
