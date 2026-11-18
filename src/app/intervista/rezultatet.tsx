@@ -1,10 +1,16 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Progresi, T, Titulli } from "@/components/ui";
-import { GabimIIntervistes, krijoRaportin, lexoIntervisten } from "@/lib/intervista/klienti";
+import {
+  GabimIIntervistes,
+  krijoRaportin,
+  lexoIntervisten,
+  listoIntervistatEPerfunduara,
+  type PerMbledhjeIntervistes,
+} from "@/lib/intervista/klienti";
 import { PAMJA_E_INTERVISTUESIT, type IntervistaInfo, type Raporti, type RreshtiIBisedes } from "@/lib/intervista/tipet";
 import { AvatariIntervistuesit, Butoni, KartaEGabimit } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
@@ -20,6 +26,7 @@ type Gjendja =
   | { lloji: "gati"; raporti: Raporti; info: IntervistaInfo; biseda: RreshtiIBisedes[] }
   | { lloji: "aktive" }
   | { lloji: "nuk_u_gjet" }
+  | { lloji: "bosh" }
   | { lloji: "gabim"; mesazhi: string; riprovohet: boolean };
 
 const PRITJA_MS = 4000; // kur raporti po shkruhet nga një kërkesë tjetër
@@ -67,11 +74,40 @@ async function ngarkoRezultatet(id: string, iGjalle: () => boolean, vendos: (g: 
 export default function RezultatetEkrani() {
   const t = useTema();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id: idNgaRruga } = useLocalSearchParams<{ id?: string }>();
   const [gjendja, setGjendja] = useState<Gjendja>({ lloji: "ngarkon" });
+  // Pa ?id (kafja "Rezultatet" nga ballina): lista e intervistave të përfunduara, e para e hapur.
+  const [lista, setLista] = useState<PerMbledhjeIntervistes[]>([]);
+  const [zgjedhur, setZgjedhur] = useState<string | null>(null);
+  const id = idNgaRruga ?? zgjedhur;
 
   const [rilexo, setRilexo] = useState(0);
   useEffect(() => {
+    if (idNgaRruga) return;
+    let aktiv = true;
+    listoIntervistatEPerfunduara()
+      .then((rreshtat) => {
+        if (!aktiv) return;
+        setLista(rreshtat);
+        if (rreshtat.length === 0) setGjendja({ lloji: "bosh" });
+        else setZgjedhur((p) => p ?? rreshtat[0].id);
+      })
+      .catch((e: unknown) => {
+        if (!aktiv) return;
+        prekja.gabim();
+        setGjendja({
+          lloji: "gabim",
+          mesazhi: e instanceof Error ? e.message : "Rezultatet s'u lexuan. Provo përsëri.",
+          riprovohet: true,
+        });
+      });
+    return () => {
+      aktiv = false;
+    };
+  }, [idNgaRruga, rilexo]);
+
+  useEffect(() => {
+    if (!id) return;
     let aktiv = true;
     ngarkoRezultatet(
       id,
@@ -87,6 +123,23 @@ export default function RezultatetEkrani() {
 
   if (gjendja.lloji === "ngarkon" || gjendja.lloji === "pret") {
     return <PoPergatitet pret={gjendja.lloji === "pret"} />;
+  }
+
+  if (gjendja.lloji === "bosh") {
+    return (
+      <Faqja>
+        <Titulli>Rezultatet</Titulli>
+        <Karta style={styles.karta}>
+          <T pesha="trashe" madhesia={16}>
+            S&apos;ke bërë ende intervistë
+          </T>
+          <T zbehur madhesia={14} style={styles.rreshtat}>
+            Pas intervistës së parë, këtu shihni notën, feedback-un për çdo përgjigje dhe gatishmërinë e re.
+          </T>
+        </Karta>
+        <Butoni teksti="Fillo një intervistë" onPress={() => router.push("/intervista")} />
+      </Faqja>
+    );
   }
 
   if (gjendja.lloji === "gabim" || gjendja.lloji === "nuk_u_gjet" || gjendja.lloji === "aktive") {
@@ -133,6 +186,32 @@ export default function RezultatetEkrani() {
 
   return (
     <Faqja>
+      {!idNgaRruga && lista.length > 1 && (
+        <View style={styles.lista} accessibilityLabel="Intervistat e mëparshme">
+          {lista.slice(0, 5).map((i) => (
+            <Pressable
+              key={i.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: i.id === id }}
+              onPress={() => {
+                if (i.id === id) return;
+                prekja.zgjedhje();
+                setGjendja({ lloji: "ngarkon" });
+                setZgjedhur(i.id);
+              }}
+              style={[styles.listaRresht, { backgroundColor: i.id === id ? t.karta2 : "transparent", borderColor: t.vija }]}
+            >
+              <T pesha={i.id === id ? "trashe" : "gjysme"} madhesia={13.5} style={styles.flex} numberOfLines={1}>
+                {i.puna ?? "Punë e hequr"}
+              </T>
+              <T zbehur madhesia={12.5}>
+                {formatoDaten(i.data)}
+                {i.nota !== null ? ` · ${i.nota}/100` : ""}
+              </T>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <Titulli>Intervista mbaroi</Titulli>
       <T zbehur madhesia={15}>
         {raporti.puna.titulli} · {raporti.puna.kompania}
@@ -385,7 +464,22 @@ function PoPergatitet({ pret }: { pret: boolean }) {
   );
 }
 
+function formatoDaten(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("sq-AL", { day: "numeric", month: "short" });
+}
+
 const styles = StyleSheet.create({
+  lista: { gap: 6, marginBottom: 6 },
+  listaRresht: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    minHeight: 44,
+  },
   flex: { flex: 1 },
   karta: { gap: 10 },
   rresht: { flexDirection: "row", alignItems: "center", gap: 8 },

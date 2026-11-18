@@ -227,3 +227,35 @@ export async function lexoIntervisten(intervistaId: string): Promise<IntervistaE
   }));
   return { info, biseda, raporti };
 }
+
+export type PerMbledhjeIntervistes = { id: string; nota: number | null; data: string; puna: string | null };
+
+/** Intervistat e mia të përfunduara (raporti gati), më e reja e para. RLS: vetëm të miat. */
+export async function listoIntervistatEPerfunduara(kufiri = 10): Promise<PerMbledhjeIntervistes[]> {
+  const { data, error } = await supabase
+    .from("intervistat")
+    .select("id, nota, krijuar_me, perfunduar_me, punet(titulli, kompania)")
+    .eq("gjendja", "perfunduar")
+    .order("perfunduar_me", { ascending: false, nullsFirst: false })
+    .limit(kufiri);
+  if (error) throw new GabimIIntervistes(mesazhiIGabimit(error), "rrjeti");
+  return (data ?? []).flatMap((r) => {
+    const rreshti = r as Record<string, unknown>;
+    if (typeof rreshti.id !== "string") return [];
+    const punet = rreshti.punet as { titulli?: unknown; kompania?: unknown } | null;
+    const data = typeof rreshti.perfunduar_me === "string" ? rreshti.perfunduar_me : String(rreshti.krijuar_me ?? "");
+    return [
+      {
+        id: rreshti.id,
+        nota: typeof rreshti.nota === "number" ? rreshti.nota : null,
+        data,
+        puna:
+          punet && typeof punet.titulli === "string"
+            ? typeof punet.kompania === "string"
+              ? `${punet.titulli} · ${punet.kompania}`
+              : punet.titulli
+            : null,
+      },
+    ];
+  });
+}
