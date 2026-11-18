@@ -156,7 +156,7 @@ export default function CilesimetEkrani() {
         <Rreshti
           ikona={IKONAT.kycja}
           titulli="Vetëm ti i sheh të dhënat e tua"
-          teksti="Emri, email-i, CV-ja dhe punët me ⭐ janë private: serveri i kthen çdo llogarie vetëm rreshtat e saj."
+          teksti="Emri, email-i, CV-ja dhe punët me ⭐ janë private: çdo llogari sheh vetëm të dhënat e veta."
         />
         <Rreshti
           kufi
@@ -174,7 +174,7 @@ export default function CilesimetEkrani() {
           kufi
           ikona={IKONAT.info}
           titulli="AI"
-          teksti="Kur kërkon analizën e CV-së, teksti i saj shkon te shërbimi i AI-së nga serveri ynë. Çelësat s'janë kurrë në telefon."
+          teksti="Kur kërkon analizën e CV-së, teksti i saj shkon te shërbimi i AI-së përmes shërbimit tonë. Çelësat s'janë kurrë në telefon."
         />
       </Grupi>
 

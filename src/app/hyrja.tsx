@@ -12,7 +12,9 @@ import { IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type TeDhenatERegjistrimit } from "@/lib/hyrja";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { HYR_PERSERI } from "@/lib/mesazhet";
 import { useSesioni } from "@/lib/sesioni";
+import { useSesioniSkaduar } from "@/lib/sesioni-skaduar";
 import { useTema } from "@/lib/tema";
 
 type Menyra = "hyr" | "regjistrohu";
@@ -111,6 +113,7 @@ export default function Hyrja() {
   const t = useTema();
   const { sesioni, profiliPaRol, gabimiIProfilit, rifreskoProfilin } = useSesioni();
   const { stili: stiliIButonit, dridhu } = useDridhja();
+  const sesioniSkaduar = useSesioniSkaduar();
   const unaza = useSharedValue(0.78);
   const fjalekalimiRef = useRef<TextInputInstance>(null);
   const emailRef = useRef<TextInputInstance>(null);
@@ -208,6 +211,26 @@ export default function Hyrja() {
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"
       >
+        {sesioniSkaduar && (
+          <Karta style={styles.karta}>
+            <T pesha="trashe" madhesia={17} accessibilityRole="header">
+              {HYR_PERSERI.titulli}
+            </T>
+            <T zbehur madhesia={14} accessibilityLiveRegion="polite">
+              {HYR_PERSERI.cfare}
+            </T>
+            <T madhesia={14}>{HYR_PERSERI.bere}</T>
+            <ButoniKryesor
+              teksti={HYR_PERSERI.buton}
+              onPress={() => {
+                prekja.zgjedhje();
+                ndryshoMenyren("hyr");
+                emailRef.current?.focus();
+              }}
+            />
+          </Karta>
+        )}
+
         <View style={styles.koka}>
           <View style={[styles.pllaka, { backgroundColor: t.karta, shadowColor: t.hija }]}>
             <Unaza madhesia={56} progresi={unaza} ngjyrat={{ gjurma: t.karta2, harku: t.theksi, shenja: t.teksti }} />

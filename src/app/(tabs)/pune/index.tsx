@@ -16,7 +16,8 @@ import { prekja } from "@/lib/prekja";
 import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
 import { lexoListenEPunes, ruajListenEPunes } from "@/lib/punet-kesh";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
-import { eshteGabimRrjeti, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 // Kur lista ndryshon (p.sh. erdhi një punë e re lart), kartat e tjera rrëshqasin poshtë në vend që të kërcejnë.
@@ -39,6 +40,10 @@ function normalizo(teksti: string): string {
     .toLowerCase()
     .trim();
 }
+
+// Mesazhet e rrjetit (mesazhet.ts): lista që pe herën e fundit mbetet në ekran, ose s'ka ende asnjë të ruajtur.
+const PA_INTERNET_ME_LISTE = paInternet("po t'i shfaqim punët që i pe herën e fundit");
+const PA_INTERNET_PA_LISTE = paInternet("s'kemi ende punë të ruajtura për t'i shfaqur");
 
 // Punët (bordi, ekrani 09), vetëm për kërkuesin: lexon, ruan me ⭐, s'poston (këtë e bën punëdhënësi).
 // Kërkimi dhe filtri i rolit: Edoniku.
@@ -72,8 +77,8 @@ export default function Punet() {
     setIRolit(0);
   }
 
-  // Kthen "ok", "rrjeti" (pa internet: lista e fundit mbetet në ekran) ose "gabim" (serveri refuzoi).
-  const ngarko = useCallback(async (ngaPerdoruesi: boolean): Promise<"ok" | "rrjeti" | "gabim"> => {
+  // Kthen "ok", "rrjeti" (pa internet), "vonese" (s'u përgjigj në kohë; të dyja: lista e fundit mbetet në ekran) ose "gabim".
+  const ngarko = useCallback(async (ngaPerdoruesi: boolean): Promise<"ok" | "rrjeti" | "vonese" | "gabim"> => {
     try {
       const [teReja, yjet] = await meKohe(Promise.all([listoPunet(), listoTeRuajturat()]), KOHA_E_LEXIMIT);
       const iRi = merrPunenERe();
@@ -87,12 +92,13 @@ export default function Punet() {
       setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
       if (ngaPerdoruesi) prekja.gabim();
       const rrjeti = eshteGabimRrjeti(e);
-      // Pa internet dhe pa listë në memorie (p.sh. app-i u hap offline): lista e fundit e ruajtur në telefon.
-      if (rrjeti) {
+      const vonese = !rrjeti && eshteGabimKohe(e);
+      // Pa internet (ose pa përgjigje në kohë) dhe pa listë në memorie (p.sh. app-i u hap offline): lista e fundit e ruajtur në telefon.
+      if (rrjeti || vonese) {
         const ruajtur = await lexoListenEPunes();
         if (ruajtur) setPunet((lista) => lista ?? ruajtur);
       }
-      return rrjeti ? "rrjeti" : "gabim";
+      return rrjeti ? "rrjeti" : vonese ? "vonese" : "gabim";
     }
   }, []);
 
@@ -143,13 +149,14 @@ export default function Punet() {
     if (!kaInternet) {
       // Pa internet s'ka çka të pritet: asnjë rrotë, vetëm njoftimi; lista e fundit mbetet në ekran.
       prekja.gabim();
-      njofto("Pa internet. Po shfaqim punët e fundit.", "gabim");
+      njofto(PA_INTERNET_ME_LISTE.cfare, "gabim");
       return;
     }
     setRifreskim(true);
     const rezultati = await ngarko(true);
     setRifreskim(false);
-    if (rezultati === "rrjeti") njofto("Pa internet. Po shfaqim punët e fundit.", "gabim");
+    if (rezultati === "rrjeti") njofto(PA_INTERNET_ME_LISTE.cfare, "gabim");
+    else if (rezultati === "vonese") njofto(`${VONON.titulli}. ${VONON.bere}`, "gabim");
     else if (rezultati === "gabim" && punet !== null) njofto("S'u rifreskuan punët. Provo përsëri.", "gabim");
   }
 
@@ -162,7 +169,9 @@ export default function Punet() {
   const koka = (
     <View style={styles.kokaEPlote}>
       <GradientiSiper brenda={18} />
-      <ShiritiPaInternet style={styles.shiritiNeListe} />
+      {punet !== null && (
+        <ShiritiPaInternet teksti={tekstiIPlote(PA_INTERNET_ME_LISTE)} style={styles.shiritiNeListe} />
+      )}
       <View style={[styles.kerkimi, { backgroundColor: t.karta, borderColor: t.vija }]}>
         <Ikona emri={IKONAT.kerko} madhesia={17} ngjyra={t.zbehur} />
         <TextInput
@@ -198,10 +207,10 @@ export default function Punet() {
       paInternetPaListe ? (
         <View style={styles.gabimi}>
           <T pesha="trashe" madhesia={16}>
-            Pa internet
+            {PA_INTERNET_PA_LISTE.titulli}
           </T>
-          <T zbehur madhesia={14} style={styles.qendroj}>
-            S&apos;kemi ende asnjë listë të ruajtur. Lidhu me internet dhe punët shfaqen vetë.
+          <T zbehur madhesia={14} style={styles.qendroj} accessibilityLiveRegion="polite">
+            {tekstiIPlote(PA_INTERNET_PA_LISTE)}
           </T>
           <Prekshme onPress={provoPerseri} accessibilityRole="button" style={[styles.butoni, { backgroundColor: t.teksti }]}>
             <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
@@ -212,10 +221,10 @@ export default function Punet() {
       ) : gabimi ? (
         <View style={styles.gabimi}>
           <T pesha="trashe" madhesia={16}>
-            S&apos;u lexuan punët
+            {eshteGabimKohe(gabimi) ? VONON.titulli : "S'u lexuan punët"}
           </T>
           <T zbehur madhesia={14} style={styles.qendroj}>
-            {gabimi}
+            {eshteGabimKohe(gabimi) ? `${gabimi} ${VONON.bere}` : gabimi}
           </T>
           <Prekshme onPress={provoPerseri} accessibilityRole="button" style={[styles.butoni, { backgroundColor: t.teksti }]}>
             <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>

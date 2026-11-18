@@ -9,6 +9,7 @@
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { HYR_PERSERI, PA_INTERNET_SHKURT, VONON } from "@/lib/mesazhet";
 import { KOHA_E_AI, meKohe } from "@/lib/rrjeti";
 import { supabase } from "@/lib/supabase";
 
@@ -37,6 +38,7 @@ export type KodiIGabimit =
   | "mbaroi" // intervista s'është më aktive
   | "aktive" // raporti u kërkua para fundit
   | "rrjeti"
+  | "vonese" // s'u përgjigj në kohë (VONON)
   | "sesioni"
   | "tjeter";
 
@@ -57,7 +59,13 @@ export class GabimIIntervistes extends Error {
 
   /** A ka kuptim butoni "Provo përsëri" me të njëjtën kërkesë. */
   get riprovohet(): boolean {
-    return this.kodi === "ai" || this.kodi === "rrjeti" || this.kodi === "tjeter" || this.kodi === "po_perpunohet";
+    return (
+      this.kodi === "ai" ||
+      this.kodi === "rrjeti" ||
+      this.kodi === "vonese" ||
+      this.kodi === "tjeter" ||
+      this.kodi === "po_perpunohet"
+    );
   }
 }
 
@@ -84,9 +92,9 @@ async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimII
     return new GabimIIntervistes(rezerva, status === 401 ? "sesioni" : "tjeter", status);
   }
   if (gabimi instanceof FunctionsFetchError) {
-    return new GabimIIntervistes("Pa internet ose serveri s'u përgjigj. Provo përsëri.", "rrjeti");
+    return new GabimIIntervistes(PA_INTERNET_SHKURT, "rrjeti");
   }
-  if (gabimi instanceof FunctionsRelayError) return new GabimIIntervistes("Serveri s'u përgjigj. Provo përsëri.", "tjeter");
+  if (gabimi instanceof FunctionsRelayError) return new GabimIIntervistes(VONON.pergjithshme, "vonese");
   return new GabimIIntervistes(rezerva, "tjeter");
 }
 
@@ -96,6 +104,12 @@ function eshte401(gabimi: unknown): boolean {
 
 type Funksioni = "intervista-nis" | "intervista-kthesa" | "intervista-raporti";
 
+const VONESA: Record<Funksioni, string> = {
+  "intervista-nis": VONON.nisja,
+  "intervista-kthesa": VONON.intervista,
+  "intervista-raporti": VONON.rezultatet,
+};
+
 // Si te lib/cv.ts: 401 = serveri s'e njeh më sesionin → një rifreskim; nëse s'mjafton, dalim nga llogaria.
 async function thirr(emri: Funksioni, body: object, rezerva: string): Promise<unknown> {
   // Ruajtësi i kohës: një lidhje që varet bëhet gabim "rrjeti" (me "Provo përsëri"), jo pritje pa fund.
@@ -104,14 +118,14 @@ async function thirr(emri: Funksioni, body: object, rezerva: string): Promise<un
     meKohe(
       supabase.functions.invoke(emri, { body }),
       KOHA_E_AI,
-      () => new GabimIIntervistes("Pa internet ose serveri s'u përgjigj. Provo përsëri.", "rrjeti"),
+      () => new GabimIIntervistes(VONESA[emri], "vonese"),
     );
   let { data, error } = await thirrja();
   if (error && eshte401(error)) {
     const { error: gabimiRifreskimit } = await supabase.auth.refreshSession();
     if (gabimiRifreskimit) {
       await supabase.auth.signOut({ scope: "local" });
-      throw new GabimIIntervistes("Sesioni ka skaduar. Hyr përsëri.", "sesioni", 401);
+      throw new GabimIIntervistes(HYR_PERSERI.cfare, "sesioni", 401); // roja çon te hyrja, ku del karta "Hyr përsëri"
     }
     ({ data, error } = await thirrja());
   }
@@ -119,7 +133,7 @@ async function thirr(emri: Funksioni, body: object, rezerva: string): Promise<un
   return data;
 }
 
-const PERGJIGJE_E_PAPLOTE = "Serveri ktheu një përgjigje të paplotë. Provo përsëri.";
+const PERGJIGJE_E_PAPLOTE = "Përgjigjja erdhi e paplotë. Provo përsëri.";
 
 // ---------- Funksionet ----------
 

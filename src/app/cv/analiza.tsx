@@ -13,7 +13,8 @@ import { Chip, Faqja, Ikona, IKONAT, Karta, Progresi, T, Titulli } from "@/compo
 import { analizaPerCV, analizoCV, listoVersionet, type AnalizaERuajtur, type SugjerimCV } from "@/lib/cv";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
-import { eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { paInternet as mesazhiPaInternet, PA_INTERNET_SHKURT, tekstiIPlote, VONON } from "@/lib/mesazhet";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import {
   celesiVleres,
   EMRAT_E_SEKSIONEVE,
@@ -90,7 +91,7 @@ export default function Analiza() {
 
         setGjendja({ lloji: "duke", ePare: true });
         // Ruajtësi i kohës: një lidhje që varet bëhet gabim me "Provo përsëri", jo rrotë pa fund.
-        const ruajtur = await meKohe(analizoCV(cvId), KOHA_E_AI);
+        const ruajtur = await meKohe(analizoCV(cvId), KOHA_E_AI, VONON.analiza);
         if (!aktiv) return;
         prekja.sukses();
         setGjendja({ lloji: "gati", ruajtur });
@@ -148,7 +149,7 @@ export default function Analiza() {
   function provoPerseri() {
     if (!kaInternet) {
       prekja.gabim();
-      njofto("Ende pa internet. Lidhu dhe provo përsëri.", "info");
+      njofto(PA_INTERNET_SHKURT, "info");
       return;
     }
     setHapiAktual(0);
@@ -159,7 +160,7 @@ export default function Analiza() {
   function analizoPerseri() {
     if (!kaInternet) {
       prekja.gabim();
-      njofto("Pa internet. Analiza e re ka nevojë për lidhje.", "gabim");
+      njofto(PA_INTERNET_SHKURT, "gabim");
       return;
     }
     Alert.alert(
@@ -244,16 +245,19 @@ export default function Analiza() {
 
   if (!id || gjendja.lloji === "gabim") {
     const paInternet = gjendja.lloji === "gabim" && eshteGabimRrjeti(gjendja.mesazhi);
+    const vonon = gjendja.lloji === "gabim" && !paInternet && eshteGabimKohe(gjendja.mesazhi);
     return (
       <Faqja>
         <View style={styles.qender}>
           <Ikona emri={IKONAT.alarm} madhesia={34} ngjyra={t.keq} />
-          <Titulli>{paInternet ? "Pa internet" : "Analiza nuk u bë"}</Titulli>
+          <Titulli>{paInternet ? "Pa internet" : vonon ? VONON.titulli : "Analiza nuk u bë"}</Titulli>
           <T zbehur style={styles.qenderTekst} accessibilityLiveRegion="polite">
             {paInternet
-              ? "Analiza s'u mbaroi. Kur të lidhesh me internet, prek Provo përsëri."
+              ? tekstiIPlote(mesazhiPaInternet("analiza nuk u mbaroi", false))
               : gjendja.lloji === "gabim"
-                ? gjendja.mesazhi
+                ? vonon
+                  ? `${gjendja.mesazhi} ${VONON.bere}`
+                  : gjendja.mesazhi
                 : "Mungon CV-ja që duhet analizuar."}
           </T>
           {id && (
@@ -279,7 +283,7 @@ export default function Analiza() {
     const ePare = gjendja.lloji === "duke" && gjendja.ePare;
     return (
       <Faqja>
-        <ShiritiPaInternet teksti="Pa internet · analiza mund të dështojë" />
+        <ShiritiPaInternet teksti={mesazhiPaInternet("analiza mund të dështojë", false).cfare} />
         <View style={styles.ngarkimi} accessibilityLiveRegion="polite">
           <ActivityIndicator size="large" color={t.zbehur} />
           <Titulli>{ePare ? "Po e analizoj CV-në tënde" : "Po e hap analizën"}</Titulli>
@@ -330,7 +334,7 @@ export default function Analiza() {
   return (
     <View style={styles.flex}>
       <Faqja me_fusha>
-        <ShiritiPaInternet />
+        <ShiritiPaInternet teksti={mesazhiPaInternet("po ta shfaqim analizën që e pe herën e fundit").cfare} />
         <View style={styles.krye}>
           <T zbehur pesha="gjysme" madhesia={12}>
             REZULTATI I ANALIZËS

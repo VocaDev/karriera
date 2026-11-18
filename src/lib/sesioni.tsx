@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { merrProfilin, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
+import { pasNdryshimitTeSesionit } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
 
 type GjendjaESesionit = {
@@ -49,7 +50,8 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
       setSesioni(data.session);
       setSesioniULexua(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_ngjarja, sesioniIRi) => {
+    const { data } = supabase.auth.onAuthStateChange((ngjarja, sesioniIRi) => {
+      pasNdryshimitTeSesionit(ngjarja); // dalje që s'e bëmë ne = sesioni mbaroi: hyrja tregon "Hyr përsëri"
       setSesioni(sesioniIRi);
       setSesioniULexua(true);
     });

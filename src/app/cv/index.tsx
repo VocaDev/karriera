@@ -10,7 +10,8 @@ import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, Ikona, IKONAT, Karta, T, Titulli } from "@/components/ui";
 import { analizaEFundit, listoVersionet, MADHESIA_MAKS_CV, ngarkoCV, type AnalizaCV, type CvRresht } from "@/lib/cv";
 import { prekja } from "@/lib/prekja";
-import { eshteGabimRrjeti, KOHA_E_LEXIMIT, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_LEXIMIT, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { useTema } from "@/lib/tema";
 
 type TeDhenat = { versionet: CvRresht[]; eFundit: { cv: CvRresht; analiza: AnalizaCV } | null };
@@ -24,8 +25,9 @@ export default function CvIndex() {
   const [teDhenat, setTeDhenat] = useState<TeDhenat | null>(null); // null = ende pa ardhur
   const [gabimi, setGabimi] = useState<string | null>(null);
   const [ngarkohet, setNgarkohet] = useState(false);
-  // PDF-ja e zgjedhur që s'u ngarkua pse s'ka internet: mbahet këtu, "Provo përsëri" e ngarkon pa e zgjedhur sërish.
-  const [pritet, setPritet] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  // PDF-ja e zgjedhur që s'u ngarkua (pa internet, ose s'mbaroi në kohë): mbahet këtu, "Provo përsëri" e ngarkon
+  // pa e zgjedhur sërish. `kohe`: shkak ishte vonesa, jo mungesa e internetit.
+  const [pritet, setPritet] = useState<{ skedari: DocumentPicker.DocumentPickerAsset; kohe: boolean } | null>(null);
 
   const lexo = useCallback(async () => {
     try {
@@ -80,7 +82,7 @@ export default function CvIndex() {
     if (!kaInternet) {
       // Skedari mbetet i zgjedhur: s'ka çka të provohet pa lidhje, por as s'duhet zgjedhur sërish.
       prekja.gabim();
-      setPritet(skedari);
+      setPritet({ skedari, kohe: false });
       return;
     }
     setNgarkohet(true);
@@ -93,6 +95,7 @@ export default function CvIndex() {
           mimeType: skedari.mimeType ?? null,
         }),
         KOHA_E_NGARKIMIT,
+        VONON.ngarkimi,
       );
       setPritet(null);
       prekja.sukses();
@@ -100,7 +103,8 @@ export default function CvIndex() {
       router.push({ pathname: "/cv/analiza", params: { id: cv.id } });
     } catch (e) {
       prekja.gabim();
-      if (eshteGabimRrjeti(e)) setPritet(skedari);
+      if (eshteGabimRrjeti(e)) setPritet({ skedari, kohe: false });
+      else if (eshteGabimKohe(e)) setPritet({ skedari, kohe: true });
       else njofto(e instanceof Error ? e.message : "Ngarkimi i CV-së dështoi.", "gabim");
     } finally {
       setNgarkohet(false);
@@ -111,17 +115,19 @@ export default function CvIndex() {
     if (!pritet || ngarkohet) return;
     if (!kaInternet) {
       prekja.gabim();
-      njofto("Ende pa internet. Lidhu dhe provo përsëri.", "info");
+      njofto(paInternet("s'mund ta ngarkojmë CV-në tani", false).cfare, "info");
       return;
     }
-    ngarkoSkedarin(pritet);
+    ngarkoSkedarin(pritet.skedari);
   }
 
   const eFundit = teDhenat?.eFundit ?? null;
 
   return (
     <Faqja>
-      <ShiritiPaInternet teksti={teDhenat ? undefined : "Pa internet"} />
+      {teDhenat && (
+        <ShiritiPaInternet teksti={paInternet("po t'i shfaqim CV-të që i pe herën e fundit").cfare} />
+      )}
       <View style={styles.kreu}>
         <Titulli>CV-ja ime</Titulli>
         <T zbehur>Ngarko CV-në ose ndërtoje me AI. AI-ja të thotë çka është mirë dhe çka duhet përmirësuar.</T>
@@ -176,9 +182,11 @@ export default function CvIndex() {
 
       {pritet ? (
         <Karta style={styles.gabimi}>
-          <T pesha="trashe">{kaInternet ? "CV-ja s'u ngarkua" : "Pa internet"}</T>
+          <T pesha="trashe">{pritet.kohe ? VONON.titulli : "Pa internet"}</T>
           <T zbehur madhesia={13} accessibilityLiveRegion="polite">
-            {`"${pritet.name}" është zgjedhur dhe po pret. Kur të lidhesh me internet, prek Provo përsëri: s'ke pse e zgjedh sërish.`}
+            {pritet.kohe
+              ? `${VONON.ngarkimi} ${VONON.bere}`
+              : tekstiIPlote(paInternet(`"${pritet.skedari.name}" mbetet i zgjedhur`, false))}
           </T>
           <Prekshme
             onPress={provoNgarkimin}
@@ -195,9 +203,15 @@ export default function CvIndex() {
 
       {gabimi && teDhenat === null ? (
         <Karta style={styles.gabimi}>
-          <T pesha="trashe">{eshteGabimRrjeti(gabimi) ? "Pa internet" : "S'u lexuan CV-të e tua"}</T>
+          <T pesha="trashe">
+            {eshteGabimRrjeti(gabimi) ? "Pa internet" : eshteGabimKohe(gabimi) ? VONON.titulli : "S'u lexuan CV-të e tua"}
+          </T>
           <T zbehur madhesia={13}>
-            {eshteGabimRrjeti(gabimi) ? "Lidhu me internet dhe versionet shfaqen vetë. Ose prek Provo përsëri." : gabimi}
+            {eshteGabimRrjeti(gabimi)
+              ? tekstiIPlote(paInternet("s'kemi ende CV të ruajtura për t'i shfaqur"))
+              : eshteGabimKohe(gabimi)
+                ? `${gabimi} ${VONON.bere}`
+                : gabimi}
           </T>
           <Prekshme
             onPress={() => {

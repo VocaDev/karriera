@@ -10,6 +10,7 @@
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { HYR_PERSERI, PA_INTERNET_SHKURT, VONON } from "@/lib/mesazhet";
 import { supabase } from "@/lib/supabase";
 
 // ---------- Tipet ----------
@@ -214,8 +215,8 @@ async function mesazhiIFunksionit(gabimi: unknown, rezerva: string): Promise<str
     }
     return rezerva;
   }
-  if (gabimi instanceof FunctionsFetchError) return "Pa internet ose serveri s'u përgjigj. Provo përsëri.";
-  if (gabimi instanceof FunctionsRelayError) return "Serveri s'u përgjigj. Provo përsëri.";
+  if (gabimi instanceof FunctionsFetchError) return PA_INTERNET_SHKURT;
+  if (gabimi instanceof FunctionsRelayError) return VONON.pergjithshme;
   return rezerva;
 }
 
@@ -234,7 +235,7 @@ async function thirrFunksionin(emri: "cv-review" | "cv-create", body: object, re
     const { error: gabimiRifreskimit } = await supabase.auth.refreshSession();
     if (gabimiRifreskimit) {
       await supabase.auth.signOut({ scope: "local" });
-      throw new Error("Sesioni ka skaduar. Hyr përsëri.");
+      throw new Error(HYR_PERSERI.cfare); // dalja nga llogaria e çon përdoruesin te hyrja, ku del karta "Hyr përsëri"
     }
     ({ data, error } = await supabase.functions.invoke(emri, { body }));
   }

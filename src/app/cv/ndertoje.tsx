@@ -12,7 +12,8 @@ import { Faqja, Karta, Progresi, T, Titulli } from "@/components/ui";
 import { krijoCV, ruajCV } from "@/lib/cv";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
-import { eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 const PYETJET = [
@@ -37,13 +38,14 @@ export default function NdertojeCV() {
   const [pergjigjet, setPergjigjet] = useState<string[]>(["", "", "", "", ""]);
   const [provoi, setProvoi] = useState(false); // shenja nën fushë del vetëm pas provës së parë
   const [dukeKrijuar, setDukeKrijuar] = useState(false);
-  const [deshtoNgaRrjeti, setDeshtoNgaRrjeti] = useState(false); // përpjekja e fundit dështoi pse s'ka internet
+  // Përpjekja e fundit dështoi: "rrjeti" (s'ka internet) ose "kohe" (s'mbaroi në kohë). Përgjigjet mbeten në ekran.
+  const [deshtimi, setDeshtimi] = useState<"rrjeti" | "kohe" | null>(null);
 
   const pyetja = PYETJET[hapi];
   const pergjigjja = pergjigjet[hapi];
   const eZbrazet = !pergjigjja.trim();
   const eFundit = hapi === PYETJET.length - 1;
-  const paInternet = eFundit && (!kaInternet || deshtoNgaRrjeti);
+  const paInternetKtu = eFundit && (!kaInternet || deshtimi === "rrjeti");
 
   function ndryshoPergjigjen(teksti: string) {
     setPergjigjet((vjetra) => vjetra.map((v, i) => (i === hapi ? teksti : v)));
@@ -65,23 +67,24 @@ export default function NdertojeCV() {
 
     if (!kaInternet) {
       // Përgjigjet qëndrojnë në ekran (gjendja e këtij ekrani): s'humb asgjë, "Provo përsëri" i dërgon kur lidhesh.
-      setDeshtoNgaRrjeti(true);
+      setDeshtimi("rrjeti");
       prekja.gabim();
       dridhu();
       return;
     }
 
     setDukeKrijuar(true);
-    setDeshtoNgaRrjeti(false);
+    setDeshtimi(null);
     try {
-      const cv = await meKohe(krijoCV({ pergjigjet }, "ks", "sq"), KOHA_E_AI);
-      const versioni = await meKohe(ruajCV(cv, "ks", "sq"), KOHA_E_LEXIMIT);
+      const cv = await meKohe(krijoCV({ pergjigjet }, "ks", "sq"), KOHA_E_AI, VONON.krijimi);
+      const versioni = await meKohe(ruajCV(cv, "ks", "sq"), KOHA_E_LEXIMIT, VONON.krijimi);
       prekja.sukses();
       njofto("CV-ja u krijua", "sukses");
       router.replace({ pathname: "/cv/dokumenti", params: { id: versioni.id } });
     } catch (e) {
       prekja.gabim();
-      if (eshteGabimRrjeti(e)) setDeshtoNgaRrjeti(true);
+      if (eshteGabimRrjeti(e)) setDeshtimi("rrjeti");
+      else if (eshteGabimKohe(e)) setDeshtimi("kohe");
       else njofto(e instanceof Error ? e.message : "Krijimi i CV-së dështoi.", "gabim");
     } finally {
       setDukeKrijuar(false);
@@ -90,7 +93,7 @@ export default function NdertojeCV() {
 
   return (
     <Faqja>
-      <ShiritiPaInternet teksti="Pa internet · përgjigjet e tua ruhen këtu" />
+      <ShiritiPaInternet teksti={paInternet("përgjigjet e tua mbeten këtu", false).cfare} />
       <View style={styles.krye}>
         <T zbehur pesha="gjysme" madhesia={12}>
           NDËRTO CV-NË · HAPI {hapi + 1} NGA {PYETJET.length}
@@ -121,9 +124,13 @@ export default function NdertojeCV() {
           <T ngjyra={t.keq} madhesia={13}>
             Shkruaj një përgjigje para se të vazhdosh.
           </T>
-        ) : paInternet ? (
+        ) : paInternetKtu ? (
           <T pesha="gjysme" madhesia={13} accessibilityLiveRegion="polite">
-            Pa internet. Përgjigjet e tua janë ruajtur këtu: kur të lidhesh, prek Provo përsëri.
+            {tekstiIPlote(paInternet("përgjigjet e tua mbeten këtu", false))}
+          </T>
+        ) : deshtimi === "kohe" ? (
+          <T pesha="gjysme" madhesia={13} accessibilityLiveRegion="polite">
+            {`${VONON.titulli}. ${VONON.krijimi} ${VONON.bere}`}
           </T>
         ) : (
           <T zbehur madhesia={12}>
@@ -137,7 +144,7 @@ export default function NdertojeCV() {
           <Prekshme
             disabled={dukeKrijuar}
             onPress={() => {
-              setDeshtoNgaRrjeti(false);
+              setDeshtimi(null);
               setHapi((h) => h - 1);
             }}
             accessibilityRole="button"
@@ -159,7 +166,7 @@ export default function NdertojeCV() {
               <ActivityIndicator color={t.sfondi} />
             ) : (
               <T ngjyra={t.sfondi} pesha="trashe">
-                {eFundit ? (deshtoNgaRrjeti ? "Provo përsëri" : "Krijo CV-në") : "Vazhdo"}
+                {eFundit ? (deshtimi ? "Provo përsëri" : "Krijo CV-në") : "Vazhdo"}
               </T>
             )}
           </Prekshme>

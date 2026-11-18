@@ -32,6 +32,7 @@ import { AvatariIntervistuesit, KartaEGabimit } from "@/lib/intervista/ui";
 import { useIntervista } from "@/lib/intervista/useIntervista";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { eshteGabimRrjeti, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
@@ -44,6 +45,9 @@ const MBYLLJA: Record<Gjuha, string> = {
   en: "That's all from my side, thank you for your time.",
   de: "Das war's von meiner Seite, vielen Dank für Ihre Zeit.",
 };
+
+// Mesazhet e rrjetit (mesazhet.ts): përgjigjja e shkruar nuk humbet kurrë.
+const PA_INTERNET_PERGJIGJJA = paInternet("përgjigjja jote është ruajtur këtu", false);
 
 const DERGO = { ios: "arrow.up", android: "arrow_upward" };
 const MAJTAS = { ios: "chevron.left", android: "chevron_left" };
@@ -72,6 +76,7 @@ export default function IntervistaEkrani() {
   const mundTeDergoje = gjendja.faza === "pret_pergjigjen" && teksti.trim().length > 0;
   // Gabimi i fundit është mungesa e internetit (jo AI-ja, jo serveri): kartës i japim titullin "Pa internet".
   const paInternetGabim = gjendja.faza === "gabim" && eshteGabimRrjeti(gjendja.gabimi);
+  const vononGabim = gjendja.faza === "gabim" && gjendja.gabimi.kodi === "vonese";
 
   // Raporti gati → rezultatet (zëvendëson këtë ekran, që "mbrapa" të mos kthejë në një intervistë të mbaruar).
   useEffect(() => {
@@ -119,7 +124,7 @@ export default function IntervistaEkrani() {
     if (!kaInternet) {
       // Pa internet përgjigjja s'niset dhe s'fshihet nga fusha: mbetet aty derisa të lidhesh.
       prekja.gabim();
-      njofto("Pa internet. Përgjigjja jote mbetet këtu.", "gabim");
+      njofto(PA_INTERNET_PERGJIGJJA.cfare, "gabim");
       return;
     }
     if (dergo(teksti)) setTeksti("");
@@ -167,7 +172,7 @@ export default function IntervistaEkrani() {
       </View>
 
       <View style={styles.shiriti}>
-        <ShiritiPaInternet teksti="Pa internet · përgjigjja jote s'humbet" style={styles.shiritiLart} />
+        <ShiritiPaInternet teksti={PA_INTERNET_PERGJIGJJA.cfare} style={styles.shiritiLart} />
       </View>
 
       <ScrollView
@@ -199,8 +204,10 @@ export default function IntervistaEkrani() {
           <KartaEGabimit
             titulli={
               paInternetGabim
-                ? "Pa internet"
-                : gjendja.veprimi === "dergo"
+                ? PA_INTERNET_PERGJIGJJA.titulli
+                : vononGabim
+                  ? VONON.titulli
+                  : gjendja.veprimi === "dergo"
                   ? "Përgjigjja s'u dërgua"
                   : gjendja.veprimi === "ngarko"
                     ? "Intervista s'u hap"
@@ -209,9 +216,11 @@ export default function IntervistaEkrani() {
             mesazhi={
               paInternetGabim
                 ? gjendja.veprimi === "dergo" && gjendja.pergjigja
-                  ? "Përgjigjja jote s'humbet: ruhet këtu. Kur të lidhesh, prek Provo përsëri."
-                  : "Lidhu me internet dhe prek Provo përsëri."
-                : gjendja.veprimi === "dergo" && gjendja.pergjigja
+                  ? tekstiIPlote(PA_INTERNET_PERGJIGJJA)
+                  : tekstiIPlote(paInternet("intervista nuk u hap", false))
+                : vononGabim
+                  ? `${gjendja.gabimi.message} ${VONON.bere}`
+                  : gjendja.veprimi === "dergo" && gjendja.pergjigja
                   ? `${gjendja.gabimi.message} Përgjigjja jote s'humbet.`
                   : gjendja.gabimi.message
             }

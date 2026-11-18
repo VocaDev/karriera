@@ -1,7 +1,9 @@
 // Të gjitha thirrjet e Supabase Auth dhe të profilit. Ekranet thërrasin vetëm këto funksione.
 // Roli (lloji) jeton te tabela profiles dhe e mbron RLS-i; nuk lexohet kurrë nga user_metadata.
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { HYR_PERSERI } from "@/lib/mesazhet";
 import { pastroKeshinEPuneve } from "@/lib/punet-kesh";
+import { shenoDaljenVullnetare } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
 
 export type Lloji = "kerkues" | "punedhenes" | "qender";
@@ -80,6 +82,7 @@ export async function regjistrohu(d: TeDhenatERegjistrimit): Promise<void> {
 
 /** Dalja: fshin sesionin nga telefoni. */
 export async function dil(): Promise<void> {
+  shenoDaljenVullnetare(); // dalja jonë s'është "sesion i mbaruar"
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(mesazhiIGabimit(error));
   await pastroKeshinEPuneve(); // lista e ruajtur e punëve s'mbetet në telefon pas daljes
@@ -102,7 +105,7 @@ export async function merrProfilin(): Promise<Profili | null> {
 export async function ndryshoProfilin(ndryshimet: { roli_synuar?: RoliSynuar; gjuha?: Gjuha }): Promise<Profili> {
   const { data: sesioni } = await supabase.auth.getSession();
   const uid = sesioni.session?.user.id;
-  if (!uid) throw new Error("Sesioni ka mbaruar. Hyr përsëri.");
+  if (!uid) throw new Error(HYR_PERSERI.cfare);
   const { data, error } = await supabase
     .from("profiles")
     .update(ndryshimet)

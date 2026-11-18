@@ -5,6 +5,7 @@ import { useNetworkState } from "expo-network";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { eshtePaInternet } from "@/lib/hyrja-offline";
+import { eshteTekstVonese, FILLIMI_PA_INTERNET, VONON } from "@/lib/mesazhet";
 
 // Debounce: një humbje e shkurtër e sinjalit (ashensor, ndërrimi Wi-Fi ↔ 4G) s'duhet të ndezë shiritin;
 // kthimi i internetit pranohet më shpejt, që ekrani të rifreskohet pa vonesë.
@@ -57,27 +58,41 @@ export function useRrjeti(kurKthehet?: () => void): Rrjeti {
 
 /**
  * A është ky gabim një gabim rrjeti (pa internet)? Njeh gabimet e Supabase, gabimet e Edge Function-eve dhe
- * mesazhet në shqip që lib/*.ts i ndërtojnë nga ato (p.sh. "Pa internet. Kontrollo lidhjen…").
- * `FunctionsRelayError` është problem i serverit, jo i telefonit: llogaritet "pa internet" vetëm kur sistemi
- * thotë se s'ka lidhje (`kaInternet` false); përndryshe ekrani tregon tekstin e gabimit të serverit.
+ * mesazhet në shqip që lib/*.ts i ndërtojnë nga ato (shih `FILLIMI_PA_INTERNET` te mesazhet.ts).
+ * `FunctionsRelayError` është problem i shërbimit, jo i telefonit: llogaritet "pa internet" vetëm kur sistemi
+ * thotë se s'ka lidhje (`kaInternet` false); përndryshe ekrani tregon mesazhin e vonesës.
  */
 export function eshteGabimRrjeti(gabimi: unknown, kaInternet = true): boolean {
   if (gabimi instanceof FunctionsFetchError) return true;
   if (gabimi instanceof FunctionsRelayError) return !kaInternet;
-  if (typeof gabimi === "string") return gabimi.toLowerCase().includes("pa internet");
+  if (typeof gabimi === "string") return gabimi.startsWith(FILLIMI_PA_INTERNET);
   if (typeof gabimi !== "object" || gabimi === null) return false;
   const g = gabimi as { name?: string; code?: string; status?: number; message?: string };
-  return eshtePaInternet(g) || (g.message ?? "").toLowerCase().includes("pa internet");
+  return eshtePaInternet(g) || (g.message ?? "").startsWith(FILLIMI_PA_INTERNET);
 }
 
-export const MESAZHI_PA_INTERNET = "Pa internet. Kontrollo lidhjen dhe provo përsëri.";
+/** Ruajtësi i kohës mbaroi (ose shërbimi s'u përgjigj): mesazhi është fjalia e plotë nga `VONON`. */
+export class GabimKohe extends Error {
+  constructor(mesazhi: string) {
+    super(mesazhi);
+    this.name = "GabimKohe";
+  }
+}
+
+/** A është ky gabim "po vonon më shumë se zakonisht" (ruajtësi i kohës ose një përgjigje që s'erdhi në kohë)? */
+export function eshteGabimKohe(gabimi: unknown): boolean {
+  if (gabimi instanceof GabimKohe || gabimi instanceof FunctionsRelayError) return true;
+  if (typeof gabimi === "string") return eshteTekstVonese(gabimi);
+  return typeof gabimi === "object" && gabimi !== null && eshteTekstVonese((gabimi as { message?: string }).message ?? "");
+}
 
 /**
- * Ruajtësi i kohës: një thirrje që varet (lidhje që "ka" por s'çon askund) bëhet gabim rrjeti pas `ms`,
- * kështu ekrani s'mbetet kurrë me një rrotë pa fund. Thirrja origjinale s'ndalet (supabase-js s'merr
- * anulim këtu); rezultati i saj i vonuar injorohet.
+ * Ruajtësi i kohës: një thirrje që varet (lidhje që "ka" por s'çon askund) bëhet gabim pas `ms`, kështu ekrani
+ * s'mbetet kurrë me një rrotë pa fund. `fjalia`: çka nuk mbaroi (një nga `VONON`), ose një funksion që e
+ * ndërton gabimin vetë. Thirrja origjinale s'ndalet (supabase-js s'merr anulim këtu); rezultati i saj i vonuar injorohet.
  */
-export function meKohe<T>(premtimi: Promise<T>, ms: number, gabimi: () => Error = () => new Error(MESAZHI_PA_INTERNET)): Promise<T> {
+export function meKohe<T>(premtimi: Promise<T>, ms: number, fjalia: string | (() => Error) = VONON.leximi): Promise<T> {
+  const gabimi = typeof fjalia === "string" ? () => new GabimKohe(fjalia) : fjalia;
   return new Promise<T>((zgjidhur, refuzuar) => {
     const ora = setTimeout(() => refuzuar(gabimi()), ms);
     premtimi.then(
