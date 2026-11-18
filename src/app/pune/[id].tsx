@@ -196,7 +196,12 @@ export default function DetajetEPunes() {
             </T>
           </View>
         )}
-        {puna.burimi === "perdoruesi" && <Chip teksti="Shtuar nga një përdorues" />}
+        {/* Punë e shtuar me "Sill linkun tënd": RLS-i ia tregon vetëm pronarit. */}
+        {puna.private ? (
+          <Chip teksti="Vetëm ti e sheh" />
+        ) : (
+          puna.burimi === "perdoruesi" && <Chip teksti="Shtuar nga një përdorues" />
+        )}
         {emriIPortalit && <Chip teksti={emriIPortalit} />}
       </View>
       <T pesha="trashe" madhesia={26} style={styles.titulli} accessibilityRole="header">
