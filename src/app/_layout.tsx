@@ -102,6 +102,17 @@ function Navigimi({ t }: { t: Tema }) {
             <Stack.Screen name="cilesimet" options={{ title: "Cilësimet" }} />
             {/* Rindërto CV-në: sugjerimet e pranuara të analizës, të zbatuara pa AI (14.11). */}
             <Stack.Screen name="cv/rindertoje" options={{ title: "" }} />
+            {/* "Sill linkun tënd" (J7): fletë me dorezë; X-i i rrumbullakët është brenda ekranit. */}
+            <Stack.Screen
+              name="pune/sill-linkun"
+              options={{
+                presentation: "formSheet",
+                headerShown: false,
+                sheetGrabberVisible: true,
+                sheetAllowedDetents: [0.75, 1],
+                sheetCornerRadius: 24,
+              }}
+            />
           </Stack.Protected>
           {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
           <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>

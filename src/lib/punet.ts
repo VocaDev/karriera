@@ -19,6 +19,8 @@ export type Puna = {
   afati: string | null; // YYYY-MM-DD, afati i aplikimit
   aktive: boolean; // false = skadoi ose s'është më te portali
   kerkesat: Kerkesat | null; // nxjerrë nga AI-ja nga shpallja e portalit; null = s'u nxor (shih lexoKerkesat)
+  // true = shtuar nga kërkuesi me "Sill linkun tënd": e sheh vetëm ai (RLS, migrimi 20261118100000).
+  private: boolean;
 };
 
 /**
@@ -70,7 +72,7 @@ export function lexoKerkesat(raw: unknown): Kerkesat | null {
 /** Rreshti nga Supabase → Puna (kerkesat kalon nga lexoKerkesat). */
 function nePune(rreshti: unknown): Puna {
   const r = rreshti as Puna;
-  return { ...r, kerkesat: lexoKerkesat(r.kerkesat) };
+  return { ...r, kerkesat: lexoKerkesat(r.kerkesat), private: r.private === true };
 }
 
 export type Portali = "kosovajob" | "portalpune" | "ofertapune";
@@ -82,7 +84,7 @@ export const EMRI_I_PORTALIT: Record<Portali, string> = {
 };
 
 const FUSHAT =
-  "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me, pronari_id, linku, portali, afati, aktive, kerkesat";
+  "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me, pronari_id, linku, portali, afati, aktive, kerkesat, private";
 
 // M1: lexon listën nga tabela "punet" (më të rejat lart). Vetëm punët aktive: shpalljet e skaduara
 // të portaleve mbeten në tabelë (që ⭐ të mos humbasin), por s'dalin më në listë.
@@ -158,4 +160,117 @@ export function degjoPunetERe(emriIKanalit: string, kurVjen: (puna: Puna) => voi
   return () => {
     supabase.removeChannel(kanali);
   };
+}
+
+// ---------- "Sill linkun tënd" (J7): kërkuesi shton një shpallje që e gjeti diku tjetër, si punë private ----------
+
+/** Kufijtë e njëjtë me bazën (check constraints te punet + migrimi 20261118100000). */
+export const KUFIJTE_E_LINKUT = { linku: 500, titulli: 120, kompania: 80, qyteti: 60, pershkrimi: 4000 } as const;
+
+/** Kur përdoruesi s'e jep qytetin. Baza e kërkon (2–60 shkronja) dhe s'e sajojmë. */
+export const PA_QYTET = "Pa qytet";
+
+// Parametrat e gjurmimit s'e ndryshojnë shpalljen: hiqen, që i njëjti link të njihet si i njëjtë.
+const GJURMIMI = /^(utm_[a-z]+|fbclid|gclid|dclid|msclkid|igshid|mc_cid|mc_eid|_ga|ref_src)$/i;
+// Domene që s'janë faqe publike: rrjeti i brendshëm i kompjuterit, i shtëpisë apo i kompanisë.
+const EMRAT_E_BRENDSHEM = /(^|\.)(localhost|local|internal|intranet|lan|home|corp|test|invalid|example)$/i;
+
+export type LinkuIKontrolluar = { ok: true; linku: string } | { ok: false; gabimi: string };
+
+/**
+ * Teksti i ngjitur → linku në formën kanonike, ose arsyeja pse s'pranohet (në shqip).
+ * Vetëm https, me emër domeni (jo IP, jo localhost), pa "user:pass@". Kanonike: domeni me shkronja të vogla,
+ * pa portin 443, pa "#...", pa parametrat e gjurmimit, pa "/" në fund. Pa `new URL()`: në React Native s'është i plotë.
+ */
+export function kontrolloLinkun(teksti: string): LinkuIKontrolluar {
+  let s = teksti.trim();
+  if (!s) return { ok: false, gabimi: "Ngjit linkun e shpalljes." };
+  if (/\s/.test(s)) return { ok: false, gabimi: "Linku s'duhet të ketë hapësira. Kopjoje përsëri nga shfletuesi." };
+  if (/^http:\/\//i.test(s)) return { ok: false, gabimi: "Linku duhet të fillojë me https:// (lidhje e sigurt)." };
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = `https://${s}`; // "kosovajob.com/..." pa skemë
+  const pjeset = /^https:\/\/([^/?#]+)([^?#]*)(\?[^#]*)?(#.*)?$/i.exec(s);
+  if (!pjeset) return { ok: false, gabimi: "Ky s'duket si link i një faqeje (https://...)." };
+  const [, autoriteti, rruga, pyetja] = pjeset;
+  if (autoriteti.includes("@")) return { ok: false, gabimi: "Linku s'duhet të ketë emër përdoruesi apo fjalëkalim." };
+
+  const hp = /^([^:]+)(?::(\d{1,5}))?$/.exec(autoriteti);
+  if (!hp) return { ok: false, gabimi: "Adresa e faqes s'është e saktë." };
+  const domeni = hp[1].toLowerCase().replace(/\.$/, "");
+  const porti = hp[2] && hp[2] !== "443" ? `:${hp[2]}` : "";
+  if (/^\d+(\.\d+){3}$/.test(domeni) || domeni.startsWith("[")) {
+    return { ok: false, gabimi: "Përdor linkun me emrin e faqes, jo me adresë IP." };
+  }
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,63}|xn--[a-z0-9-]{1,59})$/.test(domeni) || EMRAT_E_BRENDSHEM.test(domeni)) {
+    return { ok: false, gabimi: "Ky s'duket si link i një faqeje publike." };
+  }
+
+  const rrugaPa = rruga.length > 1 ? rruga.replace(/\/+$/, "") : "";
+  const parametrat = (pyetja ?? "")
+    .slice(1)
+    .split("&")
+    .filter((p) => p && !GJURMIMI.test(p.split("=")[0]));
+  const linku = `https://${domeni}${porti}${rrugaPa}${parametrat.length ? `?${parametrat.join("&")}` : ""}`;
+  if (linku.length > KUFIJTE_E_LINKUT.linku) return { ok: false, gabimi: "Linku është shumë i gjatë (maksimumi 500 shkronja)." };
+  return { ok: true, linku };
+}
+
+export type PunaNgaLinku = { linku: string; titulli: string; kompania: string; qyteti?: string; pershkrimi?: string };
+
+/** Gabimet e shtimit: fjalia e bazës për rastet që i njohim, përndryshe mesazhiIGabimit (internet etj.). */
+function gabimiIShtimit(gabimi: { code?: string; hint?: string | null; message?: string }): Error {
+  if (gabimi.code === "P0001" && gabimi.hint === "kufiri_private" && gabimi.message) return new Error(gabimi.message);
+  if (gabimi.code === "23514") return new Error("Disa fusha s'janë të sakta. Kontrollo linkun dhe titullin.");
+  if (gabimi.code === "42501") return new Error("Vetëm llogaritë e kërkuesve mund të shtojnë punë me link.");
+  return new Error(mesazhiIGabimit(gabimi));
+}
+
+/** Puna e dukshme për mua me këtë link (imja private, ose një shpallje publike, p.sh. nga portali), ose null. */
+async function gjePunenMeLink(linku: string): Promise<Puna | null> {
+  const { data, error } = await supabase.from("punet").select(FUSHAT).eq("linku", linku).limit(1).maybeSingle();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  return data ? nePune(data) : null;
+}
+
+/**
+ * "Sill linkun tënd": shton një punë private (e sheh vetëm kërkuesi që e shtoi; RLS punet_shto_private + punet_lexo).
+ * Një link një herë: nëse e ke shtuar më parë, ose shpallja është tashmë në Karriera nga portali, kthehet ajo
+ * (`ekzistonte: true`) në vend të një kopjeje. pronari_id s'dërgohet: e vendos serveri (default auth.uid()).
+ * `pershkrimi` = teksti i shpalljes që e ngjit vetë përdoruesi (opsional); "A jam gati?" e lexon kur s'ka kërkesat e AI-së.
+ */
+export async function shtoPunenNgaLinku(
+  hyrja: PunaNgaLinku,
+  roli: Puna["roli"] = "Tjetër",
+): Promise<{ puna: Puna; ekzistonte: boolean }> {
+  const kontrolli = kontrolloLinkun(hyrja.linku);
+  if (!kontrolli.ok) throw new Error(kontrolli.gabimi);
+  const titulli = hyrja.titulli.trim();
+  const kompania = hyrja.kompania.trim();
+  const qyteti = hyrja.qyteti?.trim() || PA_QYTET;
+  const pershkrimi = hyrja.pershkrimi?.trim() ?? "";
+  if (titulli.length < 3 || titulli.length > KUFIJTE_E_LINKUT.titulli) throw new Error("Titulli duhet të ketë 3 deri në 120 shkronja.");
+  if (kompania.length < 2 || kompania.length > KUFIJTE_E_LINKUT.kompania) {
+    throw new Error("Kompania duhet të ketë 2 deri në 80 shkronja.");
+  }
+  if (qyteti.length < 2 || qyteti.length > KUFIJTE_E_LINKUT.qyteti) throw new Error("Qyteti duhet të ketë 2 deri në 60 shkronja.");
+  if (pershkrimi.length > KUFIJTE_E_LINKUT.pershkrimi) {
+    throw new Error("Teksti i shpalljes është shumë i gjatë (maksimumi 4000 shkronja).");
+  }
+
+  const ekziston = await gjePunenMeLink(kontrolli.linku);
+  if (ekziston) return { puna: ekziston, ekzistonte: true };
+
+  const { data, error } = await supabase
+    .from("punet")
+    .insert({ titulli, kompania, qyteti, roli, pershkrimi, linku: kontrolli.linku, burimi: "perdoruesi", private: true })
+    .select(FUSHAT)
+    .single();
+  if (error) {
+    // Dy prekje njëra pas tjetrës (ose dy telefona): indeksi unik e ndalon kopjen; kthejmë atë që u shtua.
+    if (error.code === "23505") {
+      const ePara = await gjePunenMeLink(kontrolli.linku);
+      if (ePara) return { puna: ePara, ekzistonte: true };
+    }
+    throw gabimiIShtimit(error);
+  }
+  return { puna: nePune(data), ekzistonte: false };
 }
