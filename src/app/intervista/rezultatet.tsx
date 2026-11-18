@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Pulsi, Vije } from "@/components/Skeleti";
@@ -82,6 +82,7 @@ export default function RezultatetEkrani() {
   const id = idNgaRruga ?? zgjedhur;
 
   const [rilexo, setRilexo] = useState(0);
+  const [rilexoListen, setRilexoListen] = useState(0); // vetëm kur vetë lista dështoi
   useEffect(() => {
     if (idNgaRruga) return;
     let aktiv = true;
@@ -104,7 +105,7 @@ export default function RezultatetEkrani() {
     return () => {
       aktiv = false;
     };
-  }, [idNgaRruga, rilexo]);
+  }, [idNgaRruga, rilexoListen]);
 
   useEffect(() => {
     if (!id) return;
@@ -121,8 +122,36 @@ export default function RezultatetEkrani() {
     };
   }, [id, rilexo]);
 
+  const zgjedhesi =
+  !idNgaRruga && lista.length > 1 ? (
+      <View style={styles.lista} accessibilityLabel="Intervistat e mëparshme">
+        {lista.slice(0, 5).map((i) => (
+          <Pressable
+            key={i.id}
+            accessibilityRole="button"
+            accessibilityState={{ selected: i.id === id }}
+            onPress={() => {
+              if (i.id === id) return;
+              prekja.zgjedhje();
+              setGjendja({ lloji: "ngarkon" });
+              setZgjedhur(i.id);
+            }}
+            style={[styles.listaRresht, { backgroundColor: i.id === id ? t.karta2 : "transparent", borderColor: t.vija }]}
+          >
+            <T pesha={i.id === id ? "trashe" : "gjysme"} madhesia={13.5} style={styles.flex} numberOfLines={1}>
+              {i.puna ?? "Punë e hequr"}
+            </T>
+            <T zbehur madhesia={12.5}>
+              {formatoDaten(i.data)}
+              {i.nota !== null ? ` · ${i.nota}/100` : ""}
+            </T>
+          </Pressable>
+        ))}
+      </View>
+    ) : null;
+
   if (gjendja.lloji === "ngarkon" || gjendja.lloji === "pret") {
-    return <PoPergatitet pret={gjendja.lloji === "pret"} />;
+    return <PoPergatitet pret={gjendja.lloji === "pret"}>{zgjedhesi}</PoPergatitet>;
   }
 
   if (gjendja.lloji === "bosh") {
@@ -145,6 +174,7 @@ export default function RezultatetEkrani() {
   if (gjendja.lloji === "gabim" || gjendja.lloji === "nuk_u_gjet" || gjendja.lloji === "aktive") {
     return (
       <Faqja>
+        {zgjedhesi}
         {gjendja.lloji === "gabim" && (
           <KartaEGabimit
             titulli="Rezultatet s'u përgatitën"
@@ -153,7 +183,8 @@ export default function RezultatetEkrani() {
               gjendja.riprovohet
                 ? () => {
                     setGjendja({ lloji: "ngarkon" });
-                    setRilexo((n) => n + 1);
+                    if (!idNgaRruga && !zgjedhur) setRilexoListen((n) => n + 1);
+                    else setRilexo((n) => n + 1);
                   }
                 : undefined
             }
@@ -186,32 +217,7 @@ export default function RezultatetEkrani() {
 
   return (
     <Faqja>
-      {!idNgaRruga && lista.length > 1 && (
-        <View style={styles.lista} accessibilityLabel="Intervistat e mëparshme">
-          {lista.slice(0, 5).map((i) => (
-            <Pressable
-              key={i.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: i.id === id }}
-              onPress={() => {
-                if (i.id === id) return;
-                prekja.zgjedhje();
-                setGjendja({ lloji: "ngarkon" });
-                setZgjedhur(i.id);
-              }}
-              style={[styles.listaRresht, { backgroundColor: i.id === id ? t.karta2 : "transparent", borderColor: t.vija }]}
-            >
-              <T pesha={i.id === id ? "trashe" : "gjysme"} madhesia={13.5} style={styles.flex} numberOfLines={1}>
-                {i.puna ?? "Punë e hequr"}
-              </T>
-              <T zbehur madhesia={12.5}>
-                {formatoDaten(i.data)}
-                {i.nota !== null ? ` · ${i.nota}/100` : ""}
-              </T>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      {zgjedhesi}
       <Titulli>Intervista mbaroi</Titulli>
       <T zbehur madhesia={15}>
         {raporti.puna.titulli} · {raporti.puna.kompania}
@@ -433,9 +439,10 @@ function Pika({ ngjyra, etiketa, teksti }: { ngjyra: string; etiketa: string; te
 }
 
 /** Ekrani 26: gjatë pritjes skeleti ka formën e rezultateve, që asgjë të mos kërcejë kur vijnë. */
-function PoPergatitet({ pret }: { pret: boolean }) {
+function PoPergatitet({ pret, children }: { pret: boolean; children?: ReactNode }) {
   return (
     <Faqja>
+      {children}
       <View accessibilityLiveRegion="polite" style={styles.pritja}>
         <T pesha="trashe" madhesia={22}>
           {pret ? "Po i përgatis rezultatet" : "Po hapen rezultatet"}

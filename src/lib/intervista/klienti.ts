@@ -230,13 +230,13 @@ export async function lexoIntervisten(intervistaId: string): Promise<IntervistaE
 
 export type PerMbledhjeIntervistes = { id: string; nota: number | null; data: string; puna: string | null };
 
-/** Intervistat e mia të përfunduara (raporti gati), më e reja e para. RLS: vetëm të miat. */
+/** Intervistat e mia që kanë mbaruar (raporti gati ose ende pa u shkruar), më e reja e para. RLS: vetëm të miat. */
 export async function listoIntervistatEPerfunduara(kufiri = 10): Promise<PerMbledhjeIntervistes[]> {
   const { data, error } = await supabase
     .from("intervistat")
     .select("id, nota, krijuar_me, perfunduar_me, punet(titulli, kompania)")
-    .eq("gjendja", "perfunduar")
-    .order("perfunduar_me", { ascending: false, nullsFirst: false })
+    .in("gjendja", ["mbaroi", "po_vleresohet", "perfunduar"])
+    .order("krijuar_me", { ascending: false })
     .limit(kufiri);
   if (error) throw new GabimIIntervistes(mesazhiIGabimit(error), "rrjeti");
   return (data ?? []).flatMap((r) => {
