@@ -7,10 +7,12 @@ import Animated from "react-native-reanimated";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Faqja, Karta, Progresi, T, Titulli } from "@/components/ui";
 import { krijoCV, ruajCV } from "@/lib/cv";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 const PYETJET = [
@@ -29,15 +31,19 @@ export default function NdertojeCV() {
   const router = useRouter();
   const njofto = useNjoftim();
   const { stili: stiliIDridhjes, dridhu } = useDridhja();
+  const { kaInternet } = useRrjeti();
 
   const [hapi, setHapi] = useState(0);
   const [pergjigjet, setPergjigjet] = useState<string[]>(["", "", "", "", ""]);
   const [provoi, setProvoi] = useState(false); // shenja nën fushë del vetëm pas provës së parë
   const [dukeKrijuar, setDukeKrijuar] = useState(false);
+  const [deshtoNgaRrjeti, setDeshtoNgaRrjeti] = useState(false); // përpjekja e fundit dështoi pse s'ka internet
 
   const pyetja = PYETJET[hapi];
   const pergjigjja = pergjigjet[hapi];
   const eZbrazet = !pergjigjja.trim();
+  const eFundit = hapi === PYETJET.length - 1;
+  const paInternet = eFundit && (!kaInternet || deshtoNgaRrjeti);
 
   function ndryshoPergjigjen(teksti: string) {
     setPergjigjet((vjetra) => vjetra.map((v, i) => (i === hapi ? teksti : v)));
@@ -57,16 +63,26 @@ export default function NdertojeCV() {
       return;
     }
 
+    if (!kaInternet) {
+      // Përgjigjet qëndrojnë në ekran (gjendja e këtij ekrani): s'humb asgjë, "Provo përsëri" i dërgon kur lidhesh.
+      setDeshtoNgaRrjeti(true);
+      prekja.gabim();
+      dridhu();
+      return;
+    }
+
     setDukeKrijuar(true);
+    setDeshtoNgaRrjeti(false);
     try {
-      const cv = await krijoCV({ pergjigjet }, "ks", "sq");
-      const versioni = await ruajCV(cv, "ks", "sq");
+      const cv = await meKohe(krijoCV({ pergjigjet }, "ks", "sq"), KOHA_E_AI);
+      const versioni = await meKohe(ruajCV(cv, "ks", "sq"), KOHA_E_LEXIMIT);
       prekja.sukses();
       njofto("CV-ja u krijua", "sukses");
       router.replace({ pathname: "/cv/dokumenti", params: { id: versioni.id } });
     } catch (e) {
       prekja.gabim();
-      njofto(e instanceof Error ? e.message : "Krijimi i CV-së dështoi.", "gabim");
+      if (eshteGabimRrjeti(e)) setDeshtoNgaRrjeti(true);
+      else njofto(e instanceof Error ? e.message : "Krijimi i CV-së dështoi.", "gabim");
     } finally {
       setDukeKrijuar(false);
     }
@@ -74,6 +90,7 @@ export default function NdertojeCV() {
 
   return (
     <Faqja>
+      <ShiritiPaInternet teksti="Pa internet · përgjigjet e tua ruhen këtu" />
       <View style={styles.krye}>
         <T zbehur pesha="gjysme" madhesia={12}>
           NDËRTO CV-NË · HAPI {hapi + 1} NGA {PYETJET.length}
@@ -104,6 +121,10 @@ export default function NdertojeCV() {
           <T ngjyra={t.keq} madhesia={13}>
             Shkruaj një përgjigje para se të vazhdosh.
           </T>
+        ) : paInternet ? (
+          <T pesha="gjysme" madhesia={13} accessibilityLiveRegion="polite">
+            Pa internet. Përgjigjet e tua janë ruajtur këtu: kur të lidhesh, prek Provo përsëri.
+          </T>
         ) : (
           <T zbehur madhesia={12}>
             Nuk ka përgjigje të gabuar. AI-ja i kthen në fjali profesionale, pa shtuar fakte.
@@ -115,7 +136,10 @@ export default function NdertojeCV() {
         {hapi > 0 && (
           <Prekshme
             disabled={dukeKrijuar}
-            onPress={() => setHapi((h) => h - 1)}
+            onPress={() => {
+              setDeshtoNgaRrjeti(false);
+              setHapi((h) => h - 1);
+            }}
             accessibilityRole="button"
             style={[styles.buton, styles.butonDyte, { borderColor: t.vija }]}
           >
@@ -135,7 +159,7 @@ export default function NdertojeCV() {
               <ActivityIndicator color={t.sfondi} />
             ) : (
               <T ngjyra={t.sfondi} pesha="trashe">
-                {hapi === PYETJET.length - 1 ? "Krijo CV-në" : "Vazhdo"}
+                {eFundit ? (deshtoNgaRrjeti ? "Provo përsëri" : "Krijo CV-në") : "Vazhdo"}
               </T>
             )}
           </Prekshme>
