@@ -269,6 +269,23 @@ export default function Sot() {
           </Karta>
         </Prekshme>
       </Link>
+
+      <Link href="/permbledhja" asChild>
+        <Prekshme accessibilityRole="button" accessibilityLabel="Hap përmbledhjen time">
+          <Karta style={styles.rreshtKarte}>
+            <Ikona emri={IKONAT.grafiku} madhesia={20} ngjyra={t.theksi} />
+            <View style={styles.flex}>
+              <T pesha="trashe" madhesia={15.5}>
+                Përmbledhja ime
+              </T>
+              <T zbehur madhesia={13}>
+                Rezultatet e fundit, edhe pa internet
+              </T>
+            </View>
+            <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
+          </Karta>
+        </Prekshme>
+      </Link>
     </TabScroll>
   );
 }

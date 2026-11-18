@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { ruajIntervisten } from "@/lib/snapshot";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Pulsi, Vije } from "@/components/Skeleti";
@@ -121,6 +122,13 @@ export default function RezultatetEkrani() {
       aktiv = false;
     };
   }, [id, rilexo]);
+
+  // Rezultati i lexuar me sukses ruhet në telefon (Përmbledhja ime). Një intervistë e vjetër e zgjedhur nga lista s'e zëvendëson "të fundit".
+  useEffect(() => {
+    if (gjendja.lloji !== "gati" || !id) return;
+    if (!idNgaRruga && id !== lista[0]?.id) return;
+    void ruajIntervisten(id, gjendja.raporti, gjendja.biseda);
+  }, [gjendja, id, idNgaRruga, lista]);
 
   const zgjedhesi =
   !idNgaRruga && lista.length > 1 ? (

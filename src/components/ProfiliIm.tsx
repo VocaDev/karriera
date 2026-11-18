@@ -159,6 +159,13 @@ export default function ProfiliIm() {
               nentitulli="Ngarko, analizo dhe ndërto CV-në"
               onPress={() => router.push("/cv")}
             />
+            <RreshtiLista
+              kufi
+              ikona={IKONAT.grafiku}
+              titulli="Përmbledhja ime"
+              nentitulli="Rezultatet e fundit, edhe pa internet"
+              onPress={() => router.push("/permbledhja")}
+            />
             <RreshtiLista kufi ikona={IKONAT.personi} titulli="Cilësimet" nentitulli="Roli, gjuha e intervistës, privatësia" onPress={() => router.push("/cilesimet")} />
           </View>
         </Karta>

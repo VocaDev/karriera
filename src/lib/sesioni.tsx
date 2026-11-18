@@ -4,7 +4,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { merrProfilin, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
+import { merrProfilin, pastroTeDhenatELokale, type Gjuha, type Profili, type RoliSynuar } from "@/lib/hyrja";
 import { VONON } from "@/lib/mesazhet";
 import { lexoProfilinERuajtur, lexoSesioninERuajtur, ruajProfilin } from "@/lib/profili-kesh";
 import { eshteGabimKohe, eshteGabimRrjeti, meKohe, useRrjeti } from "@/lib/rrjeti";
@@ -79,6 +79,8 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
       if (!sesioniIRi && ngjarja === "INITIAL_SESSION" && sesioniPaInternet.current) return;
       sesioniPaInternet.current = false; // një ngjarje e vërtetë (rifreskim, hyrje, dalje) e zëvendëson identitetin e ruajtur
       pasNdryshimitTeSesionit(ngjarja); // dalje që s'e bëmë ne = sesioni mbaroi: hyrja tregon "Hyr përsëri"
+      // Çdo dalje (edhe e detyruar nga 401, që s'kalon nga dil()): të dhënat e ruajtura të llogarisë fshihen.
+      if (ngjarja === "SIGNED_OUT") void pastroTeDhenatELokale();
       setSesioni(sesioniIRi);
       setSesioniULexua(true);
     });

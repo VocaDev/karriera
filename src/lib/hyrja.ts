@@ -2,8 +2,10 @@
 // Roli (lloji) jeton te tabela profiles dhe e mbron RLS-i; nuk lexohet kurrë nga user_metadata.
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
 import { HYR_PERSERI } from "@/lib/mesazhet";
+import { pastroPraktiken } from "@/lib/praktika";
 import { pastroProfilinERuajtur } from "@/lib/profili-kesh";
 import { pastroKeshinEPuneve } from "@/lib/punet-kesh";
+import { pastroSnapshot } from "@/lib/snapshot";
 import { shenoDaljenVullnetare } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
 
@@ -81,13 +83,21 @@ export async function regjistrohu(d: TeDhenatERegjistrimit): Promise<void> {
   if (!data.session) throw new Error("Llogaria u krijua, por duhet konfirmuar email-i para hyrjes.");
 }
 
+/**
+ * Fshin gjithçka që app-i ruan në telefon për llogaritë: lista e punëve, profili, Përmbledhja ime (snapshot) dhe
+ * progresi i praktikës. Thirret kur dilet (dil) dhe kur sesioni mbaron vetë (SIGNED_OUT te sesioni.tsx).
+ * Asnjë nga katër s'hedh gabim: secila e kap vetë.
+ */
+export async function pastroTeDhenatELokale(): Promise<void> {
+  await Promise.all([pastroKeshinEPuneve(), pastroProfilinERuajtur(), pastroSnapshot(), pastroPraktiken()]);
+}
+
 /** Dalja: fshin sesionin nga telefoni. */
 export async function dil(): Promise<void> {
   shenoDaljenVullnetare(); // dalja jonë s'është "sesion i mbaruar"
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(mesazhiIGabimit(error));
-  await pastroKeshinEPuneve(); // lista e ruajtur e punëve s'mbetet në telefon pas daljes
-  await pastroProfilinERuajtur(); // as profili i ruajtur
+  await pastroTeDhenatELokale(); // asgjë e ruajtur për llogaritë s'mbetet në telefon pas daljes
 }
 
 /** Profili im. Pa filtër në kod: RLS-i (profili_lexo) kthen vetëm rreshtin tim. */

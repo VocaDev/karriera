@@ -44,6 +44,7 @@ import {
 import { lexoShenjat, ruajShenjat } from "@/lib/gati-hapat";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { ruajGatin } from "@/lib/snapshot";
 import { gjePunen, type Puna } from "@/lib/punet";
 import { paInternet as mesazhiPaInternet, PA_INTERNET_SHKURT, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
@@ -151,6 +152,13 @@ export default function GatiEkrani() {
   useEffect(() => {
     lexo();
   }, [lexo]);
+
+  // Rezultati që shihet (i lexuar ose i sapollogaritur) ruhet në telefon, për Përmbledhjen ime pa internet.
+  const rezultatiIRuajtur = gjendja.lloji === "rezultati" ? gjendja.rezultati : null;
+  const punaERuajtur = gjendja.lloji === "rezultati" ? gjendja.puna : null;
+  useEffect(() => {
+    if (rezultatiIRuajtur && punaERuajtur) void ruajGatin(rezultatiIRuajtur, punaERuajtur);
+  }, [rezultatiIRuajtur, punaERuajtur]);
 
   // Interneti u kthye pas një leximi të dështuar: rilexon vetë (leximi s'përdor AI, s'ha nga kufiri).
   // Llogaritja e AI-së s'niset vetë: e nis përdoruesi me "Provo përsëri".

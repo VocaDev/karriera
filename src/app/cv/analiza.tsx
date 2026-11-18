@@ -13,6 +13,7 @@ import { Chip, Faqja, Ikona, IKONAT, Karta, Progresi, T, Titulli } from "@/compo
 import { analizaPerCV, analizoCV, listoVersionet, type AnalizaERuajtur, type SugjerimCV } from "@/lib/cv";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { ruajCv } from "@/lib/snapshot";
 import { paInternet as mesazhiPaInternet, PA_INTERNET_SHKURT, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import {
@@ -85,6 +86,8 @@ export default function Analiza() {
         const eRuajtur = provimi === 0 ? await meKohe(analizaPerCV(cvId), KOHA_E_LEXIMIT) : null;
         if (!aktiv) return;
         if (eRuajtur) {
+          // Përmbledhja ime pa internet: vetëm versioni më i ri (analiza e një versioni të vjetër s'e zëvendëson "të fundit").
+          if (versionet[0]?.id === cvId) void ruajCv(eRuajtur.analiza, cv);
           setGjendja({ lloji: "gati", ruajtur: eRuajtur });
           return;
         }
@@ -93,6 +96,7 @@ export default function Analiza() {
         // Ruajtësi i kohës: një lidhje që varet bëhet gabim me "Provo përsëri", jo rrotë pa fund.
         const ruajtur = await meKohe(analizoCV(cvId), KOHA_E_AI, VONON.analiza);
         if (!aktiv) return;
+        if (versionet[0]?.id === cvId) void ruajCv(ruajtur.analiza, cv);
         prekja.sukses();
         setGjendja({ lloji: "gati", ruajtur });
       } catch (e) {

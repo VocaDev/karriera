@@ -100,6 +100,12 @@ function Navigimi({ t }: { t: Tema }) {
             <Stack.Screen name="intervista/[id]" options={{ title: "Intervista" }} />
             <Stack.Screen name="intervista/rezultatet" options={{ title: "Rezultatet" }} />
             <Stack.Screen name="cilesimet" options={{ title: "Cilësimet" }} />
+            {/* Pa internet (J7): rezultatet e fundit të ruajtura, dhe praktika me pyetje e këshilla në telefon. */}
+            <Stack.Screen name="permbledhja" options={{ title: "" }} />
+            <Stack.Screen name="praktika/index" options={{ title: "" }} />
+            <Stack.Screen name="praktika/kartat" options={{ title: "" }} />
+            <Stack.Screen name="praktika/keshillat/index" options={{ title: "" }} />
+            <Stack.Screen name="praktika/keshillat/[id]" options={{ title: "" }} />
             {/* Rindërto CV-në: sugjerimet e pranuara të analizës, të zbatuara pa AI (14.11). */}
             <Stack.Screen name="cv/rindertoje" options={{ title: "" }} />
             {/* "Sill linkun tënd" (J7): fletë me dorezë; X-i i rrumbullakët është brenda ekranit. */}
