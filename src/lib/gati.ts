@@ -125,9 +125,10 @@ async function lexoGabimin(gabimi: unknown): Promise<TrupiIGabimit> {
     }
     return rezerva;
   }
-  if (gabimi instanceof FunctionsFetchError || gabimi instanceof FunctionsRelayError) {
+  if (gabimi instanceof FunctionsFetchError) {
     return { ...rezerva, mesazhi: "Pa internet ose serveri s'u përgjigj. Provo përsëri." };
   }
+  if (gabimi instanceof FunctionsRelayError) return { ...rezerva, mesazhi: "Serveri s'u përgjigj. Provo përsëri." };
   return rezerva;
 }
 

@@ -83,9 +83,10 @@ async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimII
     }
     return new GabimIIntervistes(rezerva, status === 401 ? "sesioni" : "tjeter", status);
   }
-  if (gabimi instanceof FunctionsFetchError || gabimi instanceof FunctionsRelayError) {
+  if (gabimi instanceof FunctionsFetchError) {
     return new GabimIIntervistes("Pa internet ose serveri s'u përgjigj. Provo përsëri.", "rrjeti");
   }
+  if (gabimi instanceof FunctionsRelayError) return new GabimIIntervistes("Serveri s'u përgjigj. Provo përsëri.", "tjeter");
   return new GabimIIntervistes(rezerva, "tjeter");
 }
 

@@ -56,11 +56,14 @@ export function useRrjeti(kurKthehet?: () => void): Rrjeti {
 }
 
 /**
- * A është ky gabim një gabim rrjeti (pa internet, serveri s'u arrit)? Njeh gabimet e Supabase, gabimet e Edge
- * Function-eve dhe mesazhet në shqip që lib/*.ts i ndërtojnë nga ato (p.sh. "Pa internet. Kontrollo lidhjen…").
+ * A është ky gabim një gabim rrjeti (pa internet)? Njeh gabimet e Supabase, gabimet e Edge Function-eve dhe
+ * mesazhet në shqip që lib/*.ts i ndërtojnë nga ato (p.sh. "Pa internet. Kontrollo lidhjen…").
+ * `FunctionsRelayError` është problem i serverit, jo i telefonit: llogaritet "pa internet" vetëm kur sistemi
+ * thotë se s'ka lidhje (`kaInternet` false); përndryshe ekrani tregon tekstin e gabimit të serverit.
  */
-export function eshteGabimRrjeti(gabimi: unknown): boolean {
-  if (gabimi instanceof FunctionsFetchError || gabimi instanceof FunctionsRelayError) return true;
+export function eshteGabimRrjeti(gabimi: unknown, kaInternet = true): boolean {
+  if (gabimi instanceof FunctionsFetchError) return true;
+  if (gabimi instanceof FunctionsRelayError) return !kaInternet;
   if (typeof gabimi === "string") return gabimi.toLowerCase().includes("pa internet");
   if (typeof gabimi !== "object" || gabimi === null) return false;
   const g = gabimi as { name?: string; code?: string; status?: number; message?: string };

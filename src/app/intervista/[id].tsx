@@ -53,9 +53,13 @@ export default function IntervistaEkrani() {
   const router = useRouter();
   const kufijte = useSafeAreaInsets();
   const njofto = useNjoftim();
-  const { kaInternet, sapuKthye } = useRrjeti();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { gjendja, dergo, perfundo, riprovo, kaPergjigje } = useIntervista(id);
+  // Interneti u kthye pas një leximi të dështuar (hapja e intervistës): rilexon NJË herë për çdo kthim; është vetëm lexim.
+  // Dërgimi i përgjigjes s'bëhet vetë: e dërgon përdoruesi me "Provo përsëri".
+  const { kaInternet } = useRrjeti(() => {
+    if (gjendja.faza === "gabim" && gjendja.veprimi === "ngarko" && eshteGabimRrjeti(gjendja.gabimi)) riprovo();
+  });
   const [teksti, setTeksti] = useState("");
   const lista = useRef<ScrollViewInstance>(null);
 
@@ -75,14 +79,6 @@ export default function IntervistaEkrani() {
       router.replace({ pathname: "/intervista/rezultatet", params: { id } });
     }
   }, [gjendja.faza, id, router]);
-
-  // Interneti u kthye pas një leximi të dështuar (hapja e intervistës): rilexon vetë; është vetëm lexim.
-  // Dërgimi i përgjigjes s'bëhet vetë: e dërgon përdoruesi me "Provo përsëri".
-  useEffect(() => {
-    if (sapuKthye && gjendja.faza === "gabim" && gjendja.veprimi === "ngarko" && eshteGabimRrjeti(gjendja.gabimi)) {
-      riprovo();
-    }
-  }, [sapuKthye, gjendja, riprovo]);
 
   // VoiceOver: pyetja e re lexohet sapo vjen radha e kandidatit.
   const nrAktual = gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;
