@@ -47,9 +47,9 @@ export const VECORITE: Vecoria[] = [
   {
     celesi: "rezultatet",
     titulli: "Rezultatet",
-    pershkrimi: "Feedback për çdo përgjigje dhe gatishmëria e re",
-    href: null,
-    gjendja: { lloji: "vjen", kur: "09.12" },
+    pershkrimi: "Shiko notën dhe feedback-un e intervistës së fundit",
+    href: "/intervista/rezultatet",
+    gjendja: { lloji: "gati" },
   },
 ];
 
