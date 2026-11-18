@@ -9,6 +9,7 @@ import { hapetVecoria } from "@/components/RreshtiVecorise";
 import { TabScroll } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { useDridhja } from "@/lib/levizja";
+import { rrugaPraktikes } from "@/lib/praktika";
 import { prekja } from "@/lib/prekja";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
@@ -103,6 +104,31 @@ export default function Stervitja() {
           </T>
         )}
       </Karta>
+
+      {/* Praktika pa internet: pyetje, karta dhe këshilla të paketuara në app (src/app/praktika). */}
+      <Prekshme
+        onPress={() => {
+          prekja.zgjedhje();
+          router.push(rrugaPraktikes("/praktika"));
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Praktiko pa internet: pyetje, karta dhe këshilla që hapen edhe pa lidhje"
+      >
+        <Karta style={styles.rresht}>
+          <View style={[styles.ikona, { backgroundColor: t.karta2 }]}>
+            <Ikona emri={IKONAT.shkolla} madhesia={20} ngjyra={t.teksti} />
+          </View>
+          <View style={styles.flex}>
+            <T pesha="trashe" madhesia={16}>
+              Praktiko pa internet
+            </T>
+            <T zbehur madhesia={13.5}>
+              Pyetje, karta dhe këshilla që hapen edhe pa lidhje.
+            </T>
+          </View>
+          <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
+        </Karta>
+      </Prekshme>
 
       <Karta style={styles.kompetencat}>
         <View style={styles.rresht}>
