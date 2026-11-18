@@ -50,6 +50,13 @@ export async function lexoListenEPunes(): Promise<Puna[] | null> {
   }
 }
 
+/** Heq një punë nga lista e ruajtur e këtij përdoruesi (p.sh. pasi e fshiu): pa internet s'del më si e gjallë. */
+export async function hiqePunenNgaKeshi(id: string): Promise<void> {
+  const punet = await lexoListenEPunes();
+  if (!punet || !punet.some((p) => p.id === id)) return;
+  await ruajListenEPunes(punet.filter((p) => p.id !== id));
+}
+
 /** Fshin listat e ruajtura të të gjithë përdoruesve në këtë telefon (thirret kur dilet nga llogaria). */
 export async function pastroKeshinEPuneve(): Promise<void> {
   try {

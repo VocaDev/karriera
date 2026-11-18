@@ -6,10 +6,13 @@ import Animated from "react-native-reanimated";
 import { ButoniKryesor, Etiketa, Fusha, Udhezimi } from "@/components/Forma";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { IKONAT, Ikona, T } from "@/components/ui";
 import { useDridhja } from "@/lib/levizja";
+import { paInternet, VONON } from "@/lib/mesazhet";
 import { prekja } from "@/lib/prekja";
 import { KUFIJTE_E_LINKUT, kontrolloLinkun, shenoPunenERe, shtoPunenNgaLinku } from "@/lib/punet";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 
@@ -34,6 +37,13 @@ export default function SillLinkun() {
   const [provoi, setProvoi] = useState(false);
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
+  // Pas një "s'mbaroi në kohë", prova e dytë mund ta gjejë punën që e para e shtoi tashmë: s'është "e shtuar më parë".
+  const dergoi = useRef(false);
+  // Interneti u kthye: mesazhi "pa internet" ose "po vonon" largohet; përdoruesi e provon kur të dojë.
+  useRrjeti(() => {
+    setGabimi((g) => (g !== null && (eshteGabimRrjeti(g) || eshteGabimKohe(g)) ? null : g));
+  });
+  const eRrjetit = gabimi !== null && (eshteGabimRrjeti(gabimi) || eshteGabimKohe(gabimi));
 
   // Të njëjtat kufij si në bazë (migrimi 20261118100000), që gabimi të dalë para se të dërgohet.
   const kontrolliILinkut = kontrolloLinkun(linku);
@@ -56,11 +66,14 @@ export default function SillLinkun() {
     setDukeRuajtur(true);
     setGabimi(null);
     try {
-      const { puna, ekzistonte } = await shtoPunenNgaLinku(
-        { linku, titulli, kompania, qyteti, pershkrimi: teksti },
-        roli_synuar ?? "Tjetër",
+      const provaEDyte = dergoi.current;
+      dergoi.current = true;
+      const { puna, ekzistonte } = await meKohe(
+        shtoPunenNgaLinku({ linku, titulli, kompania, qyteti, pershkrimi: teksti }, roli_synuar ?? "Tjetër"),
+        KOHA_E_NGARKIMIT,
+        VONON.shtimi,
       );
-      if (ekzistonte) {
+      if (ekzistonte && !(provaEDyte && puna.private)) {
         prekja.lehte();
         njofto(puna.private ? "Këtë punë e ke shtuar më parë" : "Kjo shpallje është tashmë te Punët", "info");
       } else {
@@ -102,6 +115,7 @@ export default function SillLinkun() {
       <T zbehur madhesia={14}>
         Ke gjetur një punë diku tjetër? Ngjit linkun e shpalljes. Puna shihet vetëm nga ti.
       </T>
+      <ShiritiPaInternet teksti={paInternet("të dhënat e formularit mbeten aty", false).cfare} />
 
       <Etiketa>Linku i shpalljes *</Etiketa>
       <Fusha
@@ -183,14 +197,18 @@ export default function SillLinkun() {
       />
 
       {gabimi && (
-        <T ngjyra={t.keq} style={styles.gabimi} accessibilityLiveRegion="polite">
-          S&apos;u shtua: {gabimi}
+        <T ngjyra={eRrjetit ? t.teksti : t.keq} style={styles.gabimi} accessibilityLiveRegion="polite">
+          {eRrjetit
+            ? eshteGabimKohe(gabimi) && !eshteGabimRrjeti(gabimi)
+              ? `${VONON.titulli}. ${gabimi} ${VONON.bere}`
+              : gabimi
+            : `S'u shtua: ${gabimi}`}
         </T>
       )}
 
       <Animated.View style={stiliIButonit}>
         <ButoniKryesor
-          teksti="Shto punën"
+          teksti={eRrjetit ? "Provo përsëri" : "Shto punën"}
           onPress={shto}
           duke_punuar={duke_ruajtur}
           joValid={!valide}

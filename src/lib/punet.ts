@@ -119,6 +119,17 @@ export function merrPunenERe(): string | null {
   return id;
 }
 
+// Puna që u ndryshua në një fletë (p.sh. teksti i shpalljes): detajet e rilexojnë një herë kur kthehen në fokus.
+let idEPunesSeNdryshuar: string | null = null;
+export function shenoPunenENdryshuar(id: string) {
+  idEPunesSeNdryshuar = id;
+}
+export function uNdryshuaPuna(id: string): boolean {
+  if (idEPunesSeNdryshuar !== id) return false;
+  idEPunesSeNdryshuar = null;
+  return true;
+}
+
 // Shton një shpallje. RLS-i (punet_shto) e lejon vetëm për punëdhënësin dhe qendrën, me burimi = "perdoruesi";
 // pronari_id nuk dërgohet: serveri e vendos vetë (default auth.uid()).
 // `id`: UUID që e krijon formulari një herë (RLS e pranon vetëm në formën e UUID-së). Pas një "s'mbaroi në kohë" prova e
@@ -152,6 +163,27 @@ export async function fshiPunen(id: string): Promise<void> {
   const { data, error } = await supabase.from("punet").delete().eq("id", id).select("id");
   if (error) throw new Error(mesazhiIGabimit(error));
   if (!data || data.length === 0) throw new Error("Kjo punë s'mund të fshihet nga llogaria jote.");
+}
+
+/**
+ * Teksti i shpalljes i një pune private (e ngjit vetë pronari, ≤ 4000 shkronja): "A jam gati?" e lexon kur s'ka kërkesat e AI-së.
+ * RLS: punet_ndrysho (vetëm pronari) + grant update (pershkrimi) nga J6; check-u lejon 4000 vetëm te punët private.
+ */
+export async function ruajTekstinEShpalljes(id: string, teksti: string): Promise<Puna> {
+  const pershkrimi = teksti.trim();
+  if (pershkrimi.length > KUFIJTE_E_LINKUT.pershkrimi) {
+    throw new Error("Teksti i shpalljes është shumë i gjatë (maksimumi 4000 shkronja).");
+  }
+  const { data, error } = await supabase
+    .from("punet")
+    .update({ pershkrimi })
+    .eq("id", id)
+    .eq("private", true)
+    .select(FUSHAT)
+    .maybeSingle();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  if (!data) throw new Error("Ky tekst mund të ndryshohet vetëm te punët që i ke shtuar vetë me link.");
+  return nePune(data);
 }
 
 // Punët e reja në kohë reale (Supabase Realtime): kur një punëdhënës poston, kërkuesi e merr menjëherë.

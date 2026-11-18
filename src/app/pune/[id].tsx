@@ -1,7 +1,7 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
-import { Share, StyleSheet, View } from "react-native";
+import { Alert, Share, StyleSheet, View } from "react-native";
 
 import KerkesatEPunes from "@/components/KerkesatEPunes";
 import { useNjoftim } from "@/components/Njoftimet";
@@ -10,10 +10,10 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import { prekja } from "@/lib/prekja";
-import { paInternet } from "@/lib/mesazhet";
-import { lexoListenEPunes } from "@/lib/punet-kesh";
+import { paInternet, VONON } from "@/lib/mesazhet";
+import { hiqePunenNgaKeshi, lexoListenEPunes } from "@/lib/punet-kesh";
 import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_LEXIMIT, meKohe, pamjaEGabimit, useRrjeti } from "@/lib/rrjeti";
-import { EMRI_I_PORTALIT, gjePunen, type Puna } from "@/lib/punet";
+import { EMRI_I_PORTALIT, fshiPunen, gjePunen, uNdryshuaPuna, type Puna } from "@/lib/punet";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
@@ -22,6 +22,7 @@ import { useTema } from "@/lib/tema";
 const IKONA_NDAJE = { ios: "square.and.arrow.up", android: "share" };
 const IKONA_SHFLETUESI = { ios: "safari", android: "open_in_browser" };
 const IKONA_YLLI_BOSH = { ios: "star", android: "star" };
+const IKONA_TEKSTI = { ios: "doc.text", android: "description" };
 
 /** "2026-11-27" → "27.11.2026" dhe sa ditë mbeten (0 = sot, negativ = kaloi). */
 function afatiIPunes(afati: string): { data: string; diteMbeten: number } {
@@ -62,6 +63,7 @@ export default function DetajetEPunes() {
   const [dukeRuajtur, setDukeRuajtur] = useState(false);
 
   const [ngaKesh, setNgaKesh] = useState(false); // puna u hap nga lista e ruajtur në telefon (pa internet)
+  const [dukeFshire, setDukeFshire] = useState(false);
 
   const lexo = useCallback(() => {
     Promise.all([
@@ -93,6 +95,13 @@ export default function DetajetEPunes() {
   useEffect(() => {
     lexo();
   }, [lexo]);
+
+  // Pas fletës "Teksti i shpalljes": puna rilexohet një herë, që teksti i ri të duket këtu.
+  useFocusEffect(
+    useCallback(() => {
+      if (uNdryshuaPuna(id)) lexo();
+    }, [id, lexo]),
+  );
 
   // Interneti u kthye: nga kopja e ruajtur ose nga gabimi, puna rilexohet nga burimi.
   useRrjeti(() => {
@@ -198,6 +207,36 @@ export default function DetajetEPunes() {
     } catch {
       prekja.gabim();
       njofto("S'u nda puna. Provo përsëri.", "gabim");
+    }
+  }
+
+  // Fshirja e një pune private (vetëm pronari e sheh, RLS punet_fshi): konfirmim i sistemit, pastaj mbrapa te Punët.
+  function pyetPerFshirje() {
+    if (dukeFshire) return;
+    prekja.lehte();
+    Alert.alert(
+      "Ta fshijmë këtë punë?",
+      "Fshihet edhe rezultati i “A jam gati?” për të. Kjo s'kthehet mbrapsht.",
+      [
+        { text: "Anulo", style: "cancel" },
+        { text: "Fshije", style: "destructive", onPress: fshije },
+      ],
+    );
+  }
+
+  async function fshije() {
+    setDukeFshire(true);
+    try {
+      await meKohe(fshiPunen(id), KOHA_E_LEXIMIT, VONON.pergjithshme);
+      await hiqePunenNgaKeshi(id);
+      prekja.sukses();
+      njofto("Puna u fshi", "sukses");
+      if (router.canGoBack()) router.back();
+      else router.replace("/pune");
+    } catch (e) {
+      prekja.gabim();
+      njofto(pamjaEGabimit(e, "S'u fshi", "puna mbetet këtu", false).teksti, "gabim");
+      setDukeFshire(false);
     }
   }
 
@@ -311,6 +350,43 @@ export default function DetajetEPunes() {
             </T>
           </Prekshme>
         </View>
+
+        {/* Punë private (e shtove me link): teksti i shpalljes për "A jam gati?", dhe fshirja. Pa internet fshihen. */}
+        {puna.private && !ngaKesh && (
+          <>
+            <View style={styles.dyshja}>
+              <Prekshme
+                accessibilityRole="button"
+                accessibilityHint="Ngjit tekstin e shpalljes që “A jam gati?” ta dijë çka kërkon puna"
+                onPress={() => router.push({ pathname: "/pune/teksti", params: { id: puna.id } })}
+                style={[styles.veprimi, { backgroundColor: t.karta, shadowColor: t.hija }]}
+              >
+                <Ikona emri={IKONA_TEKSTI} madhesia={16} />
+                <T pesha="trashe" madhesia={14.5}>
+                  {puna.pershkrimi.trim() ? "Ndrysho tekstin" : "Shto tekstin"}
+                </T>
+              </Prekshme>
+              <Prekshme
+                accessibilityRole="button"
+                accessibilityLabel="Fshije punën"
+                accessibilityState={{ busy: dukeFshire }}
+                onPress={pyetPerFshirje}
+                disabled={dukeFshire}
+                style={[styles.veprimi, { backgroundColor: t.karta, shadowColor: t.hija }]}
+              >
+                <Ikona emri={IKONAT.kosha} madhesia={16} ngjyra={t.keq} />
+                <T pesha="trashe" madhesia={14.5} ngjyra={t.keq}>
+                  Fshije
+                </T>
+              </Prekshme>
+            </View>
+            {!puna.pershkrimi.trim() && (
+              <T zbehur madhesia={13}>
+                Pa tekstin e shpalljes, “A jam gati?” s&apos;di çka kërkon kjo punë. Shtoje me “Shto tekstin”.
+              </T>
+            )}
+          </>
+        )}
       </View>
 
       <KerkesatEPunes puna={puna} emriIPortalit={emriIPortalit} />
