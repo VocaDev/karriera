@@ -119,6 +119,17 @@ function Navigimi({ t }: { t: Tema }) {
                 sheetCornerRadius: 24,
               }}
             />
+            {/* Teksti i shpalljes së një pune private (J7): fletë e gjatë, e njëjta formë. */}
+            <Stack.Screen
+              name="pune/teksti"
+              options={{
+                presentation: "formSheet",
+                headerShown: false,
+                sheetGrabberVisible: true,
+                sheetAllowedDetents: [0.75, 1],
+                sheetCornerRadius: 24,
+              }}
+            />
           </Stack.Protected>
           {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
           <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
