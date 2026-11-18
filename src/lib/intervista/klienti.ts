@@ -9,6 +9,7 @@
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { KOHA_E_AI, meKohe } from "@/lib/rrjeti";
 import { supabase } from "@/lib/supabase";
 
 import { lexoIntervistuesinPer, ruajIntervistuesinPer } from "./intervistuesi";
@@ -82,9 +83,10 @@ async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimII
     }
     return new GabimIIntervistes(rezerva, status === 401 ? "sesioni" : "tjeter", status);
   }
-  if (gabimi instanceof FunctionsFetchError || gabimi instanceof FunctionsRelayError) {
+  if (gabimi instanceof FunctionsFetchError) {
     return new GabimIIntervistes("Pa internet ose serveri s'u përgjigj. Provo përsëri.", "rrjeti");
   }
+  if (gabimi instanceof FunctionsRelayError) return new GabimIIntervistes("Serveri s'u përgjigj. Provo përsëri.", "tjeter");
   return new GabimIIntervistes(rezerva, "tjeter");
 }
 
@@ -96,14 +98,22 @@ type Funksioni = "intervista-nis" | "intervista-kthesa" | "intervista-raporti";
 
 // Si te lib/cv.ts: 401 = serveri s'e njeh më sesionin → një rifreskim; nëse s'mjafton, dalim nga llogaria.
 async function thirr(emri: Funksioni, body: object, rezerva: string): Promise<unknown> {
-  let { data, error } = await supabase.functions.invoke(emri, { body });
+  // Ruajtësi i kohës: një lidhje që varet bëhet gabim "rrjeti" (me "Provo përsëri"), jo pritje pa fund.
+  // Serveri e njeh përgjigjen e dyfishtë (409), prandaj riprovimi pas kësaj është i sigurt.
+  const thirrja = () =>
+    meKohe(
+      supabase.functions.invoke(emri, { body }),
+      KOHA_E_AI,
+      () => new GabimIIntervistes("Pa internet ose serveri s'u përgjigj. Provo përsëri.", "rrjeti"),
+    );
+  let { data, error } = await thirrja();
   if (error && eshte401(error)) {
     const { error: gabimiRifreskimit } = await supabase.auth.refreshSession();
     if (gabimiRifreskimit) {
       await supabase.auth.signOut({ scope: "local" });
       throw new GabimIIntervistes("Sesioni ka skaduar. Hyr përsëri.", "sesioni", 401);
     }
-    ({ data, error } = await supabase.functions.invoke(emri, { body }));
+    ({ data, error } = await thirrja());
   }
   if (error) throw await perktheGabimin(error, rezerva);
   return data;

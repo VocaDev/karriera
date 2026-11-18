@@ -8,10 +8,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import KartaSugjerimit, { type PergjigjjaEPranimit } from "@/components/KartaSugjerimit";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Chip, Faqja, Ikona, IKONAT, Karta, Progresi, T, Titulli } from "@/components/ui";
 import { analizaPerCV, analizoCV, listoVersionet, type AnalizaERuajtur, type SugjerimCV } from "@/lib/cv";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import {
   celesiVleres,
   EMRAT_E_SEKSIONEVE,
@@ -52,13 +54,15 @@ export default function Analiza() {
   const njofto = useNjoftim();
   const kufijte = useSafeAreaInsets();
   const qetesi = useReducedMotion();
+  const { kaInternet } = useRrjeti();
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const [gjendja, setGjendja] = useState<Gjendja>({ lloji: "duke", ePare: false });
   const [hapiAktual, setHapiAktual] = useState(0);
   const [emriSkedarit, setEmriSkedarit] = useState("CV-ja jote");
   const [roast, setRoast] = useState(false);
-  const [provimi, setProvimi] = useState(0); // rritet te "Provo përsëri" / "Analizo përsëri"
+  const [provimi, setProvimi] = useState(0); // rritet vetëm te "Analizo përsëri": kërkon një analizë të re (përdor AI)
+  const [rilexo, setRilexo] = useState(0); // rritet te "Provo përsëri" pas një gabimi: rilexon analizën e ruajtur para se të thërrasë AI-në
   const [grupiIFundit, setGrupiIFundit] = useState<string[] | null>(null); // "Rregullo të gjitha gabimet", për "Zhbëj"
 
   useEffect(() => {
@@ -68,7 +72,7 @@ export default function Analiza() {
 
     async function nis() {
       try {
-        const versionet = await listoVersionet();
+        const versionet = await meKohe(listoVersionet(), KOHA_E_LEXIMIT);
         const cv = versionet.find((v) => v.id === cvId);
         if (!aktiv) return;
         if (!cv) {
@@ -77,7 +81,7 @@ export default function Analiza() {
         }
         setEmriSkedarit(cv.emri_skedarit ?? `CV e krijuar · v${cv.versioni}`);
 
-        const eRuajtur = provimi === 0 ? await analizaPerCV(cvId) : null;
+        const eRuajtur = provimi === 0 ? await meKohe(analizaPerCV(cvId), KOHA_E_LEXIMIT) : null;
         if (!aktiv) return;
         if (eRuajtur) {
           setGjendja({ lloji: "gati", ruajtur: eRuajtur });
@@ -85,7 +89,8 @@ export default function Analiza() {
         }
 
         setGjendja({ lloji: "duke", ePare: true });
-        const ruajtur = await analizoCV(cvId);
+        // Ruajtësi i kohës: një lidhje që varet bëhet gabim me "Provo përsëri", jo rrotë pa fund.
+        const ruajtur = await meKohe(analizoCV(cvId), KOHA_E_AI);
         if (!aktiv) return;
         prekja.sukses();
         setGjendja({ lloji: "gati", ruajtur });
@@ -100,7 +105,7 @@ export default function Analiza() {
     return () => {
       aktiv = false;
     };
-  }, [id, provimi]);
+  }, [id, provimi, rilexo]);
 
   // Hapat e listës ecin ndërsa AI-ja punon (vetëm për pritjen e parë; i fundit pret përgjigjen).
   const dukeAnalizuar = gjendja.lloji === "duke" && gjendja.ePare;
@@ -138,20 +143,39 @@ export default function Analiza() {
     mbetenPara.current = n.mbeten;
   }, [n.mbeten, n.pranuar, meRindertim, zgjedhjetGati, njofto]);
 
+  // Pas një gabimi (p.sh. pa internet): rilexon dhe, vetëm nëse s'ka analizë të ruajtur, e thërret AI-në.
+  // Para kësaj, "Provo përsëri" harxhonte një analizë të re edhe kur gabimi ishte vetëm leximi.
   function provoPerseri() {
+    if (!kaInternet) {
+      prekja.gabim();
+      njofto("Ende pa internet. Lidhu dhe provo përsëri.", "info");
+      return;
+    }
     setHapiAktual(0);
-    setGrupiIFundit(null);
-    setGjendja({ lloji: "duke", ePare: true });
-    setProvimi((v) => v + 1);
+    setGjendja({ lloji: "duke", ePare: false });
+    setRilexo((v) => v + 1);
   }
 
   function analizoPerseri() {
+    if (!kaInternet) {
+      prekja.gabim();
+      njofto("Pa internet. Analiza e re ka nevojë për lidhje.", "gabim");
+      return;
+    }
     Alert.alert(
       "Ta analizoj përsëri?",
       "Analiza e re përdor një nga 5 analizat e tua të sotme. Kjo analizë dhe zgjedhjet e saja mbeten të ruajtura.",
       [
         { text: "Anulo", style: "cancel" },
-        { text: "Analizo", onPress: provoPerseri },
+        {
+          text: "Analizo",
+          onPress: () => {
+            setHapiAktual(0);
+            setGrupiIFundit(null);
+            setGjendja({ lloji: "duke", ePare: true });
+            setProvimi((v) => v + 1);
+          },
+        },
       ],
     );
   }
@@ -219,13 +243,18 @@ export default function Analiza() {
   // ---------- Gjendjet: gabim, duke pritur ----------
 
   if (!id || gjendja.lloji === "gabim") {
+    const paInternet = gjendja.lloji === "gabim" && eshteGabimRrjeti(gjendja.mesazhi);
     return (
       <Faqja>
         <View style={styles.qender}>
           <Ikona emri={IKONAT.alarm} madhesia={34} ngjyra={t.keq} />
-          <Titulli>Analiza nuk u bë</Titulli>
-          <T zbehur style={styles.qenderTekst}>
-            {gjendja.lloji === "gabim" ? gjendja.mesazhi : "Mungon CV-ja që duhet analizuar."}
+          <Titulli>{paInternet ? "Pa internet" : "Analiza nuk u bë"}</Titulli>
+          <T zbehur style={styles.qenderTekst} accessibilityLiveRegion="polite">
+            {paInternet
+              ? "Analiza s'u mbaroi. Kur të lidhesh me internet, prek Provo përsëri."
+              : gjendja.lloji === "gabim"
+                ? gjendja.mesazhi
+                : "Mungon CV-ja që duhet analizuar."}
           </T>
           {id && (
             <Prekshme onPress={provoPerseri} accessibilityRole="button" style={[styles.buton, { backgroundColor: t.teksti }]}>
@@ -250,6 +279,7 @@ export default function Analiza() {
     const ePare = gjendja.lloji === "duke" && gjendja.ePare;
     return (
       <Faqja>
+        <ShiritiPaInternet teksti="Pa internet · analiza mund të dështojë" />
         <View style={styles.ngarkimi} accessibilityLiveRegion="polite">
           <ActivityIndicator size="large" color={t.zbehur} />
           <Titulli>{ePare ? "Po e analizoj CV-në tënde" : "Po e hap analizën"}</Titulli>
@@ -300,6 +330,7 @@ export default function Analiza() {
   return (
     <View style={styles.flex}>
       <Faqja me_fusha>
+        <ShiritiPaInternet />
         <View style={styles.krye}>
           <T zbehur pesha="gjysme" madhesia={12}>
             REZULTATI I ANALIZËS

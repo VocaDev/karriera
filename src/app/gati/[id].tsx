@@ -21,6 +21,7 @@ import {
   type VeprimiNeRresht,
 } from "@/components/GatiPjeset";
 import { useNjoftim } from "@/components/Njoftimet";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import {
   cvEFundit,
@@ -44,6 +45,7 @@ import { lexoShenjat, ruajShenjat } from "@/lib/gati-hapat";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { gjePunen, type Puna } from "@/lib/punet";
+import { eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { useTema } from "@/lib/tema";
 
 type Gjendja =
@@ -61,6 +63,8 @@ const eProva = (r: Gatishmeria): Prova => ({ id: r.id, perqindja: r.perqindja, b
 export default function GatiEkrani() {
   const t = useTema();
   const router = useRouter();
+  const njofto = useNjoftim();
+  const { kaInternet, sapuKthye } = useRrjeti();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [gjendja, setGjendja] = useState<Gjendja>({ lloji: "duke_lexuar" });
   const [historia, setHistoria] = useState<Prova[]>([]); // kontrollet e kësaj pune, më i riu i pari
@@ -89,7 +93,8 @@ export default function GatiEkrani() {
     dukeLlogaritur.current = true;
     setGjendja({ lloji: "llogarit", puna, cv });
     try {
-      const { rezultati, kufiri: kufiriRi } = await llogaritGatishmerine(puna.id);
+      // Ruajtësi i kohës: një lidhje që varet bëhet gabim me "Provo përsëri", jo rrotë pa fund.
+      const { rezultati, kufiri: kufiriRi } = await meKohe(llogaritGatishmerine(puna.id), KOHA_E_AI);
       if (!aktiv.current) return;
       prekja.sukses();
       kufiriIPyetur.current = kufiriRi !== null;
@@ -117,13 +122,16 @@ export default function GatiEkrani() {
 
   // Lexon punën, rezultatin e fundit, historinë dhe CV-në (pa AI). Pa rezultat dhe me CV: nis AI-në vetë.
   const lexo = useCallback(() => {
-    Promise.all([
-      gjePunen(id),
-      gatishmeriaEFundit(id),
-      cvEFundit(),
-      // historia është shtesë: nëse dështon, rezultati shfaqet pa të
-      historiaEPunes(id).catch((): Prova[] => []),
-    ])
+    meKohe(
+      Promise.all([
+        gjePunen(id),
+        gatishmeriaEFundit(id),
+        cvEFundit(),
+        // historia është shtesë: nëse dështon, rezultati shfaqet pa të
+        historiaEPunes(id).catch((): Prova[] => []),
+      ]),
+      KOHA_E_LEXIMIT,
+    )
       .then(([puna, rezultati, cv, kaluara]) => {
         if (!aktiv.current) return;
         setHistoria(kaluara);
@@ -141,6 +149,17 @@ export default function GatiEkrani() {
   useEffect(() => {
     lexo();
   }, [lexo]);
+
+  // Interneti u kthye pas një leximi të dështuar: rilexon vetë (leximi s'përdor AI, s'ha nga kufiri).
+  // Llogaritja e AI-së s'niset vetë: e nis përdoruesi me "Provo përsëri".
+  useEffect(() => {
+    if (!sapuKthye) return;
+    const g = gjendjaRef.current;
+    if (g.lloji === "gabim_leximi" && eshteGabimRrjeti(g.mesazhi)) {
+      setGjendja({ lloji: "duke_lexuar" });
+      lexo();
+    }
+  }, [sapuKthye, lexo]);
 
   // Sa kontrolle kanë mbetur: një pyetje pa AI sa del rezultati (nëse funksioni e njeh; përndryshe mbetet null).
   useEffect(() => {
@@ -176,14 +195,15 @@ export default function GatiEkrani() {
     case "duke_lexuar":
       return <SkeletiILeximit />;
 
-    case "gabim_leximi":
+    case "gabim_leximi": {
+      const paInternet = eshteGabimRrjeti(gjendja.mesazhi);
       return (
         <Qendra>
           <T pesha="trashe" madhesia={17}>
-            S&apos;u lexua &quot;A jam gati?&quot;
+            {paInternet ? "Pa internet" : "S'u lexua \"A jam gati?\""}
           </T>
-          <T zbehur madhesia={14} style={styles.qendroj}>
-            {gjendja.mesazhi}
+          <T zbehur madhesia={14} style={styles.qendroj} accessibilityLiveRegion="polite">
+            {paInternet ? "Lidhu me internet dhe rezultati shfaqet vetë. Ose prek Provo përsëri." : gjendja.mesazhi}
           </T>
           <Butoni
             teksti="Provo përsëri"
@@ -194,6 +214,7 @@ export default function GatiEkrani() {
           />
         </Qendra>
       );
+    }
 
     case "pa_pune":
       return (
@@ -226,7 +247,14 @@ export default function GatiEkrani() {
       );
 
     case "llogarit":
-      return <Pritja puna={gjendja.puna} cv={gjendja.cv} />;
+      return (
+        <View style={styles.flex}>
+          <View style={styles.shiriti}>
+            <ShiritiPaInternet teksti="Pa internet · kontrolli mund të dështojë" style={styles.shiritiLart} />
+          </View>
+          <Pritja puna={gjendja.puna} cv={gjendja.cv} />
+        </View>
+      );
 
     case "kufiri": {
       const { puna, iFundit, kufiri: k } = gjendja;
@@ -260,18 +288,31 @@ export default function GatiEkrani() {
 
     case "gabim_ai": {
       const { puna, cv, iFundit } = gjendja;
+      const paInternet = eshteGabimRrjeti(gjendja.mesazhi);
       return (
         <Qendra>
           <View style={[styles.ikonaEMadhe, { backgroundColor: t.karta2 }]}>
             <Ikona emri={IKONAT.alarm} madhesia={30} ngjyra={t.keq} />
           </View>
           <T pesha="trashe" madhesia={18} style={styles.qendroj}>
-            S&apos;u llogarit gatishmëria
+            {paInternet ? "Pa internet" : "S'u llogarit gatishmëria"}
           </T>
           <T zbehur madhesia={14} style={styles.qendroj} accessibilityLiveRegion="polite">
-            {gjendja.mesazhi}
+            {paInternet ? "Kontrolli s'u mbaroi. Kur të lidhesh, prek Provo përsëri." : gjendja.mesazhi}
           </T>
-          <Butoni teksti="Provo përsëri" onPress={() => llogarit(puna, cv, iFundit)} />
+          <Butoni
+            teksti="Provo përsëri"
+            jashtePune={paInternet && !kaInternet}
+            hint={paInternet && !kaInternet ? "Pa internet" : undefined}
+            onPress={() => {
+              if (paInternet && !kaInternet) {
+                prekja.lehte();
+                njofto("Ende pa internet. Lidhu dhe provo përsëri.", "info");
+                return;
+              }
+              llogarit(puna, cv, iFundit);
+            }}
+          />
           {iFundit && (
             <Butoni
               teksti="Shiko rezultatin e fundit"
@@ -292,6 +333,7 @@ export default function GatiEkrani() {
           rezultati={rezultati}
           historia={historia}
           kufiri={kufiri}
+          paInternet={!kaInternet}
           onRillogarit={() => (cv ? llogarit(puna, cv, rezultati) : setGjendja({ lloji: "pa_cv", puna }))}
         />
       );
@@ -307,6 +349,7 @@ function Rezultati({
   rezultati,
   historia,
   kufiri,
+  paInternet,
   onRillogarit,
 }: {
   puna: Puna;
@@ -314,6 +357,7 @@ function Rezultati({
   rezultati: Gatishmeria;
   historia: Prova[];
   kufiri: Kufiri | null;
+  paInternet: boolean;
   onRillogarit: () => void;
 }) {
   const t = useTema();
@@ -379,7 +423,9 @@ function Rezultati({
   const kur = kufiri ? kohaERivendosjes(kufiri.rivendoset) : null;
   const cvPaNdryshuar = !cvMeERe && rezultati.burimi === "cv";
   let nenButonin: string;
-  if (arritur) {
+  if (paInternet) {
+    nenButonin = "Pa internet: lidhu për ta kontrolluar përsëri. Rezultati i fundit mbetet këtu.";
+  } else if (arritur) {
     nenButonin = `Ke përdorur ${kufiri.perdorur} nga ${kufiri.maks} kontrolle në 24 orët e fundit.${
       kur ? ` Një vend lirohet ${kur}.` : ""
     }`;
@@ -388,12 +434,13 @@ function Rezultati({
   } else {
     nenButonin = `Kufiri: ${KUFIRI_DITOR_GATI} kontrolle në 24 orë. Një kontroll i ri zgjat 10–40 sekonda.`;
   }
-  if (cvPaNdryshuar && !arritur) {
+  if (cvPaNdryshuar && !arritur && !paInternet) {
     nenButonin += " CV-ja s'ka ndryshuar që nga ky kontroll, prandaj numri do dalë afërsisht i njëjtë.";
   }
 
   return (
     <Faqja>
+      <ShiritiPaInternet teksti="Pa internet · po shfaqim rezultatin e fundit" />
       <View style={styles.koka}>
         <UnazaEGatishmerise perqindja={rezultati.perqindja} />
         <T pesha="trashe" madhesia={18} style={[styles.qendroj, styles.gjykimi]} accessibilityRole="header">
@@ -542,17 +589,17 @@ function Rezultati({
         <Butoni
           teksti="Kontrollo përsëri"
           dytesor
-          jashtePune={arritur}
+          jashtePune={arritur || paInternet}
           onPress={() => {
-            if (arritur) {
-              // si çdo gjë e kyçur: dridhje e lehtë, dhe teksti poshtë thotë kur lirohet
+            if (arritur || paInternet) {
+              // si çdo gjë e kyçur: dridhje e lehtë, dhe teksti poshtë thotë pse (pa internet, ose kur lirohet kufiri)
               prekja.lehte();
               dridhu();
               return;
             }
             onRillogarit();
           }}
-          hint={arritur ? "Kufiri ditor u arrit" : "Përdor një nga kontrollet e 24 orëve"}
+          hint={paInternet ? "Pa internet" : arritur ? "Kufiri ditor u arrit" : "Përdor një nga kontrollet e 24 orëve"}
         />
       </Animated.View>
       <T zbehur madhesia={12} style={styles.qendroj} accessibilityLiveRegion="polite">
@@ -564,6 +611,8 @@ function Rezultati({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  shiriti: { paddingHorizontal: 18 },
+  shiritiLart: { marginTop: 8, marginBottom: 0 },
   qendroj: { textAlign: "center" },
   ikonaEMadhe: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 4 },
   koka: { alignItems: "center", gap: 10, paddingTop: 4 },

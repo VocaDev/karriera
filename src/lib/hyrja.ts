@@ -1,6 +1,7 @@
 // Të gjitha thirrjet e Supabase Auth dhe të profilit. Ekranet thërrasin vetëm këto funksione.
 // Roli (lloji) jeton te tabela profiles dhe e mbron RLS-i; nuk lexohet kurrë nga user_metadata.
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { pastroKeshinEPuneve } from "@/lib/punet-kesh";
 import { supabase } from "@/lib/supabase";
 
 export type Lloji = "kerkues" | "punedhenes" | "qender";
@@ -81,6 +82,7 @@ export async function regjistrohu(d: TeDhenatERegjistrimit): Promise<void> {
 export async function dil(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(mesazhiIGabimit(error));
+  await pastroKeshinEPuneve(); // lista e ruajtur e punëve s'mbetet në telefon pas daljes
 }
 
 /** Profili im. Pa filtër në kod: RLS-i (profili_lexo) kthen vetëm rreshtin tim. */

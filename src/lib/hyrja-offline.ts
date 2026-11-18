@@ -3,7 +3,8 @@
 
 type GabimISupabase = { name?: string; code?: string; status?: number; message?: string };
 
-function eshtePaInternet(g: GabimISupabase): boolean {
+/** Gabimet që vijnë nga mungesa e lidhjes (pa internet), jo nga serveri. */
+export function eshtePaInternet(g: GabimISupabase): boolean {
   const m = (g.message ?? "").toLowerCase();
   return (
     g.name === "AuthRetryableFetchError" ||

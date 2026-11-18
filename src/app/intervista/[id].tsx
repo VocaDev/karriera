@@ -15,7 +15,9 @@ import {
 import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Ikona, Progresi, T } from "@/components/ui";
 import { kushEkaRadhen, type Gjendja, type Mesazhi } from "@/lib/intervista/gjendja";
@@ -29,6 +31,8 @@ import {
 import { AvatariIntervistuesit, KartaEGabimit } from "@/lib/intervista/ui";
 import { useIntervista } from "@/lib/intervista/useIntervista";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
+import { prekja } from "@/lib/prekja";
+import { eshteGabimRrjeti, useRrjeti } from "@/lib/rrjeti";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 // Intervista me shkrim (bordi, ekrani 14, pa avatarin ende): biseda si chat. Lart gjithmonë shkruan kush e ka radhën.
@@ -48,8 +52,14 @@ export default function IntervistaEkrani() {
   const t = useTema();
   const router = useRouter();
   const kufijte = useSafeAreaInsets();
+  const njofto = useNjoftim();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { gjendja, dergo, perfundo, riprovo, kaPergjigje } = useIntervista(id);
+  // Interneti u kthye pas një leximi të dështuar (hapja e intervistës): rilexon NJË herë për çdo kthim; është vetëm lexim.
+  // Dërgimi i përgjigjes s'bëhet vetë: e dërgon përdoruesi me "Provo përsëri".
+  const { kaInternet } = useRrjeti(() => {
+    if (gjendja.faza === "gabim" && gjendja.veprimi === "ngarko" && eshteGabimRrjeti(gjendja.gabimi)) riprovo();
+  });
   const [teksti, setTeksti] = useState("");
   const lista = useRef<ScrollViewInstance>(null);
 
@@ -60,6 +70,8 @@ export default function IntervistaEkrani() {
   const intervistuesi: Intervistuesi = info?.intervistuesi ?? INTERVISTUESI_FILLESTAR;
   const pamja = PAMJA_E_INTERVISTUESIT[intervistuesi];
   const mundTeDergoje = gjendja.faza === "pret_pergjigjen" && teksti.trim().length > 0;
+  // Gabimi i fundit është mungesa e internetit (jo AI-ja, jo serveri): kartës i japim titullin "Pa internet".
+  const paInternetGabim = gjendja.faza === "gabim" && eshteGabimRrjeti(gjendja.gabimi);
 
   // Raporti gati → rezultatet (zëvendëson këtë ekran, që "mbrapa" të mos kthejë në një intervistë të mbaruar).
   useEffect(() => {
@@ -104,6 +116,12 @@ export default function IntervistaEkrani() {
   });
 
   function dergoTani() {
+    if (!kaInternet) {
+      // Pa internet përgjigjja s'niset dhe s'fshihet nga fusha: mbetet aty derisa të lidhesh.
+      prekja.gabim();
+      njofto("Pa internet. Përgjigjja jote mbetet këtu.", "gabim");
+      return;
+    }
     if (dergo(teksti)) setTeksti("");
   }
 
@@ -145,7 +163,11 @@ export default function IntervistaEkrani() {
           <View style={styles.dil} />
         </View>
         {info && <Progresi vlera={pyetjaNr / info.max} />}
-        <Statusi gjendja={gjendja} radha={radha} emri={pamja.emri} />
+        <Statusi gjendja={gjendja} radha={radha} emri={pamja.emri} paInternet={!kaInternet} />
+      </View>
+
+      <View style={styles.shiriti}>
+        <ShiritiPaInternet teksti="Pa internet · përgjigjja jote s'humbet" style={styles.shiritiLart} />
       </View>
 
       <ScrollView
@@ -176,16 +198,22 @@ export default function IntervistaEkrani() {
         {gjendja.faza === "gabim" && (
           <KartaEGabimit
             titulli={
-              gjendja.veprimi === "dergo"
-                ? "Përgjigjja s'u dërgua"
-                : gjendja.veprimi === "ngarko"
-                  ? "Intervista s'u hap"
-                  : "Rezultatet s'u përgatitën"
+              paInternetGabim
+                ? "Pa internet"
+                : gjendja.veprimi === "dergo"
+                  ? "Përgjigjja s'u dërgua"
+                  : gjendja.veprimi === "ngarko"
+                    ? "Intervista s'u hap"
+                    : "Rezultatet s'u përgatitën"
             }
             mesazhi={
-              gjendja.veprimi === "dergo" && gjendja.pergjigja
-                ? `${gjendja.gabimi.message} Përgjigjja jote s'humbet.`
-                : gjendja.gabimi.message
+              paInternetGabim
+                ? gjendja.veprimi === "dergo" && gjendja.pergjigja
+                  ? "Përgjigjja jote s'humbet: ruhet këtu. Kur të lidhesh, prek Provo përsëri."
+                  : "Lidhu me internet dhe prek Provo përsëri."
+                : gjendja.veprimi === "dergo" && gjendja.pergjigja
+                  ? `${gjendja.gabimi.message} Përgjigjja jote s'humbet.`
+                  : gjendja.gabimi.message
             }
             riprovo={gjendja.gabimi.riprovohet || gjendja.veprimi === "ngarko" ? riprovo : undefined}
           />
@@ -218,9 +246,9 @@ export default function IntervistaEkrani() {
             accessibilityState={{ disabled: !mundTeDergoje }}
             disabled={!mundTeDergoje}
             onPress={dergoTani}
-            style={[styles.dergo, { backgroundColor: mundTeDergoje ? t.theksi : t.karta2 }]}
+            style={[styles.dergo, { backgroundColor: mundTeDergoje && kaInternet ? t.theksi : t.karta2 }]}
           >
-            <Ikona emri={DERGO} madhesia={18} ngjyra={mundTeDergoje ? t.sfondi : t.zbehur} />
+            <Ikona emri={DERGO} madhesia={18} ngjyra={mundTeDergoje && kaInternet ? t.sfondi : t.zbehur} />
           </Prekshme>
         </View>
       )}
@@ -234,10 +262,22 @@ export default function IntervistaEkrani() {
 }
 
 /** Shiriti "kush e ka radhën": pika portokalli kur është radha jote, ndryshe tekst i qetë. */
-function Statusi({ gjendja, radha, emri }: { gjendja: Gjendja; radha: "arta" | "ti" | "askush"; emri: string }) {
+function Statusi({
+  gjendja,
+  radha,
+  emri,
+  paInternet,
+}: {
+  gjendja: Gjendja;
+  radha: "arta" | "ti" | "askush";
+  emri: string;
+  paInternet: boolean;
+}) {
   const t = useTema();
   const teksti =
-    gjendja.faza === "gati"
+    gjendja.faza === "pret_pergjigjen" && paInternet
+      ? "Pa internet: lidhu për ta dërguar përgjigjen"
+      : gjendja.faza === "gati"
       ? "Po hapet intervista…"
       : gjendja.faza === "gabim"
         ? "U ndal: shiko mesazhin poshtë"
@@ -350,6 +390,8 @@ const styles = StyleSheet.create({
   kokaTitulli: { flex: 1, paddingHorizontal: 8 },
   dil: { flexDirection: "row", alignItems: "center", gap: 2, minWidth: 64, minHeight: 44 },
   statusi: { flexDirection: "row", alignItems: "center", gap: 8 },
+  shiriti: { paddingHorizontal: 16 },
+  shiritiLart: { marginTop: 10, marginBottom: 0 },
   pika: { width: 9, height: 9, borderRadius: 5 },
   biseda: { padding: 16, gap: 12, paddingBottom: 24 },
   flluska: { maxWidth: "88%", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 11, gap: 4 },

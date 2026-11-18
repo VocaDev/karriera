@@ -214,9 +214,8 @@ async function mesazhiIFunksionit(gabimi: unknown, rezerva: string): Promise<str
     }
     return rezerva;
   }
-  if (gabimi instanceof FunctionsFetchError || gabimi instanceof FunctionsRelayError) {
-    return "Pa internet ose serveri s'u përgjigj. Provo përsëri.";
-  }
+  if (gabimi instanceof FunctionsFetchError) return "Pa internet ose serveri s'u përgjigj. Provo përsëri.";
+  if (gabimi instanceof FunctionsRelayError) return "Serveri s'u përgjigj. Provo përsëri.";
   return rezerva;
 }
 
