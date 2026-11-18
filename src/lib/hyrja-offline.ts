@@ -1,9 +1,12 @@
 // Gabimet e hyrjes në shqip: fjalëkalim i gabuar, llogari që ekziston, pa internet.
 // Mesazhi teknik nuk i shfaqet përdoruesit; mbetet vetëm në log-un e zhvillimit.
 
+import { PA_INTERNET_SHKURT } from "@/lib/mesazhet";
+
 type GabimISupabase = { name?: string; code?: string; status?: number; message?: string };
 
-function eshtePaInternet(g: GabimISupabase): boolean {
+/** Gabimet që vijnë nga mungesa e lidhjes (pa internet), jo nga serveri. */
+export function eshtePaInternet(g: GabimISupabase): boolean {
   const m = (g.message ?? "").toLowerCase();
   return (
     g.name === "AuthRetryableFetchError" ||
@@ -16,7 +19,7 @@ function eshtePaInternet(g: GabimISupabase): boolean {
 /** Kthen një fjali të qartë në shqip për çdo gabim të Supabase (hyrja, regjistrimi, të dhënat). */
 export function mesazhiIGabimit(gabimi: unknown): string {
   const g = (gabimi ?? {}) as GabimISupabase;
-  if (eshtePaInternet(g)) return "Pa internet. Kontrollo lidhjen dhe provo përsëri.";
+  if (eshtePaInternet(g)) return PA_INTERNET_SHKURT;
 
   switch (g.code) {
     case "invalid_credentials":

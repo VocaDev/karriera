@@ -14,6 +14,7 @@ import Ngarkimi from "@/components/Ngarkimi";
 import { NjoftimetProvider } from "@/components/Njoftimet";
 import { SesioniProvider, useSesioni } from "@/lib/sesioni";
 import { SHKRONJAT, useTema, type Tema } from "@/lib/tema";
+import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
 
 // Splash-i i telefonit mbetet derisa të ngarkohen fontet dhe ekrani i hapjes (Ngarkimi) të vizatohet
 // mbi app: atëherë fshihet, dhe kalimi nga splash-i te app-i bëhet pa kërcim.
@@ -87,6 +88,52 @@ function Navigimi({ t }: { t: Tema }) {
           </Stack.Protected>
           <Stack.Protected guard={lloji === "kerkues"} redirectTo={kreu}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            {/* CV-ja: vetëm kërkuesi. Titulli i madh është në ekran, prandaj koka mbetet pa tekst. */}
+            <Stack.Screen name="cv/index" options={{ title: "" }} />
+            <Stack.Screen name="cv/analiza" options={{ title: "" }} />
+            {/* Ndërtuesi i CV-së del tani (vendimi i Gentit, 11.11). */}
+            <Stack.Screen name="cv/ndertoje" options={{ title: "" }} />
+            <Stack.Screen name="cv/dokumenti" options={{ title: "" }} />
+            {/* Rrugët e javës (placeholder-at): A jam gati?, Intervista, Cilësimet. */}
+            <Stack.Screen name="gati/[id]" options={{ title: "A jam gati?" }} />
+            <Stack.Screen name="intervista/index" options={{ title: "Intervista" }} />
+            <Stack.Screen name="intervista/[id]" options={{ title: "Intervista" }} />
+            <Stack.Screen name="intervista/rezultatet" options={{ title: "Rezultatet" }} />
+            <Stack.Screen name="cilesimet" options={{ title: "Cilësimet" }} />
+            {/* Pa internet (J7): rezultatet e fundit të ruajtura, dhe praktika me pyetje e këshilla në telefon. */}
+            <Stack.Screen name="permbledhja" options={{ title: "" }} />
+            <Stack.Screen name="praktika/index" options={{ title: "" }} />
+            <Stack.Screen name="praktika/kartat" options={{ title: "" }} />
+            <Stack.Screen name="praktika/keshillat/index" options={{ title: "" }} />
+            <Stack.Screen name="praktika/keshillat/[id]" options={{ title: "" }} />
+            {/* Rindërto CV-në: sugjerimet e pranuara të analizës, të zbatuara pa AI (14.11). */}
+            <Stack.Screen name="cv/rindertoje" options={{ title: "" }} />
+            {/* "Sill linkun tënd" (J7): fletë me dorezë; X-i i rrumbullakët është brenda ekranit. */}
+            <Stack.Screen
+              name="pune/sill-linkun"
+              options={{
+                presentation: "formSheet",
+                headerShown: false,
+                sheetGrabberVisible: true,
+                sheetAllowedDetents: [0.75, 1],
+                sheetCornerRadius: 24,
+              }}
+            />
+            {/* Teksti i shpalljes së një pune private (J7): fletë e gjatë, e njëjta formë. */}
+            <Stack.Screen
+              name="pune/teksti"
+              options={{
+                presentation: "formSheet",
+                headerShown: false,
+                sheetGrabberVisible: true,
+                sheetAllowedDetents: [0.75, 1],
+                sheetCornerRadius: 24,
+              }}
+            />
+          </Stack.Protected>
+          {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
+          <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
+            <Stack.Screen name="cv/ndaje" options={{ title: "" }} />
           </Stack.Protected>
           <Stack.Protected guard={organizate} redirectTo={kreu}>
             <Stack.Screen name="organizata" options={{ headerShown: false }} />

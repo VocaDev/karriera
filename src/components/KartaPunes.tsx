@@ -89,7 +89,11 @@ export default function KartaPunes({ puna, ruajtur = false, kurNdryshonRuajtja, 
         {puna.kompania}, {puna.qyteti}
       </T>
       <T zbehur madhesia={12.5} style={styles.burimi}>
-        {puna.burimi === "perdoruesi" ? "Nga një punëdhënës në Karriera" : "Karriera"}
+        {puna.private
+          ? "Vetëm ti e sheh · e shtove me link"
+          : puna.burimi === "perdoruesi"
+            ? "Nga një punëdhënës në Karriera"
+            : "Karriera"}
       </T>
 
       <Rruga hapi={0} />

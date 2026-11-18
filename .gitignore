@@ -46,3 +46,9 @@ example
 .env
 .env.*
 !.env.example
+
+# Deno (scripts/test-cv-ai.ts): lockfile lokal, jo në Git
+/deno.lock
+
+# Mostrat e zërit (prova e dëgjimit): s'futen në git
+docs/zeri-mostra/

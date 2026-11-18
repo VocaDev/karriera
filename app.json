@@ -36,6 +36,13 @@
             "image": "./assets/images/splash-icon-dark.png"
           }
         }
+      ],
+      "expo-sharing",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Karriera e përdor mikrofonin vetëm kur prek butonin për t'iu përgjigjur intervistës me zë. Zëri kthehet në tekst dhe nuk ruhet."
+        }
       ]
     ],
     "experiments": {

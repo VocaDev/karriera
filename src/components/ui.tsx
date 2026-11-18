@@ -19,8 +19,19 @@ import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTimin
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
-/** Faqja: sfondi me gradientin portokalli lart (si në bord) dhe ScrollView. */
-export function Faqja({ children, pa_scroll = false }: { children: ReactNode; pa_scroll?: boolean }) {
+/**
+ * Faqja: sfondi me gradientin portokalli lart (si në bord) dhe ScrollView.
+ * `me_fusha`: faqe me fusha teksti: tastiera s'e mbulon fushën, dhe një prekje te një buton s'e humb.
+ */
+export function Faqja({
+  children,
+  pa_scroll = false,
+  me_fusha = false,
+}: {
+  children: ReactNode;
+  pa_scroll?: boolean;
+  me_fusha?: boolean;
+}) {
   const t = useTema();
   const gradienti = (
     <LinearGradient
@@ -41,7 +52,13 @@ export function Faqja({ children, pa_scroll = false }: { children: ReactNode; pa
   return (
     <View style={[styles.flex, { backgroundColor: t.sfondi }]}>
       {gradienti}
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.permbajtja}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.permbajtja}
+        keyboardShouldPersistTaps={me_fusha ? "handled" : undefined}
+        automaticallyAdjustKeyboardInsets={me_fusha}
+        keyboardDismissMode={me_fusha ? "interactive" : undefined}
+      >
         {children}
       </ScrollView>
     </View>
@@ -132,6 +149,8 @@ export const IKONAT = {
   shkolla: { ios: "graduationcap.fill", android: "school" },
   kosha: { ios: "trash", android: "delete" },
   email: { ios: "envelope.fill", android: "mail" },
+  kerko: { ios: "magnifyingglass", android: "search" },
+  mbyll: { ios: "xmark.circle.fill", android: "cancel" },
 } satisfies Record<string, EmriIkones>;
 
 /** Chip (etiketë e vogël), p.sh. "SWE" ose "Gati". */
