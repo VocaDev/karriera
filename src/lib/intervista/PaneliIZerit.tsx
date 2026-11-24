@@ -11,16 +11,17 @@ import { Ikona, T } from "@/components/ui";
 import { useTema } from "@/lib/tema";
 
 import { Avatari, type AvatariRef } from "./Avatari";
+import { LejaModal } from "./LejaModal";
 import type { Gjendja } from "./gjendja";
-import type { FjaliaMeZe } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi } from "./tipet";
-import type { CelesiIZerit, RezultatiIZerit } from "./useIntervista";
+import type { RezultatiIZerit, ZeriRrjedhe } from "./useIntervista";
 import { useZeri } from "./useZeri";
 
 const MIKROFONI = { ios: "mic.fill", android: "mic" };
 const NDALO = { ios: "stop.fill", android: "stop" };
 const PERSERIT = { ios: "arrow.counterclockwise", android: "replay" };
 const HESHT = { ios: "forward.end.fill", android: "skip_next" };
+const ANULO = { ios: "xmark", android: "close" };
 
 export function PaneliIZerit({
   intervistaId,
@@ -28,7 +29,6 @@ export function PaneliIZerit({
   intervistuesi,
   kaInternet,
   dergoZerin,
-  merrZerin,
   uPyet,
   kaloTeShkruaj,
   njofto,
@@ -40,8 +40,7 @@ export function PaneliIZerit({
   gjendja: Gjendja;
   intervistuesi: Intervistuesi;
   kaInternet: boolean;
-  dergoZerin: (uri: string) => Promise<RezultatiIZerit>;
-  merrZerin: (celesi: CelesiIZerit) => FjaliaMeZe[] | null;
+  dergoZerin: (uri: string, zeri: ZeriRrjedhe) => Promise<RezultatiIZerit>;
   uPyet: () => void;
   kaloTeShkruaj: (mesazhi: string | null) => void;
   njofto: (teksti: string, lloji?: "sukses" | "info" | "gabim") => void;
@@ -59,7 +58,6 @@ export function PaneliIZerit({
     intervistuesi,
     kaInternet,
     dergoZerin,
-    merrZerin,
     uPyet,
     kaloTeShkruaj,
     njofto,
@@ -80,6 +78,14 @@ export function PaneliIZerit({
         onGabim={z.onGabim}
         style={[styles.avatari, { height: Math.round(height * 0.3) }]}
       />
+      <LejaModal
+        faza={z.leja}
+        emri={emri}
+        onVazhdo={z.lejaVazhdo}
+        onJo={z.lejaJo}
+        onHapCilesimet={z.lejaHapCilesimet}
+        onVazhdoMeShkrim={z.lejaVazhdoMeShkrim}
+      />
       <Statusi teksti={z.statusi} radha={z.radha} mendon={z.mendon} />
       {children}
       {!mbaroi && (
@@ -92,6 +98,7 @@ export function PaneliIZerit({
           emri={emri}
           onMikrofoni={z.prekMikrofonin}
           onPerserit={z.perseritPyetjen}
+          onAnulo={z.anuloRegjistrimin}
           onNdalo={z.ndaloFolesin}
           poshte={poshte}
         />
@@ -155,6 +162,7 @@ function ShiritiPoshte({
   emri,
   onMikrofoni,
   onPerserit,
+  onAnulo,
   onNdalo,
   poshte,
 }: {
@@ -166,6 +174,7 @@ function ShiritiPoshte({
   emri: string;
   onMikrofoni: () => void;
   onPerserit: () => void;
+  onAnulo: () => void;
   onNdalo: () => void;
   poshte: number;
 }) {
@@ -192,6 +201,9 @@ function ShiritiPoshte({
         <View style={styles.ane}>
           {radhaJote && !regjistron && (
             <ButoniAnesor ikona={PERSERIT} teksti="Përsërit pyetjen" pershkrimi={`${emri} e thotë pyetjen sërish`} onPress={onPerserit} />
+          )}
+          {regjistron && (
+            <ButoniAnesor ikona={ANULO} teksti="Anulo" pershkrimi="Hedh poshtë regjistrimin pa e dërguar" onPress={onAnulo} />
           )}
         </View>
         <View style={styles.vendi}>

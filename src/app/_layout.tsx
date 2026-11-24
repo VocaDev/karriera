@@ -99,6 +99,7 @@ function Navigimi({ t }: { t: Tema }) {
             <Stack.Screen name="intervista/index" options={{ title: "Intervista" }} />
             <Stack.Screen name="intervista/[id]" options={{ title: "Intervista" }} />
             <Stack.Screen name="intervista/rezultatet" options={{ title: "Rezultatet" }} />
+            <Stack.Screen name="intervista/historiku" options={{ title: "" }} />
             <Stack.Screen name="cilesimet" options={{ title: "Cilësimet" }} />
             {/* Pa internet (J7): rezultatet e fundit të ruajtura, dhe praktika me pyetje e këshilla në telefon. */}
             <Stack.Screen name="permbledhja" options={{ title: "" }} />

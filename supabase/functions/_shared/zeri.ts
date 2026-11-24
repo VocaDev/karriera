@@ -25,6 +25,9 @@ export type AudioIFolur = {
   kufijte?: Record<string, string>;
 };
 
+/** Një copë e rrjedhës së TTS: PCM 16 bit mono little-endian (numër çift bajtesh) me shkallën e mostrimit. */
+export type CopaAudio = { pcm: Uint8Array; shkalla: number };
+
 /** STT: tekst nga audio. */
 export interface Degjuesi {
   /** Emri për log-et (pa sekrete). */
@@ -38,6 +41,11 @@ export interface Folesi {
   readonly emri: string;
   /** Audio nga teksti i një kthese (një ose disa fjali). Hedh GabimIZerit kur ofruesi dështon. */
   fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur>;
+  /**
+   * Njëlloj, por audio vjen në copa sapo ofruesi i krijon (byte-i i parë pas ~2 s te Gemini, në vend të ~4,5 s për
+   * gjithë audion). Hedh GabimIZerit para copës së parë ose mes rrjedhës.
+   */
+  rrjedhe?(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): AsyncGenerator<CopaAudio>;
 }
 
 /** Gabim i ofruesit të zërit: mesazhi është për app-in (shqip), pa detaje teknike. */

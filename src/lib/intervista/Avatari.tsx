@@ -12,6 +12,10 @@ import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tip
 
 export type AvatariRef = {
   fol: (id: string, fjalite: FjaliaMeZe[], shprehja: Shprehja, pershendetje: boolean, shto?: boolean) => void;
+  /** Zëri në rrjedhë: fillo (ndalon çdo gjë tjetër), copa PCM base64 (16 bit mono, shkalla `s`), mbaroi (s'vjen më). */
+  rrjedheFillo: (id: string, shprehja: Shprehja, pershendetje: boolean) => void;
+  rrjedhePcm: (id: string, b: string, s: number) => void;
+  rrjedheMbaroi: (id: string) => void;
   ndalo: () => void;
   degjon: (po: boolean) => void;
   mendon: () => void;
@@ -43,6 +47,9 @@ export function Avatari({
 
   useImperativeHandle(ref, () => ({
     fol: (id, fjalite, shprehja, pershendetje, shto = false) => dergo({ lloji: "fol", id, fjalite, shprehja, pershendetje, shto }),
+    rrjedheFillo: (id, shprehja, pershendetje) => dergo({ lloji: "rrjedhe_fillo", id, shprehja, pershendetje }),
+    rrjedhePcm: (id, b, s) => dergo({ lloji: "rrjedhe_pcm", id, b, s }),
+    rrjedheMbaroi: (id) => dergo({ lloji: "rrjedhe_mbaroi", id }),
     ndalo: () => dergo({ lloji: "ndalo" }),
     degjon: (po) => dergo({ lloji: "degjon", po }),
     mendon: () => dergo({ lloji: "mendon" }),

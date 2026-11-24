@@ -8,6 +8,9 @@ import type { Intervistuesi, Shprehja } from "./tipet";
 
 export type AvatariRef = {
   fol: (id: string, fjalite: FjaliaMeZe[], shprehja: Shprehja, pershendetje: boolean, shto?: boolean) => void;
+  rrjedheFillo: (id: string, shprehja: Shprehja, pershendetje: boolean) => void;
+  rrjedhePcm: (id: string, b: string, s: number) => void;
+  rrjedheMbaroi: (id: string) => void;
   ndalo: () => void;
   degjon: (po: boolean) => void;
   mendon: () => void;

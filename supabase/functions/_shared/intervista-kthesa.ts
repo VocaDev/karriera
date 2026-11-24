@@ -41,6 +41,13 @@ export type HyrjaEKthesës = {
   pergjigja: string;
   /** Përgjigjja erdhi nga njohja e zërit: prompt-i e di që mund të ketë fjalë të gabuara. */
   meZe?: boolean;
+  /**
+   * Vetëm zëri: pyetja tjetër s'pret vlerësimin e përgjigjes (që s'e përdor askush gjatë intervistës, vetëm raporti).
+   * Vlerësimi dhe mbyllja e kthesës vazhdojnë në sfond; ky thirret me premtimin që kërkesa ta presë para se të mbarojë.
+   */
+  nePlan?: (premtimi: Promise<unknown>) => void;
+  /** Vetëm zëri: teksti i reagimit sapo modeli e mbaron (para pyetjes); zëri i tij nis pa pritur pjesën tjetër. */
+  onReagimi?: (reagimi: string) => void;
 };
 
 /** Rezultati si JSON + status HTTP. Trupi është kontrata e intervista-kthesa (shih krye të atij skedari). */
@@ -155,17 +162,39 @@ export async function perpunoKthesen(t: Thirresi, hyrja: HyrjaEKthesës): Promis
     const meKetePergjigje = kthesat.map((k) => (k.id === aktuale.id ? { ...k, pergjigja } : k));
 
     // Vlerësimi dhe pyetja tjetër njëherësh: kandidati pret vetëm sa më e ngadalta.
-    const [vleresimi, kthesaAI] = await Promise.allSettled([
-      vleresoPergjigjen({ konteksti, intervistuesi, roli, gjuha, meZe, kthesa: { reagimi: aktuale.reagimi, pyetja: aktuale.pyetja, pergjigja } }),
-      gjeneroKthesen({ konteksti, intervistuesi, roli, gjuha, gjatesia, kthesat: meKetePergjigje, nrPyetjeve, menyra, lejohetVazhdim, meZe }),
-    ]);
+    const vleresimiP = vleresoPergjigjen({
+      konteksti,
+      intervistuesi,
+      roli,
+      gjuha,
+      meZe,
+      kthesa: { reagimi: aktuale.reagimi, pyetja: aktuale.pyetja, pergjigja },
+    });
+    const kthesaP = gjeneroKthesen({
+      konteksti,
+      intervistuesi,
+      roli,
+      gjuha,
+      gjatesia,
+      kthesat: meKetePergjigje,
+      nrPyetjeve,
+      menyra,
+      lejohetVazhdim,
+      meZe,
+      onReagimi: hyrja.onReagimi,
+    });
+    const nePlan = hyrja.nePlan;
+    const [vleresimi, kthesaAI] = nePlan
+      ? [null, (await Promise.allSettled([kthesaP]))[0]]
+      : await Promise.allSettled([vleresimiP, kthesaP]);
+    if (nePlan) vleresimiP.catch(() => {}); // trajtohet te mbyllja në sfond; kjo vetëm e shënon si të trajtuar
     if (kthesaAI.status === "rejected") {
       await liroQirane();
       const e = kthesaAI.reason;
       if (e instanceof GabimIntervista) return gabimi(e.message, e.status, e.kodi);
       throw e;
     }
-    if (vleresimi.status === "rejected") {
+    if (vleresimi?.status === "rejected") {
       // S'e ndal intervistën: raporti e vlerëson sërish këtë përgjigje.
       console.error("[intervista-kthesa] Vlerësimi i përgjigjes dështoi; do të provohet te raporti.");
     }
@@ -215,15 +244,31 @@ export async function perpunoKthesen(t: Thirresi, hyrja: HyrjaEKthesës): Promis
     }
 
     // Kthesa aktuale mbyllet e fundit: nëse funksioni ndalet para kësaj, pyetja tjetër ekziston tashmë.
-    const { error: gabimiMbylljes } = await t.admin
-      .from("intervista_kthesat")
-      .update({
-        vleresimi: vleresimi.status === "fulfilled" && eshteVleresim(vleresimi.value) ? vleresimi.value : null,
-        pergjigjur_me: new Date().toISOString(),
-        perpunim_nga: null,
-      })
-      .eq("id", aktuale.id);
-    if (gabimiMbylljes) console.error("[intervista-kthesa] Vlerësimi s'u ruajt; raporti do ta provojë sërish.");
+    const mbyllKthesen = async (v: unknown) => {
+      const { error: gabimiMbylljes } = await t.admin
+        .from("intervista_kthesat")
+        .update({
+          vleresimi: eshteVleresim(v) ? v : null,
+          pergjigjur_me: new Date().toISOString(),
+          perpunim_nga: null,
+        })
+        .eq("id", aktuale.id);
+      if (gabimiMbylljes) console.error("[intervista-kthesa] Vlerësimi s'u ruajt; raporti do ta provojë sërish.");
+    };
+    if (nePlan) {
+      // Qiraja mbetet derisa mbyllja në sfond ta lirojë; pyetja tjetër ekziston, ndaj përgjigjja s'mund të dërgohet sërish.
+      nePlan(
+        vleresimiP.then(
+          (v) => mbyllKthesen(v),
+          () => {
+            console.error("[intervista-kthesa] Vlerësimi i përgjigjes dështoi; do të provohet te raporti.");
+            return mbyllKthesen(null);
+          },
+        ),
+      );
+    } else {
+      await mbyllKthesen(vleresimi?.status === "fulfilled" ? vleresimi.value : null);
+    }
     kthesaEZene = null;
 
     if (kthesaERe) {
