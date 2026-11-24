@@ -4,7 +4,8 @@
 // Dalja:  { "gatishmeria": Gatishmeria, "kufiri": Kufiri | null }  (rreshti i ri te public.gatishmeria, burimi = "cv")
 // Kufiri: POST { "veprimi": "kufiri" } kthen vetëm { "kufiri": Kufiri } (pa AI, pa e shtuar thirrjen).
 //         Kufiri = { perdorur, maks, rivendoset }: rivendoset = ISO kur del nga dritarja thirrja më e vjetër (ose null).
-// Gabim:  { "error": "<fjali në shqip>", "kodi"?: "pa_cv" | "kufiri", "kufiri"?: Kufiri }
+// Gabim:  { "error": "<fjali në shqip>", "kodi"?: "pa_cv" | "pa_kerkesa" | "kufiri", "kufiri"?: Kufiri }
+//         "pa_kerkesa" (422) = shpallja s'ka çka të krahasohet; kontrollohet para se të numërohet thirrja, s'harxhon kufirin.
 //
 // 1. Thirrësi: sesion i vërtetë dhe llogari "kerkues" (_shared/thirresi.ts), maksimumi KUFIRI_DITOR thirrje në 24 orë
 //    (tabela gati_thirrjet; cv_ai_thirrjet pranon vetëm funksionet e CV-së).
@@ -71,6 +72,8 @@ HOW TO JUDGE
   already backs most requirements, applying is a valid step. Start each step with a plain action verb
   (e.g. "Praktiko", "Shto në CV", "Apliko" in Albanian) so the app can offer the matching button.
 - At most 10 items in "ke" and 8 in "mungon". Keep every text short and specific.
+- Order "mungon" with the must-have requirements first, the nice-to-haves last, so the most damaging gap
+  is the first thing the candidate reads. Order "ke" the same way.
 
 LANGUAGE
 - Write every text field in the language you are told in the request.
@@ -246,7 +249,10 @@ Deno.serve(async (req: Request) => {
     const kerkesat = kerkesatPerModel(puna.kerkesat);
     if (kerkesat === null && aftesite.length === 0 && pershkrimi.trim().length < 40) {
       return json(
-        { error: "Kjo shpallje s'thotë mjaftueshëm se çka kërkon, ndaj s'mund ta krahasojmë me CV-në tënde." },
+        {
+          error: "Kjo shpallje s'thotë mjaftueshëm se çka kërkon, ndaj s'mund ta krahasojmë me CV-në tënde.",
+          kodi: "pa_kerkesa",
+        },
         422,
       );
     }

@@ -13,7 +13,7 @@ import Svg, { Circle } from "react-native-svg";
 
 import Prekshme from "@/components/Prekshme";
 import { Pulsi, Vije } from "@/components/Skeleti";
-import { Faqja, IKONAT, Ikona, Karta, T } from "@/components/ui";
+import { Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import type { CvEFundit, Prova } from "@/lib/gati";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import type { Puna } from "@/lib/punet";
@@ -122,6 +122,10 @@ export function Pritja({ puna, cv }: { puna: Puna; cv: CvEFundit }) {
         <T zbehur madhesia={14} style={styles.qendroj}>
           {puna.titulli}, {puna.kompania}
         </T>
+        {/* Bordi 25: rruga tregon ku jemi, CV-ja është kryer dhe po bëhet përputhja. */}
+        <View style={styles.rrugaEPritjes}>
+          <Rruga hapi={1} />
+        </View>
       </View>
 
       <Karta style={styles.fazat}>
@@ -415,6 +419,7 @@ const styles = StyleSheet.create({
   unaza: { width: 176, height: 176, alignItems: "center", justifyContent: "center" },
   unazaBosh: { borderRadius: 88, borderWidth: 12 },
   numriIMadh: { letterSpacing: -1.5, lineHeight: 58 },
+  rrugaEPritjes: { alignSelf: "stretch" },
   fazat: { gap: 14 },
   faza: { flexDirection: "row", gap: 12, alignItems: "center" },
   pikaEFazes: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },

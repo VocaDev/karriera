@@ -16,17 +16,27 @@ import type { Puna } from "@/lib/punet";
 import { useTema } from "@/lib/tema";
 
 // Karta e punës në stilin D (bordi, ekrani 09): shirit "E RE", roli, titulli, kompania,
-// burimi dhe rruga drejt "gati". Pa CV ende, çdo punë është te hapi i parë (CV).
+// burimi dhe rruga drejt "gati". Pa CV, çdo punë është te hapi i parë (CV); me CV, te Përputhja; me rezultat, te Intervista.
 // ⭐ ruhet në Supabase (punet_e_ruajtura): lista mban gjendjen dhe e jep këtu me `ruajtur`.
 type Props = {
   puna: Puna;
   ruajtur?: boolean;
+  /** Përqindja e fundit e "A jam gati?" për këtë punë, nëse ka; pa të, rruga ndjek vetëm CV-në. */
+  gatishmeria?: number | null;
+  kaCv?: boolean;
   kurNdryshonRuajtja?: (ruaje: boolean) => void; // pa këtë, ylli s'shfaqet (p.sh. te punëdhënësi)
 } & Omit<PressableProps, "style">;
 
 const TRE_DITE_MS = 3 * 24 * 60 * 60 * 1000;
 
-export default function KartaPunes({ puna, ruajtur = false, kurNdryshonRuajtja, ...pressableProps }: Props) {
+export default function KartaPunes({
+  puna,
+  ruajtur = false,
+  gatishmeria = null,
+  kaCv = false,
+  kurNdryshonRuajtja,
+  ...pressableProps
+}: Props) {
   const t = useTema();
   const qetesi = useReducedMotion();
   const [tani] = useState(() => Date.now()); // koha merret një herë, jo në çdo render
@@ -96,13 +106,23 @@ export default function KartaPunes({ puna, ruajtur = false, kurNdryshonRuajtja, 
             : "Karriera"}
       </T>
 
-      <Rruga hapi={0} />
+      <Rruga hapi={gatishmeria !== null ? 2 : kaCv ? 1 : 0} />
       <T zbehur madhesia={12.5} style={styles.tani}>
+        {gatishmeria !== null && (
+          <T pesha="trashe" madhesia={12.5}>
+            {gatishmeria}% gati ·{" "}
+          </T>
+        )}
         Tani:{" "}
         <T pesha="trashe" madhesia={12.5}>
-          CV
+          {gatishmeria !== null ? "Intervista" : kaCv ? "Përputhja" : "CV"}
         </T>{" "}
-        · ngarko CV-në për të parë sa je gati
+        ·{" "}
+        {gatishmeria !== null
+          ? "praktiko për ta rritur"
+          : kaCv
+            ? "hape për të parë sa je gati"
+            : "ngarko CV-në për të parë sa je gati"}
       </T>
     </Prekshme>
   );

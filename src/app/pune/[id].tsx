@@ -9,6 +9,7 @@ import Prekshme from "@/components/Prekshme";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
+import { cvEFundit, gatishmeriaEFundit } from "@/lib/gati";
 import { prekja } from "@/lib/prekja";
 import { paInternet, VONON } from "@/lib/mesazhet";
 import { hiqePunenNgaKeshi, lexoListenEPunes } from "@/lib/punet-kesh";
@@ -64,6 +65,9 @@ export default function DetajetEPunes() {
 
   const [ngaKesh, setNgaKesh] = useState(false); // puna u hap nga lista e ruajtur në telefon (pa internet)
   const [dukeFshire, setDukeFshire] = useState(false);
+  // Ku je me këtë punë (pa AI): përqindja e fundit të "A jam gati?" dhe a ke CV. null = s'dihet (pa internet).
+  const [gatiPerqindja, setGatiPerqindja] = useState<number | null>(null);
+  const [kaCv, setKaCv] = useState<boolean | null>(null);
 
   const lexo = useCallback(() => {
     Promise.all([
@@ -101,6 +105,27 @@ export default function DetajetEPunes() {
     useCallback(() => {
       if (uNdryshuaPuna(id)) lexo();
     }, [id, lexo]),
+  );
+
+  // Gatishmëria e kësaj pune lexohet sa herë që ekrani shfaqet (p.sh. kthehesh nga "A jam gati?"). Është shtesë:
+  // nëse dështon, hyrja mbetet "A jam gati për këtë?".
+  useFocusEffect(
+    useCallback(() => {
+      if (!mundRuan) return;
+      let gjalle = true;
+      Promise.all([gatishmeriaEFundit(id), cvEFundit()])
+        .then(([gati, cv]) => {
+          if (!gjalle) return;
+          setGatiPerqindja(gati ? gati.perqindja : null);
+          setKaCv(cv !== null);
+        })
+        .catch(() => {
+          // pa internet: mbetet çka dihej
+        });
+      return () => {
+        gjalle = false;
+      };
+    }, [id, mundRuan]),
   );
 
   // Interneti u kthye: nga kopja e ruajtur ose nga gabimi, puna rilexohet nga burimi.
@@ -312,12 +337,19 @@ export default function DetajetEPunes() {
         {mundRuan && (
           <Prekshme
             accessibilityRole="button"
-            accessibilityHint="AI-ja e krahason CV-në tënde me këtë shpallje"
+            accessibilityLabel={
+              gatiPerqindja !== null ? `Shiko gatishmërinë: ${gatiPerqindja} për qind` : "A jam gati për këtë?"
+            }
+            accessibilityHint={
+              gatiPerqindja !== null
+                ? "Hapet rezultati i fundit, pa e kontrolluar përsëri"
+                : "AI-ja e krahason CV-në tënde me këtë shpallje"
+            }
             onPress={() => router.push({ pathname: "/gati/[id]", params: { id: puna.id } })}
             style={[styles.butoni, { backgroundColor: t.teksti }]}
           >
             <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
-              A jam gati për këtë?
+              {gatiPerqindja !== null ? `Shiko gatishmërinë · ${gatiPerqindja}%` : "A jam gati për këtë?"}
             </T>
           </Prekshme>
         )}
@@ -395,12 +427,16 @@ export default function DetajetEPunes() {
       {mundRuan && (
         <Karta style={styles.rrugaKarta}>
           <T pesha="trashe" madhesia={14}>
-            Tani: CV
+            Tani: {gatiPerqindja !== null ? "Intervista" : kaCv ? "Përputhja" : "CV"}
           </T>
           <T zbehur madhesia={13}>
-            Ngarko CV-në për të parë sa je gati për këtë punë
+            {gatiPerqindja !== null
+              ? `Je ${gatiPerqindja}% gati. Praktiko intervistën për ta rritur numrin.`
+              : kaCv
+                ? 'Prek "A jam gati për këtë?" për të parë sa je gati për këtë punë'
+                : "Ngarko CV-në për të parë sa je gati për këtë punë"}
           </T>
-          <Rruga hapi={0} />
+          <Rruga hapi={gatiPerqindja !== null ? 2 : kaCv ? 1 : 0} />
         </Karta>
       )}
     </Faqja>
