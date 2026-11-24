@@ -1,6 +1,6 @@
 import { Link, useFocusEffect, type Href } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
@@ -11,6 +11,7 @@ import { TabScroll } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import { listoVersionet, type CvRresht } from "@/lib/cv";
 import { kontrolletEFundit, type KontrollEFundit } from "@/lib/gati";
+import { lexoHistorikun } from "@/lib/intervista/klienti";
 import { prekja } from "@/lib/prekja";
 import { paInternet, PA_INTERNET_SHKURT } from "@/lib/mesazhet";
 import { KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
@@ -40,8 +41,16 @@ function veco(celesi: Vecoria["celesi"]): Vecoria {
 
 type HapiTjeter = { titulli: string; pershkrimi: string; href: Href | null; butoni: string; shenim?: string };
 
+/** Hapi tjetër për një veçori: me buton kur hapet, përndryshe me gjendjen e saj. */
+function hapiIVecorise(v: Vecoria): HapiTjeter {
+  const { titulli, pershkrimi } = v;
+  return hapetVecoria(v)
+    ? { titulli, pershkrimi, href: v.href, butoni: "Hape" }
+    : { titulli, pershkrimi, href: null, butoni: "", shenim: tekstiIGjendjes(v.gjendja) };
+}
+
 // Kreu (bordi, ekrani 41): gjendja e vërtetë e përdoruesit te rruga CV → Përputhja → Intervista → Mëso → Gati,
-// hapi tjetër, dhe punët e fundit. Gatishmëria dhe intervista s'ekzistojnë ende, prandaj tregojnë gjendjen e tyre të ndershme.
+// hapi tjetër, dhe punët e fundit.
 // Pa streak dhe pa numra të shpikur: kur ka streak të vërtetë (Demo Day), vjen këtu.
 export default function Sot() {
   const { profili } = useSesioni();
@@ -51,24 +60,25 @@ export default function Sot() {
   const [teRuajturat, setTeRuajturat] = useState<Burimi<number>>(null);
   const [punet, setPunet] = useState<Burimi<Puna[]>>(null);
   const [kontrollet, setKontrollet] = useState<Burimi<KontrollEFundit[]>>(null);
+  const [intervistat, setIntervistat] = useState<Burimi<number>>(null); // 0 ose 1: a ka të paktën një të mbaruar
   const [rifreskim, setRifreskim] = useState(false);
 
   // Lexon burimet nga Supabase (RLS kthen vetëm të miat). Kthen true nëse të gjitha u lexuan.
   const ngarko = useCallback(async (): Promise<boolean> => {
-    const [c, r, p, g] = await Promise.allSettled([
+    const [c, r, p, g, i] = await Promise.allSettled([
       meKohe(listoVersionet(), KOHA_E_LEXIMIT),
       meKohe(listoTeRuajturat(), KOHA_E_LEXIMIT),
       meKohe(listoPunet(), KOHA_E_LEXIMIT),
       meKohe(kontrolletEFundit(3), KOHA_E_LEXIMIT),
+      meKohe(lexoHistorikun(1), KOHA_E_LEXIMIT),
     ]);
     // Një burim që dështon (p.sh. pa internet) e lë atë që e kishim lexuar më parë: ekrani s'zbrazet.
     setCvt((m) => (c.status === "fulfilled" ? { ok: true, v: c.value } : m?.ok ? m : { ok: false }));
     setTeRuajturat((m) => (r.status === "fulfilled" ? { ok: true, v: r.value.size } : m?.ok ? m : { ok: false }));
     setPunet((m) => (p.status === "fulfilled" ? { ok: true, v: p.value } : m?.ok ? m : { ok: false }));
     setKontrollet((m) => (g.status === "fulfilled" ? { ok: true, v: g.value } : m?.ok ? m : { ok: false }));
-    return (
-      c.status === "fulfilled" && r.status === "fulfilled" && p.status === "fulfilled" && g.status === "fulfilled"
-    );
+    setIntervistat((m) => (i.status === "fulfilled" ? { ok: true, v: i.value.length } : m?.ok ? m : { ok: false }));
+    return [c, r, p, g, i].every((x) => x.status === "fulfilled");
   }, []);
 
   useFocusEffect(
@@ -105,6 +115,9 @@ export default function Sot() {
   const ruajtura = teRuajturat?.ok ? teRuajturat.v : null;
   const listaEPuneve = punet?.ok ? punet.v : null;
   const hapiMbaruar = iAnalizuar ? 1 : 0; // vetëm CV-ja ka të dhëna të vërteta; Përputhja vjen me "A jam gati?"
+  // null = ende s'dihet. Nga këto vjen edhe lista e hapave, edhe "Hapi tjetër".
+  const kaKontroll = kontrollet?.ok ? kontrollet.v.length > 0 : null;
+  const kaIntervista = intervistat?.ok ? intervistat.v > 0 : null;
 
   const cvVecoria = veco("cv");
   const gatiVecoria = veco("gati");
@@ -123,27 +136,39 @@ export default function Sot() {
   else if (ruajtura === 0) nenPunet = "Asnjë e ruajtur · prek ☆ te një punë";
   else nenPunet = `${ruajtura} ${ruajtura === 1 ? "e ruajtur" : "të ruajtura"} me ⭐`;
 
-  // Hapi tjetër: i pari që s'është bërë dhe mund të bëhet tani; nëse është i kyçur (s'ekziston ende), e themi ndershmërisht.
+  let nenGati: string;
+  if (kontrollet === null) nenGati = "Po lexohet…";
+  else if (kaKontroll === null) nenGati = kaInternet ? "S'u lexua. Tërhiqe poshtë për të provuar përsëri." : PA_INTERNET_SHKURT;
+  else if (!kaKontroll) nenGati = "Ende pa kontroll · zgjidh një punë";
+  else nenGati = "E ke kontrolluar · provoje edhe për një punë tjetër";
+
+  let nenIntervista: string;
+  if (intervistat === null) nenIntervista = "Po lexohet…";
+  else if (kaIntervista === null) nenIntervista = kaInternet ? "S'u lexua. Tërhiqe poshtë për të provuar përsëri." : PA_INTERNET_SHKURT;
+  else if (!kaIntervista) nenIntervista = "Ende pa intervistë · AI-ja të pyet për punën që zgjedh";
+  else nenIntervista = "E ke bërë një intervistë · praktikoje përsëri";
+
+  // Hapi tjetër: i pari që s'është bërë (e njëjta gjendje si te lista e hapave); nëse është i kyçur, e themi ndershmërisht.
   // CV-ja hapet vetëm kur veçoria është gati (ose në zhvillim); përndryshe tregojmë gjendjen e saj, jo një buton të vdekur.
   const cvHref: Href | null = hapetVecoria(cvVecoria) ? "/cv" : null;
   const cvShenim = tekstiIGjendjes(cvVecoria.gjendja);
   let tjeter: HapiTjeter | null = null;
-  if (versionet !== null && ruajtura !== null) {
+  if (versionet !== null && ruajtura !== null && kaKontroll !== null && kaIntervista !== null) {
     if (versionet.length === 0) {
       tjeter = { titulli: "Ngarko CV-në", pershkrimi: "Një herë. AI-ja e lexon dhe të tregon çka e ngre dhe çka e ul.", href: cvHref, butoni: "Hap CV-në", shenim: cvShenim };
     } else if (!iAnalizuar) {
       tjeter = { titulli: "Analizoje CV-në", pershkrimi: "AI-ja e lexon CV-në dhe të jep këshilla konkrete.", href: cvHref, butoni: "Hap CV-në", shenim: cvShenim };
     } else if (ruajtura === 0) {
       tjeter = { titulli: "Zgjidh një punë", pershkrimi: "Ruaj me ⭐ punën që do. Pastaj shohim sa je gati për të.", href: "/pune", butoni: "Hap punët" };
-    } else if (hapetVecoria(gatiVecoria) && gatiVecoria.href !== null) {
-      tjeter = { titulli: gatiVecoria.titulli, pershkrimi: gatiVecoria.pershkrimi, href: gatiVecoria.href, butoni: "Hape" };
+    } else if (!kaKontroll) {
+      tjeter = hapiIVecorise(gatiVecoria);
+    } else if (!kaIntervista) {
+      tjeter = hapiIVecorise(intervistaVecoria);
     } else {
       tjeter = {
-        titulli: gatiVecoria.titulli,
-        pershkrimi: gatiVecoria.pershkrimi,
-        href: null,
-        butoni: "",
-        shenim: tekstiIGjendjes(gatiVecoria.gjendja),
+        ...hapiIVecorise(intervistaVecoria),
+        titulli: "Praktiko përsëri",
+        pershkrimi: "Bëj edhe një intervistë dhe shih a rritet gatishmëria jote.",
       };
     }
   }
@@ -164,7 +189,7 @@ export default function Sot() {
         </T>
         <Rruga hapi={hapiMbaruar} />
         {tjeter === null ? (
-          cvt === null || teRuajturat === null ? (
+          cvt === null || teRuajturat === null || kontrollet === null || intervistat === null ? (
             <Pulsi>
               <View style={styles.skeleti} accessibilityLabel="Po lexohet gjendja jote">
                 <Vije gjeresia="45%" lartesia={16} />
@@ -224,8 +249,8 @@ export default function Sot() {
       <Karta style={styles.lista}>
         <RreshtiVecorise vecoria={cvVecoria} bere={iAnalizuar !== null} nenTeksti={nenCV} />
         <RreshtiVecorise vecoria={veco("punet")} bere={(ruajtura ?? 0) > 0} nenTeksti={nenPunet} />
-        <RreshtiVecorise vecoria={gatiVecoria} />
-        <RreshtiVecorise vecoria={intervistaVecoria} iFundit />
+        <RreshtiVecorise vecoria={gatiVecoria} bere={kaKontroll === true} nenTeksti={nenGati} />
+        <RreshtiVecorise vecoria={intervistaVecoria} bere={kaIntervista === true} nenTeksti={nenIntervista} iFundit />
       </Karta>
 
       <Link href="/pune" asChild>
@@ -300,14 +325,13 @@ function RreshtiIKontrollit({ kontrolli, iFundit }: { kontrolli: KontrollEFundit
   }`;
   return (
     <Link href={{ pathname: "/gati/[id]", params: { id: kontrolli.puna_id } }} asChild>
-      <Pressable
+      <Prekshme
         accessibilityRole="button"
         accessibilityLabel={etiketa}
-        style={({ pressed }) => [
+        style={StyleSheet.flatten([
           styles.kontrolli,
           !iFundit && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.vija },
-          pressed && { backgroundColor: t.karta2 },
-        ]}
+        ])}
       >
         <View style={styles.flex}>
           <T pesha="trashe" madhesia={15} numberOfLines={1}>
@@ -328,7 +352,7 @@ function RreshtiIKontrollit({ kontrolli, iFundit }: { kontrolli: KontrollEFundit
           )}
         </View>
         <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
-      </Pressable>
+      </Prekshme>
     </Link>
   );
 }
