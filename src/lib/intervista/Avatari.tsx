@@ -7,7 +7,7 @@ import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { useTema } from "@/lib/tema";
 
 import { FAQJA_E_AVATARIT } from "./avatari-faqja";
-import { koduoPerFaqen, lexoMesazhinNgaFaqja, type FjaliaMeZe, type MesazhPerFaqen } from "./mesazhet";
+import { koduoPerFaqen, lexoMesazhinNgaFaqja, type FjaliaMeZe, type MesazhNgaFaqja, type MesazhPerFaqen } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tipet";
 
 export type AvatariRef = {
@@ -19,6 +19,8 @@ export type AvatariRef = {
   ndalo: () => void;
   degjon: (po: boolean) => void;
   mendon: () => void;
+  /** Ndez ose fik kamerën brenda faqes (pasi leja u dha). */
+  kamera: (po: boolean) => void;
 };
 
 export function Avatari({
@@ -29,6 +31,7 @@ export function Avatari({
   onFoliMbaroi,
   onPrek,
   onGabim,
+  onKamera,
   style,
 }: {
   ref: Ref<AvatariRef>;
@@ -39,6 +42,8 @@ export function Avatari({
   onPrek: () => void;
   /** Faqja s'u hap fare (pa internet, WebView dështoi): ekrani kalon te Shkruaj. */
   onGabim: () => void;
+  /** Mesazhet e kamerës nga faqja: kamera_gati · kamera_gabim · kamera_statistika. */
+  onKamera?: (m: Extract<MesazhNgaFaqja, { lloji: "kamera_gati" | "kamera_gabim" | "kamera_statistika" }>) => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const t = useTema();
@@ -53,6 +58,7 @@ export function Avatari({
     ndalo: () => dergo({ lloji: "ndalo" }),
     degjon: (po) => dergo({ lloji: "degjon", po }),
     mendon: () => dergo({ lloji: "mendon" }),
+    kamera: (po) => dergo({ lloji: "kamera", po }),
   }));
 
   function merr(e: WebViewMessageEvent) {
@@ -79,6 +85,11 @@ export function Avatari({
       case "prek":
         onPrek();
         break;
+      case "kamera_gati":
+      case "kamera_gabim":
+      case "kamera_statistika":
+        onKamera?.(m);
+        break;
       case "gabim":
         // Gabimet e faqes s'e ndalin intervistën (zëri ose unaza vazhdojnë); pa tekst të intervistës në log.
         if (__DEV__) console.log("[avatari]", m.kodi, m.mesazhi);
@@ -100,6 +111,7 @@ export function Avatari({
         onError={onGabim}
         javaScriptEnabled
         allowsInlineMediaPlayback
+        mediaCapturePermissionGrantType="grant"
         mediaPlaybackRequiresUserAction={false}
         scrollEnabled={false}
         bounces={false}

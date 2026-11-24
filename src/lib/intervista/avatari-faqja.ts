@@ -41,6 +41,8 @@ export const FAQJA_E_AVATARIT = String.raw`<!doctype html>
   #prek { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); min-height: 44px; padding: 0 20px;
     border: 0; border-radius: 22px; font: 600 15px -apple-system, system-ui, sans-serif;
     background: var(--teksti, #1C1917); color: var(--sfondi, #F5F5F4); }
+  #kamera { position: fixed; right: 10px; bottom: 10px; width: 84px; height: 112px; object-fit: cover; border-radius: 14px;
+    transform: scaleX(-1); background: #000; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 2px 10px rgba(0,0,0,0.25); }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -48,6 +50,7 @@ export const FAQJA_E_AVATARIT = String.raw`<!doctype html>
 <div id="avatar"></div>
 <div id="unaza" hidden></div>
 <button id="prek" hidden>Prek për ta dëgjuar</button>
+<video id="kamera" playsinline muted autoplay hidden></video>
 
 <script type="module">
 const $ = (id) => document.getElementById(id);
@@ -307,8 +310,89 @@ function fol(m) {
 }
 
 // Kur kandidati flet: avatari e shikon; kur pret përgjigjen e serverit: shikon anash, "po mendon".
-function degjon(po) { avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
+function degjon(po) { kamFlet = po; avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
 function mendon() { avatari((h) => { h.lookAhead(900); h.playGesture("🤔", 1.4); }); }
+
+// ---------- Kamera e kandidatit (getUserMedia + MediaPipe) ----------
+// Ndizet vetëm kur app-i e kërkon, pasi kandidati e lejoi. Videoja s'del nga kjo faqe dhe s'ruhet: kalojnë vetëm tri numra.
+// Sasia që matim: sa kornizave GJATË PËRGJIGJES SË KANDIDATIT u pa fytyra dhe sa prej tyre shikonin përafërsisht kamerën
+// (blendshape-et e syve nën 0,45, si te prototipi). Numërohet vetëm kur app-i thotë "degjon" (kandidati po flet).
+// Nëse getUserMedia s'funksionon në këtë WebView, app-i merr "kamera_gabim" dhe tregon kamerën native (pa analizë).
+const KAM_MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0";
+const KAM_MODELI = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+let kamFlux = null, kamSesioni = 0, kamMP = null, kamFlet = false, kamRaporti = null;
+const kamNr = { kornizat: 0, fytyra: 0, sy: 0 };
+async function kamNgarkoMP() {
+  if (kamMP) return;
+  const v = await import(KAM_MP + "/vision_bundle.mjs");
+  const files = await v.FilesetResolver.forVisionTasks(KAM_MP + "/wasm");
+  const opts = (delegate) => ({ baseOptions: { modelAssetPath: KAM_MODELI, delegate }, runningMode: "VIDEO", numFaces: 1, outputFaceBlendshapes: true });
+  try { kamMP = await v.FaceLandmarker.createFromOptions(files, opts("GPU")); }
+  catch (e) { kamMP = await v.FaceLandmarker.createFromOptions(files, opts("CPU")); }
+}
+function kamBuklla(sesioni) {
+  const video = $("kamera");
+  let fundit = 0, kohaPare = -1;
+  const hap = () => {
+    if (sesioni !== kamSesioni) return;
+    const tani = performance.now();
+    if (kamFlet && tani - fundit >= 120 && video.readyState >= 2 && video.currentTime !== kohaPare) {
+      fundit = tani; kohaPare = video.currentTime;
+      try {
+        const r = kamMP.detectForVideo(video, tani);
+        kamNr.kornizat++;
+        if (r.faceLandmarks && r.faceLandmarks.length >= 1) {
+          kamNr.fytyra++;
+          const b = r.faceBlendshapes && r.faceBlendshapes[0];
+          if (b) {
+            const m = {};
+            b.categories.forEach((c) => { m[c.categoryName] = c.score; });
+            const largon = Math.max(m.eyeLookOutLeft || 0, m.eyeLookOutRight || 0, m.eyeLookInLeft || 0, m.eyeLookInRight || 0,
+              m.eyeLookDownLeft || 0, m.eyeLookDownRight || 0, m.eyeLookUpLeft || 0, m.eyeLookUpRight || 0);
+            if (largon < 0.45) kamNr.sy++;
+          }
+        }
+      } catch (e) { /* një kornizë e humbur s'ndryshon asgjë */ }
+    }
+    requestAnimationFrame(hap);
+  };
+  hap();
+  let raportuar = -1;
+  kamRaporti = setInterval(() => {
+    if (sesioni !== kamSesioni) { clearInterval(kamRaporti); return; }
+    if (kamNr.kornizat === raportuar) return;
+    raportuar = kamNr.kornizat;
+    teApp({ lloji: "kamera_statistika", kornizat: kamNr.kornizat, fytyra: kamNr.fytyra, sy: kamNr.sy });
+  }, 3000);
+}
+function kameraNdal() {
+  kamSesioni++;
+  if (kamRaporti) { clearInterval(kamRaporti); kamRaporti = null; }
+  if (kamFlux) { kamFlux.getTracks().forEach((t) => t.stop()); kamFlux = null; }
+  $("kamera").srcObject = null;
+  $("kamera").hidden = true;
+}
+async function kameraNis() {
+  kameraNdal();
+  const sesioni = kamSesioni;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("getUserMedia s'ekziston në këtë WebView");
+    kamFlux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } }, audio: false });
+    if (sesioni !== kamSesioni) { kamFlux.getTracks().forEach((t) => t.stop()); kamFlux = null; return; }
+    $("kamera").srcObject = kamFlux;
+    $("kamera").hidden = false;
+    await $("kamera").play().catch(() => {});
+  } catch (e) {
+    kamFlux = null;
+    teApp({ lloji: "kamera_gabim", mesazhi: String((e && e.name) || "") + " " + String((e && e.message) || "") });
+    return;
+  }
+  teApp({ lloji: "kamera_gati", analiza: false }); // pamja punon; matja vjen pasi MediaPipe ngarkohet
+  try { await kamNgarkoMP(); } catch (e) { return; /* vetëm pamja, pa matje */ }
+  if (sesioni !== kamSesioni) return;
+  teApp({ lloji: "kamera_gati", analiza: true });
+  kamBuklla(sesioni);
+}
 
 // ---------- Nisja ----------
 async function nis(m) {
@@ -340,6 +424,7 @@ function ngaApp(e) {
   else if (m.lloji === "rrjedhe_fillo") rrFillo(m);
   else if (m.lloji === "rrjedhe_pcm") rrPcm(m);
   else if (m.lloji === "rrjedhe_mbaroi") rrMbaroi(m);
+  else if (m.lloji === "kamera") { if (m.po === true) kameraNis(); else kameraNdal(); }
   else if (m.lloji === "ndalo") ndalo();
   else if (m.lloji === "degjon") degjon(m.po === true);
   else if (m.lloji === "mendon") mendon();

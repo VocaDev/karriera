@@ -9,11 +9,15 @@ import { useTema } from "@/lib/tema";
 import { Butoni } from "./ui";
 
 export type FazaELejes = "shpjegim" | "refuzuar";
+export type LlojiILejes = "mikrofon" | "kamera";
 
 const MIKROFONI = { ios: "mic.fill", android: "mic" };
 const MIKROFONI_I_FIKUR = { ios: "mic.slash.fill", android: "mic_off" };
+const KAMERA = { ios: "camera.fill", android: "photo_camera" };
+const KAMERA_E_FIKUR = { ios: "video.slash.fill", android: "videocam_off" };
 
 export function LejaModal({
+  lloji = "mikrofon",
   faza,
   emri,
   onVazhdo,
@@ -21,6 +25,7 @@ export function LejaModal({
   onHapCilesimet,
   onVazhdoMeShkrim,
 }: {
+  lloji?: LlojiILejes;
   faza: FazaELejes | null;
   /** Emri i intervistuesit (Arta · Arbër). */
   emri: string;
@@ -32,6 +37,7 @@ export function LejaModal({
   const t = useTema();
   const kufijte = useSafeAreaInsets();
   const refuzuar = faza === "refuzuar";
+  const kamera = lloji === "kamera";
   return (
     <Modal
       visible={faza !== null}
@@ -43,16 +49,18 @@ export function LejaModal({
         {refuzuar ? (
           <View style={styles.permbajtja}>
             <View style={[styles.rrethi, { backgroundColor: t.karta2 }]}>
-              <Ikona emri={MIKROFONI_I_FIKUR} madhesia={30} ngjyra={t.keq} />
+              <Ikona emri={kamera ? KAMERA_E_FIKUR : MIKROFONI_I_FIKUR} madhesia={30} ngjyra={t.keq} />
             </View>
             <T pesha="trashe" madhesia={26} style={styles.majtas} accessibilityRole="header">
-              Mikrofoni është i fikur për Karriera
+              {kamera ? "Kamera është e fikur për Karriera" : "Mikrofoni është i fikur për Karriera"}
             </T>
             <T zbehur madhesia={15} style={styles.majtas}>
-              Pa mikrofon intervista punon, por vetëm me shkrim. Për t&apos;iu përgjigjur {emri} me zë:
+              {kamera
+                ? "Pa kamerë intervista punon, por pa këshillat për kontaktin me sy. Për ta ndezur:"
+                : `Pa mikrofon intervista punon, por vetëm me shkrim. Për t'iu përgjigjur ${emri} me zë:`}
             </T>
             <View style={[styles.hapat, { backgroundColor: t.karta, borderColor: t.vija }]}>
-              {["Hap Cilësimet e telefonit", "Gjej Karriera", "Aktivizo Mikrofonin"].map((h, i) => (
+              {["Hap Cilësimet e telefonit", "Gjej Karriera", kamera ? "Aktivizo Kamerën" : "Aktivizo Mikrofonin"].map((h, i) => (
                 <View key={h} style={styles.hapi}>
                   <View style={[styles.numri, { backgroundColor: t.karta2 }]}>
                     <T pesha="trashe" madhesia={13}>
@@ -69,14 +77,15 @@ export function LejaModal({
         ) : (
           <View style={styles.permbajtja}>
             <View style={[styles.rrethi, { backgroundColor: t.theksiButë }]}>
-              <Ikona emri={MIKROFONI} madhesia={30} ngjyra={t.theksi} />
+              <Ikona emri={kamera ? KAMERA : MIKROFONI} madhesia={30} ngjyra={t.theksi} />
             </View>
             <T pesha="trashe" madhesia={26} style={styles.majtas} accessibilityRole="header">
-              {emri} duhet të të dëgjojë
+              {kamera ? `${emri} duhet të të shohë` : `${emri} duhet të të dëgjojë`}
             </T>
             <T zbehur madhesia={15} style={styles.majtas}>
-              {emri} të pyet me zë dhe ti përgjigjesh duke folur. Mikrofoni hapet vetëm kur prek butonin e tij. Zëri kthehet në
-              tekst dhe nuk ruhet.
+              {kamera
+                ? "Kamera ndizet vetëm kur prek butonin \"Kamera\". Të tregon veten dhe matet sa e shikon kamerën gjatë përgjigjeve, për këshilla mbi kontaktin me sy. Videoja nuk ruhet dhe nuk del nga telefoni."
+                : `${emri} të pyet me zë dhe ti përgjigjesh duke folur. Mikrofoni hapet vetëm kur prek butonin e tij. Zëri kthehet në tekst dhe nuk ruhet.`}
             </T>
             <T zbehur madhesia={13.5} style={styles.majtas}>
               Pastaj telefoni e kërkon lejen një herë.
@@ -87,7 +96,7 @@ export function LejaModal({
           {refuzuar ? (
             <>
               <Butoni teksti="Hap Cilësimet" onPress={onHapCilesimet} />
-              <Butoni teksti="Vazhdo me shkrim" lloji="dytesor" onPress={onVazhdoMeShkrim} />
+              <Butoni teksti={kamera ? "Vazhdo vetëm me zë" : "Vazhdo me shkrim"} lloji="dytesor" onPress={onVazhdoMeShkrim} />
             </>
           ) : (
             <>

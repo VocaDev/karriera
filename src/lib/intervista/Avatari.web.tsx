@@ -14,6 +14,7 @@ export type AvatariRef = {
   ndalo: () => void;
   degjon: (po: boolean) => void;
   mendon: () => void;
+  kamera: (po: boolean) => void;
 };
 
 export function Avatari(_props: {
@@ -24,6 +25,7 @@ export function Avatari(_props: {
   onFoliMbaroi: (id: string) => void;
   onPrek: () => void;
   onGabim: () => void;
+  onKamera?: (m: { lloji: string }) => void;
   style?: StyleProp<ViewStyle>;
 }) {
   return null;

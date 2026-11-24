@@ -43,6 +43,14 @@
         {
           "microphonePermission": "Karriera e përdor mikrofonin vetëm kur prek butonin për t'iu përgjigjur intervistës me zë. Zëri kthehet në tekst dhe nuk ruhet."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Karriera e përdor kamerën vetëm kur e ndez gjatë intervistës, për të të treguar veten dhe për këshillat mbi kontaktin me sy. Videoja nuk ruhet.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {

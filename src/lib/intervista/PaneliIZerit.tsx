@@ -1,17 +1,20 @@
 // Paneli i Fol-it: avatari lart, statusi ("Po flet Arta · Po të dëgjoj · Arta po mendon… · Radha jote"),
 // transkripti i të dyve (children: biseda e ekranit) dhe poshtë: "Përsërit pyetjen" · mikrofoni · "Ndalo".
 // Vizatohet vetëm në Fol: kur kandidati kalon te Shkruaj, hiqet bashkë me avatarin dhe mikrofonin.
+import { CameraView } from "expo-camera";
 import { useRef, type ReactNode } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, type SharedValue } from "react-native-reanimated";
 
 import Prekshme from "@/components/Prekshme";
 import { Pulsi } from "@/components/Skeleti";
+import { prekja } from "@/lib/prekja";
 import { Ikona, T } from "@/components/ui";
 import { useTema } from "@/lib/tema";
 
 import { Avatari, type AvatariRef } from "./Avatari";
 import { LejaModal } from "./LejaModal";
+import { useKamera } from "./useKamera";
 import type { Gjendja } from "./gjendja";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi } from "./tipet";
 import type { RezultatiIZerit, ZeriRrjedhe } from "./useIntervista";
@@ -22,6 +25,8 @@ const NDALO = { ios: "stop.fill", android: "stop" };
 const PERSERIT = { ios: "arrow.counterclockwise", android: "replay" };
 const HESHT = { ios: "forward.end.fill", android: "skip_next" };
 const ANULO = { ios: "xmark", android: "close" };
+const KAMERA = { ios: "camera.fill", android: "photo_camera" };
+const KAMERA_E_FIKUR = { ios: "video.slash.fill", android: "videocam_off" };
 
 export function PaneliIZerit({
   intervistaId,
@@ -63,20 +68,56 @@ export function PaneliIZerit({
     njofto,
     onRaportiGati,
   });
+  const t = useTema();
+  const k = useKamera({ avatari, intervistaId, faqjaGati: z.faqjaGati, njofto });
   const emri = PAMJA_E_INTERVISTUESIT[intervistuesi].emri;
   const mbaroi = gjendja.faza === "perfundon" || gjendja.faza === "raporti";
 
   return (
     <View style={styles.flex}>
-      <Avatari
-        ref={avatari}
-        intervistuesi={intervistuesi}
-        onGati={z.onGati}
-        onFoliFilloi={z.onFoliFilloi}
-        onFoliMbaroi={z.onFoliMbaroi}
-        onPrek={z.onPrek}
-        onGabim={z.onGabim}
-        style={[styles.avatari, { height: Math.round(height * 0.3) }]}
+      <View style={[styles.avatari, { height: Math.round(height * 0.3) }]}>
+        <Avatari
+          ref={avatari}
+          intervistuesi={intervistuesi}
+          onGati={z.onGati}
+          onFoliFilloi={z.onFoliFilloi}
+          onFoliMbaroi={z.onFoliMbaroi}
+          onPrek={z.onPrek}
+          onGabim={z.onGabim}
+          onKamera={k.onKamera}
+          style={styles.flex}
+        />
+        {/* Kamera: opsionale. Pamja e kandidatit vjen nga faqja (matje) ose, si rezervë, nga kamera native (vetëm pasqyrë). */}
+        {k.menyra === "native" && (
+          <View style={styles.pasqyra} pointerEvents="none" accessibilityLabel="Pamja jote nga kamera">
+            <CameraView style={styles.flex} facing="front" mirror />
+          </View>
+        )}
+        <Prekshme
+          accessibilityRole="button"
+          accessibilityLabel={k.aktive ? "Fik kamerën" : "Ndiz kamerën"}
+          accessibilityHint={k.aktive ? "Kamera fiket; intervista vazhdon me zë" : "Të tregon veten dhe mat kontaktin me sy; videoja nuk ruhet"}
+          accessibilityState={{ selected: k.aktive }}
+          onPress={() => {
+            prekja.zgjedhje();
+            void k.ndrysho();
+          }}
+          style={[styles.butoniKamera, { backgroundColor: k.aktive ? t.teksti : t.karta, borderColor: t.vija }]}
+        >
+          <Ikona emri={k.aktive ? KAMERA : KAMERA_E_FIKUR} madhesia={16} ngjyra={k.aktive ? t.sfondi : t.teksti} />
+          <T pesha="gjysme" madhesia={13} ngjyra={k.aktive ? t.sfondi : t.teksti}>
+            Kamera
+          </T>
+        </Prekshme>
+      </View>
+      <LejaModal
+        lloji="kamera"
+        faza={k.leja}
+        emri={emri}
+        onVazhdo={k.lejaVazhdo}
+        onJo={k.lejaJo}
+        onHapCilesimet={k.lejaHapCilesimet}
+        onVazhdoMeShkrim={k.lejaVazhdoPaKamere}
       />
       <LejaModal
         faza={z.leja}
@@ -234,8 +275,21 @@ function ShiritiPoshte({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  pasqyra: { position: "absolute", right: 10, bottom: 10, width: 84, height: 112, borderRadius: 14, overflow: "hidden" },
+  butoniKamera: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   qendroj: { textAlign: "center" },
-  avatari: { marginHorizontal: 16, marginTop: 10 },
+  avatari: { marginHorizontal: 16, marginTop: 10, borderRadius: 24, overflow: "hidden" },
   statusi: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingTop: 10, minHeight: 30 },
   pika: { width: 9, height: 9, borderRadius: 5 },
   pikat: { flexDirection: "row", gap: 4 },
