@@ -64,7 +64,7 @@ export default function IntervistaEkrani() {
   const kufijte = useSafeAreaInsets();
   const njofto = useNjoftim();
   const { id, menyra } = useLocalSearchParams<{ id: string; menyra?: string }>();
-  const { gjendja, dergo, dergoZerin, merrZerin, ndryshoParaqitjen, perfundo, riprovo, uPyet, kaPergjigje } = useIntervista(
+  const { gjendja, dergo, dergoZerin, ndryshoParaqitjen, perfundo, riprovo, uPyet, kaPergjigje } = useIntervista(
     id,
     menyra === "fol" && mbeshtetetZeri ? "avatar" : "tekst",
   );
@@ -276,7 +276,6 @@ export default function IntervistaEkrani() {
           intervistuesi={intervistuesi}
           kaInternet={kaInternet}
           dergoZerin={dergoZerin}
-          merrZerin={merrZerin}
           uPyet={uPyet}
           kaloTeShkruaj={kaloTeShkruaj}
           njofto={njofto}

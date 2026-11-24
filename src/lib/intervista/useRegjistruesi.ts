@@ -83,6 +83,7 @@ export function useRegjistruesi(kurMbaronKoha: () => void): Regjistruesi {
   const [regjistron, setRegjistron] = useState(false);
   const [sekonda, setSekonda] = useState(0);
   const fillimi = useRef(0);
+  const eRegjistron = useRef(false); // per pastrimin kur ekrani mbyllet gjate regjistrimit
   const ora = useRef<ReturnType<typeof setInterval> | null>(null);
   const kurMbaron = useRef(kurMbaronKoha);
   useEffect(() => {
@@ -105,6 +106,7 @@ export function useRegjistruesi(kurMbaronKoha: () => void): Regjistruesi {
       throw e;
     }
     fillimi.current = Date.now();
+    eRegjistron.current = true;
     setSekonda(0);
     setRegjistron(true);
     ndalOren();
@@ -120,6 +122,7 @@ export function useRegjistruesi(kurMbaronKoha: () => void): Regjistruesi {
 
   const ndalo = useCallback(async (): Promise<Regjistrimi | null> => {
     ndalOren();
+    eRegjistron.current = false;
     setRegjistron(false);
     niveli.set(0);
     let r: { uri: string; duration: number } | null = null;
@@ -139,6 +142,7 @@ export function useRegjistruesi(kurMbaronKoha: () => void): Regjistruesi {
 
   const anulo = useCallback(() => {
     ndalOren();
+    eRegjistron.current = false;
     setRegjistron(false);
     niveli.set(0);
     stream
@@ -155,6 +159,14 @@ export function useRegjistruesi(kurMbaronKoha: () => void): Regjistruesi {
   useEffect(
     () => () => {
       ndalOren();
+      // Ekrani u mbyll gjatë regjistrimit (Dil, Shkruaj): skedari WAV s'duhet të mbetet në telefon.
+      if (eRegjistron.current) {
+        eRegjistron.current = false;
+        stream
+          .stopFileRecordingAsync()
+          .then((r) => fshiRegjistrimin(r.uri))
+          .catch(() => {});
+      }
       try {
         stream.stop();
       } catch {
