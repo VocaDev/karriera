@@ -14,6 +14,7 @@ import {
 } from "@/lib/intervista/klienti";
 import { PAMJA_E_INTERVISTUESIT, type IntervistaInfo, type Raporti, type RreshtiIBisedes } from "@/lib/intervista/tipet";
 import { AvatariIntervistuesit, Butoni, KartaEGabimit } from "@/lib/intervista/ui";
+import { lexoStatistiken, vleresoKameren, type VleresimiIKameres } from "@/lib/intervista/kamera";
 import { prekja } from "@/lib/prekja";
 import { useTema } from "@/lib/tema";
 
@@ -273,6 +274,9 @@ export default function RezultatetEkrani() {
         </Karta>
       )}
 
+      {/* 1b · Gjuha e trupit: vetëm kur kamera matoi vërtet (kamera.ts); përndryshe s'del asgjë */}
+      <KartaEKameres intervistaId={info.id} />
+
       {/* 2 · Nota e intervistës */}
       <Karta style={styles.karta}>
         <View style={styles.rreshtiINumrave}>
@@ -476,6 +480,48 @@ function PoPergatitet({ pret, children }: { pret: boolean; children?: ReactNode 
         </View>
       </Pulsi>
     </Faqja>
+  );
+}
+
+/** Gjuha e trupit nga kamera: numrat vijnë nga kornizat e vërteta gjatë përgjigjeve; pa matje të mjaftueshme s'tregohet. */
+function KartaEKameres({ intervistaId }: { intervistaId: string }) {
+  const [v, setV] = useState<VleresimiIKameres | null>(null);
+  useEffect(() => {
+    let aktiv = true;
+    lexoStatistiken(intervistaId).then((s) => {
+      if (aktiv) setV(vleresoKameren(s));
+    });
+    return () => {
+      aktiv = false;
+    };
+  }, [intervistaId]);
+  if (!v) return null;
+  return (
+    <Karta style={styles.karta}>
+      <T pesha="trashe" madhesia={14} zbehur>
+        Gjuha e trupit (nga kamera)
+      </T>
+      <View style={styles.rresht} accessible accessibilityLabel={`Kontakti me sy: ${v.sy} për qind`}>
+        <T pesha="shumeTrashe" madhesia={30} maxFontSizeMultiplier={1.2}>
+          {v.sy}%
+        </T>
+        <T zbehur madhesia={14}>
+          e kohës shikoje kamerën
+        </T>
+      </View>
+      <Progresi vlera={v.sy / 100} />
+      <T zbehur madhesia={13.5}>
+        Fytyra ishte e dukshme {v.fytyra}% e kohës gjatë përgjigjeve.
+      </T>
+      {v.keshilla.map((k) => (
+        <T key={k} madhesia={14.5} style={styles.rreshtat}>
+          {k}
+        </T>
+      ))}
+      <T zbehur madhesia={12}>
+        Matje e përafërt nga kamera e telefonit, vetëm gjatë përgjigjeve të tua. Nuk është gjykim dhe videoja nuk u ruajt.
+      </T>
+    </Karta>
   );
 }
 

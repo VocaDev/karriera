@@ -490,6 +490,7 @@ export function useZeri(opts: {
   const onGabim = useCallback(() => kaloTeShkruaj(`${pamja.emri} s'u hap. Vazhdo me shkrim.`), [kaloTeShkruaj, pamja.emri]);
 
   return {
+    faqjaGati,
     onGati: () => setFaqjaGati(true), // edhe kur avatari s'u ngarkua: unaza flet njësoj
     onFoliFilloi,
     onFoliMbaroi,
