@@ -11,6 +11,7 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { KartaSkelet } from "@/components/Skeleti";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, T } from "@/components/ui";
+import { cvEFundit, gatishmeriaPerPune } from "@/lib/gati";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
@@ -58,6 +59,9 @@ export default function Punet() {
   const [teRuajturat, setTeRuajturat] = useState<Set<string>>(() => new Set());
   const [kerkimi, setKerkimi] = useState("");
   const [iRolit, setIRolit] = useState(0); // indeksi te ROLET
+  // "A jam gati?" te kartat: përqindja e fundit për çdo punë dhe a ka CV. Shtesë: pa internet kartat mbeten si më parë.
+  const [gatiPerPune, setGatiPerPune] = useState<Map<string, number>>(() => new Map());
+  const [kaCv, setKaCv] = useState(false);
 
   const punetEFiltruara = useMemo(() => {
     if (punet === null) return null;
@@ -87,6 +91,14 @@ export default function Punet() {
       setGabimi(null);
       if (iRi) setEPunesSeRe(iRi);
       ruajListenEPunes(teReja);
+      Promise.all([gatishmeriaPerPune(), cvEFundit()])
+        .then(([gati, cv]) => {
+          setGatiPerPune(gati);
+          setKaCv(cv !== null);
+        })
+        .catch(() => {
+          // shtesë: kartat mbeten pa përqindje
+        });
       return "ok";
     } catch (e) {
       setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
@@ -284,6 +296,8 @@ export default function Punet() {
             <KartaPunes
               puna={item}
               ruajtur={teRuajturat.has(item.id)}
+              gatishmeria={gatiPerPune.get(item.id) ?? null}
+              kaCv={kaCv}
               kurNdryshonRuajtja={(ruaje) => ndryshoRuajtjen(item.id, ruaje)}
             />
           </Link>

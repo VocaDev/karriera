@@ -25,8 +25,10 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import {
   cvEFundit,
+  bazaERezultatit,
   GabimKufiri,
   GabimPaCV,
+  GabimPaKerkesa,
   gatishmeriaEFundit,
   gjykimiIPerqindjes,
   historiaEPunes,
@@ -35,6 +37,7 @@ import {
   lexoKufirin,
   llogaritGatishmerine,
   ndryshimiKundrejtParaprakut,
+  punaKaKerkesa,
   veprimiIHapit,
   type CvEFundit,
   type Gatishmeria,
@@ -44,8 +47,9 @@ import {
 import { lexoShenjat, ruajShenjat } from "@/lib/gati-hapat";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
-import { ruajGatin } from "@/lib/snapshot";
+import { lexoGatinPerPune, ruajGatin, type SnapshotGati } from "@/lib/snapshot";
 import { gjePunen, type Puna } from "@/lib/punet";
+import { lexoListenEPunes } from "@/lib/punet-kesh";
 import { paInternet as mesazhiPaInternet, PA_INTERNET_SHKURT, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_AI, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
 import { useTema } from "@/lib/tema";
@@ -55,10 +59,59 @@ type Gjendja =
   | { lloji: "gabim_leximi"; mesazhi: string }
   | { lloji: "pa_pune" }
   | { lloji: "pa_cv"; puna: Puna }
+  | { lloji: "pa_kerkesa"; puna: Puna; cv: CvEFundit | null; iFundit: Gatishmeria | null }
   | { lloji: "llogarit"; puna: Puna; cv: CvEFundit }
   | { lloji: "gabim_ai"; puna: Puna; cv: CvEFundit; mesazhi: string; iFundit: Gatishmeria | null }
   | { lloji: "kufiri"; puna: Puna; cv: CvEFundit; kufiri: Kufiri | null; iFundit: Gatishmeria | null }
-  | { lloji: "rezultati"; puna: Puna; cv: CvEFundit | null; rezultati: Gatishmeria };
+  | { lloji: "rezultati"; puna: Puna; cv: CvEFundit | null; rezultati: Gatishmeria; kesh?: { punaIPlote: boolean } };
+
+type GjendjaERezultatit = Extract<Gjendja, { lloji: "rezultati" }>;
+
+/** Pa internet (ose pa përgjigje): rezultati i fundit i ruajtur në telefon për këtë punë, ose null nëse s'ka. */
+async function rezultatiNgaKeshi(punaId: string): Promise<GjendjaERezultatit | null> {
+  const hyrja = await lexoGatinPerPune(punaId);
+  if (!hyrja) return null;
+  const k: SnapshotGati = hyrja.te_dhenat;
+  const eRuajtur = (await lexoListenEPunes())?.find((p) => p.id === punaId) ?? null;
+  const puna: Puna = eRuajtur ?? {
+    id: k.puna.id,
+    titulli: k.puna.titulli,
+    kompania: k.puna.kompania,
+    qyteti: "",
+    roli: "Tjetër",
+    pershkrimi: "",
+    aftesite: [],
+    burimi: "portal",
+    krijuar_me: k.llogaritur_me,
+    pronari_id: null,
+    linku: null,
+    portali: null,
+    afati: null,
+    aktive: true,
+    kerkesat: null,
+    private: false,
+  };
+  return {
+    lloji: "rezultati",
+    puna,
+    cv: null,
+    kesh: { punaIPlote: eRuajtur !== null },
+    rezultati: {
+      id: k.rezultati_id ?? `kesh-${punaId}`,
+      puna_id: punaId,
+      cv_id: null,
+      burimi: k.burimi ?? "cv",
+      intervista_id: null,
+      perqindja: k.perqindja,
+      ke: k.ke,
+      mungon: k.mungon,
+      hapat: k.hapat,
+      arsyeja: k.arsyeja,
+      modeli: "kesh",
+      krijuar_me: k.llogaritur_me,
+    },
+  };
+}
 
 const eProva = (r: Gatishmeria): Prova => ({ id: r.id, perqindja: r.perqindja, burimi: r.burimi, krijuar_me: r.krijuar_me });
 
@@ -92,6 +145,11 @@ export default function GatiEkrani() {
   // Thërret AI-në (numërohet te kufiri ditor). iFundit: rezultati që kthehet nëse kjo provë dështon.
   const llogarit = useCallback(async (puna: Puna, cv: CvEFundit, iFundit: Gatishmeria | null) => {
     if (dukeLlogaritur.current) return;
+    // Shpallje pa çka të krahasohet: s'thirret AI-ja dhe s'harxhohet asnjë kontroll (e njëjta rregull si te serveri).
+    if (!punaKaKerkesa(puna)) {
+      setGjendja({ lloji: "pa_kerkesa", puna, cv, iFundit });
+      return;
+    }
     dukeLlogaritur.current = true;
     setGjendja({ lloji: "llogarit", puna, cv });
     try {
@@ -108,6 +166,10 @@ export default function GatiEkrani() {
       prekja.gabim();
       if (e instanceof GabimPaCV) {
         setGjendja({ lloji: "pa_cv", puna });
+        return;
+      }
+      if (e instanceof GabimPaKerkesa) {
+        setGjendja({ lloji: "pa_kerkesa", puna, cv, iFundit });
         return;
       }
       if (e instanceof GabimKufiri) {
@@ -143,7 +205,17 @@ export default function GatiEkrani() {
         else if (!cv) setGjendja({ lloji: "pa_cv", puna });
         else llogarit(puna, cv, null);
       })
-      .catch((e: unknown) => {
+      .catch(async (e: unknown) => {
+        // Pa internet ose pa përgjigje në kohë: rezultati i fundit i ruajtur në telefon, nëse e kemi.
+        if (eshteGabimRrjeti(e) || eshteGabimKohe(e)) {
+          const kesh = await rezultatiNgaKeshi(id);
+          if (!aktiv.current) return;
+          if (kesh) {
+            setHistoria([]);
+            setGjendja(kesh);
+            return;
+          }
+        }
         if (!aktiv.current) return;
         setGjendja({ lloji: "gabim_leximi", mesazhi: e instanceof Error ? e.message : "Gabim i panjohur." });
       });
@@ -154,8 +226,8 @@ export default function GatiEkrani() {
   }, [lexo]);
 
   // Rezultati që shihet (i lexuar ose i sapollogaritur) ruhet në telefon, për Përmbledhjen ime pa internet.
-  const rezultatiIRuajtur = gjendja.lloji === "rezultati" ? gjendja.rezultati : null;
-  const punaERuajtur = gjendja.lloji === "rezultati" ? gjendja.puna : null;
+  const rezultatiIRuajtur = gjendja.lloji === "rezultati" && !gjendja.kesh ? gjendja.rezultati : null;
+  const punaERuajtur = gjendja.lloji === "rezultati" && !gjendja.kesh ? gjendja.puna : null;
   useEffect(() => {
     if (rezultatiIRuajtur && punaERuajtur) void ruajGatin(rezultatiIRuajtur, punaERuajtur);
   }, [rezultatiIRuajtur, punaERuajtur]);
@@ -165,7 +237,8 @@ export default function GatiEkrani() {
   useEffect(() => {
     if (!sapuKthye) return;
     const g = gjendjaRef.current;
-    if (g.lloji === "gabim_leximi" && eshteGabimRrjeti(g.mesazhi)) {
+    if ((g.lloji === "gabim_leximi" && eshteGabimRrjeti(g.mesazhi)) || (g.lloji === "rezultati" && g.kesh)) {
+      // gabim pa internet, ose kopja e ruajtur në telefon: lexohet përsëri nga serveri
       setGjendja({ lloji: "duke_lexuar" });
       lexo();
     }
@@ -185,8 +258,8 @@ export default function GatiEkrani() {
   useFocusEffect(
     useCallback(() => {
       const g = gjendjaRef.current;
-      if (g.lloji === "pa_cv") {
-        lexo();
+      if (g.lloji === "pa_cv" || g.lloji === "pa_kerkesa") {
+        lexo(); // CV-ja e re, ose teksti i shpalljes që sapo u shtua
       } else if (g.lloji === "rezultati") {
         Promise.all([gatishmeriaEFundit(g.puna.id), cvEFundit(), historiaEPunes(g.puna.id)])
           .then(([rezultati, cv, kaluara]) => {
@@ -255,8 +328,51 @@ export default function GatiEkrani() {
             shpalljen. Ngarko PDF-në ose ndërtoje me AI, pastaj kthehu këtu.
           </T>
           <Butoni teksti="Ngarko CV-në" onPress={() => router.push("/cv")} />
+          <Butoni teksti="Nuk kam CV · Ndërtoje me AI" dytesor onPress={() => router.push("/cv/ndertoje")} />
         </Qendra>
       );
+
+    case "pa_kerkesa": {
+      const { puna, cv, iFundit } = gjendja;
+      const linkuIShpalljes = puna.linku && /^https?:\/\//i.test(puna.linku) ? puna.linku : null;
+      return (
+        <Qendra>
+          <View style={[styles.ikonaEMadhe, { backgroundColor: t.karta2 }]}>
+            <Ikona emri={IKONAT.info} madhesia={30} ngjyra={t.zbehur} />
+          </View>
+          <T pesha="trashe" madhesia={18} style={styles.qendroj}>
+            S&apos;kemi çka të krahasojmë
+          </T>
+          <T zbehur madhesia={14} style={styles.qendroj}>
+            {puna.private
+              ? `Për "${puna.titulli}" ke vetëm linkun, jo tekstin e shpalljes. Ngjite tekstin dhe AI-ja e krahason me CV-në tënde.`
+              : `Shpallja "${puna.titulli}" s'thotë mjaftueshëm se çka kërkon, prandaj s'mund ta krahasojmë me CV-në tënde. Hape shpalljen origjinale ose zgjidh një punë tjetër.`}{" "}
+            Ky kontroll s&apos;e ka harxhuar asnjërin nga kontrollet e tua.
+          </T>
+          {puna.private ? (
+            <Butoni
+              teksti="Shto tekstin e shpalljes"
+              onPress={() => router.push({ pathname: "/pune/teksti", params: { id: puna.id } })}
+            />
+          ) : linkuIShpalljes ? (
+            <Butoni
+              teksti="Hape shpalljen"
+              onPress={() => {
+                WebBrowser.openBrowserAsync(linkuIShpalljes).catch(() => njofto("S'u hap shpallja. Provo përsëri.", "gabim"));
+              }}
+            />
+          ) : null}
+          {iFundit && (
+            <Butoni
+              teksti="Shiko rezultatin e fundit"
+              dytesor
+              onPress={() => setGjendja({ lloji: "rezultati", puna, cv, rezultati: iFundit })}
+            />
+          )}
+          <Butoni teksti="Te punët" dytesor onPress={() => router.replace("/pune")} />
+        </Qendra>
+      );
+    }
 
     case "llogarit":
       return (
@@ -348,10 +464,21 @@ export default function GatiEkrani() {
           puna={puna}
           cv={cv}
           rezultati={rezultati}
+          kesh={gjendja.kesh ?? null}
           historia={historia}
           kufiri={kufiri}
           paInternet={!kaInternet}
-          onRillogarit={() => (cv ? llogarit(puna, cv, rezultati) : setGjendja({ lloji: "pa_cv", puna }))}
+          onRillogarit={() => {
+            if (cv) {
+              llogarit(puna, cv, rezultati);
+            } else if (gjendja.kesh) {
+              // kopja e ruajtur s'e njeh CV-në: lexo nga serveri (ky e vendos cv-në ose pa_cv)
+              setGjendja({ lloji: "duke_lexuar" });
+              lexo();
+            } else {
+              setGjendja({ lloji: "pa_cv", puna });
+            }
+          }}
         />
       );
     }
@@ -364,6 +491,7 @@ function Rezultati({
   puna,
   cv,
   rezultati,
+  kesh,
   historia,
   kufiri,
   paInternet,
@@ -372,6 +500,7 @@ function Rezultati({
   puna: Puna;
   cv: CvEFundit | null;
   rezultati: Gatishmeria;
+  kesh: { punaIPlote: boolean } | null; // rezultati u lexua nga telefoni (pa internet), jo nga serveri
   historia: Prova[];
   kufiri: Kufiri | null;
   paInternet: boolean;
@@ -409,6 +538,7 @@ function Rezultati({
     ruajShenjat(puna.id, rezultati.id, tjeter);
   }
 
+  const baza = bazaERezultatit(puna);
   const praktiko = () => router.push({ pathname: "/intervista", params: { puna: puna.id } });
   const linku = puna.linku && /^https?:\/\//i.test(puna.linku) ? puna.linku : null;
 
@@ -468,6 +598,7 @@ function Rezultati({
         </T>
         <View style={styles.chipat}>
           <Chip teksti={`${nga} · ${dataEPlote(rezultati.krijuar_me)}`} />
+          {kesh && <Chip teksti="Kopja e ruajtur në telefon" />}
           {delta !== null && <NdryshimiChip delta={delta} />}
         </View>
       </View>
@@ -490,6 +621,15 @@ function Rezultati({
         <T madhesia={14.5} style={styles.rreshtiGjate}>
           {rezultati.arsyeja}
         </T>
+        {/* Mbi çka bazohet numri: pa këtë, "62%" do të ishte një numër i zhveshur. Pa shpalljen e plotë (kopje e ruajtur) s'thuhet gjë. */}
+        {(!kesh || kesh.punaIPlote) && (
+          <View style={styles.rreshtIkone} accessible accessibilityLabel={baza.teksti}>
+            <Ikona emri={IKONAT.info} madhesia={16} ngjyra={baza.eKufizuar ? t.keq : t.zbehur} />
+            <T zbehur madhesia={13} style={styles.flex}>
+              {baza.teksti}
+            </T>
+          </View>
+        )}
       </Karta>
 
       <Karta style={styles.karta}>
@@ -599,6 +739,17 @@ function Rezultati({
         Vlerësim i AI-së nga CV-ja dhe shpallja, jo garanci punësimi. AI-ja mund të gabojë: krahasoje me shpalljen.
       </T>
 
+      {/* Intervista e lexon vetë gatishmërinë e fundit të kësaj pune (intervista-nis) dhe i merr çka të mungon si objektiva. */}
+      {rezultati.mungon.length > 0 && (
+        <T zbehur madhesia={12.5} style={styles.qendroj}>
+          Intervista e merr çka të mungon (
+          {rezultati.mungon
+            .slice(0, 3)
+            .map((m) => m.aftesia)
+            .join(", ")}
+          ) si objektiv për pyetjet.
+        </T>
+      )}
       {!interviste_te_hapat && (
         <Butoni teksti="Praktiko intervistën për këtë punë" ikona={IKONAT.mikrofoni} onPress={praktiko} />
       )}

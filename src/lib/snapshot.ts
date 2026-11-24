@@ -55,6 +55,9 @@ export type SnapshotIntervista = {
 
 export type SnapshotGati = {
   puna: PunaShkurt;
+  /** Id-ja dhe burimi i rreshtit te serveri (hyrjet e vjetra s'i kanë): që shenjat "e bëra" të hapave të mbeten të lidhura. */
+  rezultati_id?: string;
+  burimi?: "cv" | "intervista";
   perqindja: number; // 0–100, vlerësim i AI-së, jo garanci punësimi
   ke: AftesiaQeKe[];
   mungon: AftesiaQeMungon[];
@@ -208,6 +211,8 @@ export const lexoIntervistenEFundit = () => lexo("intervista", eshteIntervista);
 export async function ruajGatin(rezultati: Gatishmeria, puna: PunaShkurt) {
   const te_dhenat: SnapshotGati = {
     puna: { id: puna.id, titulli: puna.titulli, kompania: puna.kompania },
+    rezultati_id: rezultati.id,
+    burimi: rezultati.burimi,
     perqindja: rezultati.perqindja,
     ke: rezultati.ke,
     mungon: rezultati.mungon,
@@ -220,7 +225,12 @@ export async function ruajGatin(rezultati: Gatishmeria, puna: PunaShkurt) {
   return ok;
 }
 
-/** Të gjitha "A jam gati?" e ruajtura të këtij përdoruesi, më e reja e para (sipas kohës së ruajtjes). */
+/** "A jam gati?" i ruajtur në telefon për një punë (kur ekrani hapet pa internet), ose null. */
+export async function lexoGatinPerPune(punaId: string): Promise<Hyrja<SnapshotGati> | null> {
+  return lexo(`gati:${punaId}`, eshteGati);
+}
+
+/** Të gjitha "A jam gati?" e ruajtura të këtij përdoruesit, më e reja e para (sipas kohës së ruajtjes). */
 export async function lexoGatite(): Promise<Hyrja<SnapshotGati>[]> {
   try {
     const u = await uid();

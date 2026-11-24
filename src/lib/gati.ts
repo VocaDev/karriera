@@ -11,6 +11,7 @@ import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@s
 
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
 import { HYR_PERSERI, PA_INTERNET_SHKURT, VONON } from "@/lib/mesazhet";
+import type { Puna } from "@/lib/punet";
 import { supabase } from "@/lib/supabase";
 
 // ---------- Tipet (kontrata me WP4) ----------
@@ -49,6 +50,14 @@ export class GabimPaCV extends Error {
   constructor(mesazhi = "Së pari ngarko ose ndërto CV-në tënde.") {
     super(mesazhi);
     this.name = "GabimPaCV";
+  }
+}
+
+/** Shpallja s'thotë mjaftueshëm se çka kërkon (422): s'ka çka të krahasohet me CV-në, AI-ja s'thirret dhe kufiri s'harxhohet. */
+export class GabimPaKerkesa extends Error {
+  constructor(mesazhi = "Kjo shpallje s'thotë mjaftueshëm se çka kërkon, ndaj s'mund ta krahasojmë me CV-në tënde.") {
+    super(mesazhi);
+    this.name = "GabimPaKerkesa";
   }
 }
 
@@ -101,22 +110,32 @@ function eshteKufi(v: unknown): v is Kufiri {
 
 // ---------- Thirrja e Edge Function-it ----------
 
-type TrupiIGabimit = { mesazhi: string; paCV: boolean; kufiriIArritur: boolean; kufiri: Kufiri | null };
+type TrupiIGabimit = {
+  mesazhi: string;
+  paCV: boolean;
+  paKerkesa: boolean;
+  kufiriIArritur: boolean;
+  kufiri: Kufiri | null;
+};
 
 async function lexoGabimin(gabimi: unknown): Promise<TrupiIGabimit> {
   const rezerva: TrupiIGabimit = {
     mesazhi: "Llogaritja dështoi. Provo përsëri.",
     paCV: false,
+    paKerkesa: false,
     kufiriIArritur: false,
     kufiri: null,
   };
   if (gabimi instanceof FunctionsHttpError) {
+    // 422 = shpallja pa kërkesa të mjaftueshme (edhe funksioni i vjetër, që s'dërgonte "kodi", e kthen këtë status)
+    const paKerkesa = (gabimi.context as Response).status === 422;
     try {
       const trupi: unknown = await (gabimi.context as Response).json();
       if (eshteObjekt(trupi) && eshteTekst(trupi.error)) {
         return {
           mesazhi: trupi.error,
           paCV: trupi.kodi === "pa_cv",
+          paKerkesa: paKerkesa || trupi.kodi === "pa_kerkesa",
           kufiriIArritur: trupi.kodi === "kufiri",
           kufiri: eshteKufi(trupi.kufiri) ? trupi.kufiri : null,
         };
@@ -124,7 +143,7 @@ async function lexoGabimin(gabimi: unknown): Promise<TrupiIGabimit> {
     } catch {
       // përgjigje pa JSON
     }
-    return rezerva;
+    return { ...rezerva, paKerkesa };
   }
   if (gabimi instanceof FunctionsFetchError) {
     return { ...rezerva, mesazhi: PA_INTERNET_SHKURT };
@@ -151,8 +170,9 @@ async function thirrGati<T>(body: Record<string, string>, lexo: (data: unknown) 
   }
 
   if (error) {
-    const { mesazhi, paCV, kufiriIArritur, kufiri } = await lexoGabimin(error);
+    const { mesazhi, paCV, paKerkesa, kufiriIArritur, kufiri } = await lexoGabimin(error);
     if (kufiriIArritur) throw new GabimKufiri(mesazhi, kufiri);
+    if (paKerkesa) throw new GabimPaKerkesa(mesazhi);
     throw paCV ? new GabimPaCV(mesazhi) : new Error(mesazhi);
   }
   return lexo(data);
@@ -160,7 +180,8 @@ async function thirrGati<T>(body: Record<string, string>, lexo: (data: unknown) 
 
 /**
  * Thërret `gati`: AI-ja krahason CV-në e fundit me punën dhe e ruan rezultatin. Zgjat 10–40 sekonda dhe
- * numërohet te kufiri ditor. Hedh `GabimPaCV` kur s'ka CV, `GabimKufiri` kur kufiri është arritur,
+ * numërohet te kufiri ditor. Hedh `GabimPaCV` kur s'ka CV, `GabimPaKerkesa` kur shpallja s'ka çka të krahasohet,
+ * `GabimKufiri` kur kufiri është arritur,
  * përndryshe Error me mesazh në shqip. `kufiri` është null para deploy-t të ri të funksionit.
  */
 export async function llogaritGatishmerine(punaId: string): Promise<{ rezultati: Gatishmeria; kufiri: Kufiri | null }> {
@@ -279,6 +300,27 @@ export async function kontrolletEFundit(sa = 3): Promise<KontrollEFundit[]> {
   });
 }
 
+/**
+ * Gatishmëria e fundit e çdo pune (një pyetje pa AI): puna_id → përqindja. Për kartat e listës dhe detajet e punës.
+ * Rreshtat vijnë më i riu i pari, ndaj i pari për çdo punë është ai i fundit. Pa rezultat: puna s'është në hartë.
+ */
+export async function gatishmeriaPerPune(): Promise<Map<string, number>> {
+  const { data, error } = await supabase
+    .from("gatishmeria")
+    .select("puna_id, perqindja, krijuar_me")
+    .order("krijuar_me", { ascending: false })
+    .limit(300);
+  if (error) throw new Error(mesazhiIGabimit(error));
+  const hartat = new Map<string, number>();
+  for (const r of data ?? []) {
+    const rr = r as { puna_id?: unknown; perqindja?: unknown };
+    if (typeof rr.puna_id === "string" && typeof rr.perqindja === "number" && !hartat.has(rr.puna_id)) {
+      hartat.set(rr.puna_id, rr.perqindja);
+    }
+  }
+  return hartat;
+}
+
 /** CV-ja më e re e përdoruesit, ose null nëse s'ka asnjë (gjendja bosh e ekranit). */
 export async function cvEFundit(): Promise<CvEFundit | null> {
   const { data, error } = await supabase
@@ -330,6 +372,60 @@ export function veprimiIHapit(hapi: string): VeprimiIHapit | null {
     }
   }
   return zgjedhur;
+}
+
+type PunaPerKerkesa = Pick<Puna, "pershkrimi" | "aftesite" | "kerkesat">;
+
+/** Kërkesat e strukturuara që i duhen krahasimit (e njëjta rregull si te `kerkesatPerModel` e funksionit `gati`). */
+function kerkesatEVeta(puna: PunaPerKerkesa) {
+  const k = puna.kerkesat;
+  return {
+    kerkesa: k?.kerkesat.length ?? 0,
+    detyra: k?.detyrat.length ?? 0,
+    kaArsim: Boolean(k?.arsimi),
+    kaPervoje: Boolean(k?.pervoja),
+  };
+}
+
+/**
+ * A ka kjo shpallje çka të krahasohet me CV-në? Pasqyron kontrollin e funksionit `gati` (kërkesa të strukturuara, ose
+ * aftësi, ose përshkrim të paktën 40 shkronja), që ekrani të mos thërrasë AI-në kot dhe të tregojë rrugën e daljes.
+ */
+export function punaKaKerkesa(puna: PunaPerKerkesa): boolean {
+  const v = kerkesatEVeta(puna);
+  const struktur = v.kerkesa > 0 || v.detyra > 0 || v.kaArsim || v.kaPervoje;
+  return struktur || puna.aftesite.length > 0 || puna.pershkrimi.trim().length >= 40;
+}
+
+/**
+ * Mbi çka bazohet numri (një fjali, pa e sajuar): kërkesat e shpalljes, detyrat, aftësitë ose vetëm përshkrimi.
+ * `eKufizuar` = shpallja s'ka kërkesa të listuara, prandaj numri është më pak i sigurt dhe ekrani e thotë.
+ */
+export function bazaERezultatit(puna: PunaPerKerkesa): { teksti: string; eKufizuar: boolean } {
+  const v = kerkesatEVeta(puna);
+  if (v.kerkesa > 0) {
+    return {
+      teksti: `Krahasuar me ${v.kerkesa === 1 ? "1 kërkesë" : `${v.kerkesa} kërkesa`} që i thotë shpallja.`,
+      eKufizuar: false,
+    };
+  }
+  if (v.detyra > 0 || v.kaArsim || v.kaPervoje) {
+    return {
+      teksti:
+        "Shpallja s'ka kërkesa të listuara: u krahasua me detyrat, arsimin dhe përvojën që i përmend. Numri është më pak i sigurt.",
+      eKufizuar: true,
+    };
+  }
+  if (puna.aftesite.length > 0 && puna.pershkrimi.trim().length < 40) {
+    return {
+      teksti: "Shpallja ka vetëm aftësitë e listuara: numri bazohet vetëm te ato dhe është më pak i sigurt.",
+      eKufizuar: true,
+    };
+  }
+  return {
+    teksti: "Shpallja s'ka kërkesa të listuara: numri bazohet te përshkrimi i saj dhe është më pak i sigurt.",
+    eKufizuar: true,
+  };
 }
 
 /** "sot në 14:20", "nesër në 08:05" ose data; null nëse s'dihet. */
