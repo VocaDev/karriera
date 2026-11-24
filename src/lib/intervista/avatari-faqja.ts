@@ -154,8 +154,13 @@ let fundiPaAvatar = 0;   // kur mbaron zëri i fundit i unazës
 let radha = 0;           // çdo "fol" e re anulon të vjetrën
 
 function poFlet() {
+  if (rr && ctx().currentTime < rr.fundi) return true;
   if (head) return head.isSpeaking || head.speechQueue.length > 0;
   return ctx().currentTime < fundiPaAvatar;
+}
+function lidhUnazen() {
+  if (!analizuesi) { analizuesi = ctx().createAnalyser(); analizuesi.fftSize = 256; analizuesi.connect(ctx().destination); pulsoUnazen(); }
+  return analizuesi;
 }
 async function luaj(f, para) {
   const buf = await ctx().decodeAudioData(neBajte(f.audio_base64));
@@ -166,16 +171,104 @@ async function luaj(f, para) {
   } else {
     const burimi = ctx().createBufferSource();
     burimi.buffer = buf;
-    if (!analizuesi) { analizuesi = ctx().createAnalyser(); analizuesi.fftSize = 256; analizuesi.connect(ctx().destination); pulsoUnazen(); }
-    burimi.connect(analizuesi);
+    burimi.connect(lidhUnazen());
     const fillo = Math.max(ctx().currentTime, fundiPaAvatar);
     burimi.start(fillo);
     burimet.push(burimi);
     fundiPaAvatar = fillo + buf.duration;
   }
 }
+// ---------- Zëri në rrjedhë: PCM nga serveri, luhet sapo vjen copa e parë ----------
+// Copat (~200 ms) planifikohen njëra pas tjetrës në orën e AudioContext (pa pushim). Gemini i krijon më shpejt se koha reale
+// pas byte-it të parë, ndaj nuk ka mungesë. Gojën e lëvizim nga vala e vërtetë e zërit: çdo kornizë 60 ms me energji
+// bëhet një vizemë zanore në kohën e saj të saktë (nuk kemi tekst të ndarë me kohë për audion që vjen pjesë-pjesë).
+let rr = null;           // rrjedha aktuale: { id, fundi, fillimi, mbaroi, gati }
+let niveliMax = 0.02;    // pika më e lartë e fundit e zërit, për të normalizuar energjinë
+let vizemaNr = 0;
+const KORNIZA_S = 0.06;
+const ZANORET = ["aa", "E", "O", "I", "aa", "U", "E"];
+function rrNdalo() {
+  rr = null;
+  avatari((h) => { h.animQueue = h.animQueue.filter((x) => x.template.name !== "viseme"); });
+}
+function vizemaPerCopen(mostrat, shkalla, kohaFillimit) {
+  if (!head) return;
+  const n = Math.max(1, Math.floor(shkalla * KORNIZA_S));
+  const tani = ctx().currentTime;
+  for (let i = 0; i + n <= mostrat.length; i += n) {
+    let s = 0;
+    for (let k = i; k < i + n; k++) { const x = mostrat[k] / 32768; s += x * x; }
+    const rms = Math.sqrt(s / n);
+    niveliMax = Math.max(rms, niveliMax * 0.997);
+    const l = Math.min(1, rms / (niveliMax * 0.8));
+    if (l < 0.12) continue;
+    const t = head.animClock + (kohaFillimit + i / shkalla - tani) * 1000;
+    const d = KORNIZA_S * 1000;
+    const v = ZANORET[vizemaNr++ % ZANORET.length];
+    head.animQueue.push({ template: { name: "viseme" }, ts: [t - d * 0.6, t + d * 0.4, t + d * 1.4], vs: { ["viseme_" + v]: [null, 0.25 + 0.55 * l, 0] } });
+  }
+}
+function rrFillo(m) {
+  // Pa ndalo() të plotë: pranimi i shkurtër që po thuhet s'duhet prerë; vetëm një rrjedhë e mëparshme ndalon.
+  radha++;
+  if (rr) rr.burimet.forEach((x) => { try { x.stop(); } catch (e) { /* s'ka gjë */ } });
+  rrNdalo();
+  const r = { id: m.id, fundi: 0, fillimi: false, mbaroi: false, gati: null, burimet: [] };
+  rr = r;
+  // Nëse pranimi i shkurtër ("Mirë, e kuptoj.") po thuhet ende, prit pak që të mos pritet në mes.
+  r.gati = (async () => {
+    await gatiPerTeFolur();
+    for (let i = 0; i < 30 && head && (head.isSpeaking || head.speechQueue.length > 0) && rr === r; i++) await pritje(100);
+    if (rr === r && head) { head.setMood("neutral"); shpreh(m.shprehja); if (m.pershendetje) avatari((h) => h.playGesture("👋", 1.8)); }
+  })();
+}
+async function rrPcm(m) {
+  const r = rr;
+  if (!r || r.id !== m.id) return;
+  await r.gati;
+  if (rr !== r) return;
+  const b = new Uint8Array(neBajte(m.b));
+  const mostrat = new Int16Array(b.buffer, 0, b.length >> 1);
+  if (mostrat.length === 0) return;
+  const buf = ctx().createBuffer(1, mostrat.length, m.s);
+  const kanali = buf.getChannelData(0);
+  for (let k = 0; k < mostrat.length; k++) kanali[k] = mostrat[k] / 32768;
+  const burimi = ctx().createBufferSource();
+  burimi.buffer = buf;
+  burimi.connect(head ? ctx().destination : lidhUnazen());
+  const tani = ctx().currentTime;
+  const fillo = r.fillimi ? Math.max(tani + 0.02, r.fundi) : Math.max(tani + 0.15, head ? 0 : fundiPaAvatar);
+  burimi.start(fillo);
+  burimet.push(burimi);
+  r.burimet.push(burimi);
+  burimi.onended = () => { burimet = burimet.filter((x) => x !== burimi); };
+  r.fundi = fillo + buf.duration;
+  vizemaPerCopen(mostrat, m.s, fillo);
+  if (!r.fillimi) {
+    r.fillimi = true;
+    avatari((h) => { h.isSpeaking = true; h.stateName = "speaking"; try { h.speakWithHands(); } catch (e) { /* s'ka gjë */ } });
+    teApp({ lloji: "foli_filloi", id: r.id });
+  }
+}
+async function rrMbaroi(m) {
+  const r = rr;
+  if (!r || r.id !== m.id) return;
+  await r.gati;
+  r.mbaroi = true;
+  for (;;) {
+    if (rr !== r) return;
+    const mbetur = r.fundi - ctx().currentTime;
+    if (mbetur <= 0.05) break;
+    await pritje(Math.max(60, Math.min(250, mbetur * 1000)));
+  }
+  rr = null;
+  avatari((h) => { h.isSpeaking = false; h.stateName = "idle"; });
+  teApp({ lloji: "foli_mbaroi", id: r.id });
+}
+
 function ndalo() {
   radha++;
+  rrNdalo();
   avatari((h) => h.stopSpeaking());
   burimet.forEach((b) => { try { b.stop(); } catch (e) { /* s'ka gjë */ } });
   burimet = [];
@@ -244,6 +337,9 @@ function ngaApp(e) {
   if (!m || typeof m.lloji !== "string") return;
   if (m.lloji === "nis") nis(m);
   else if (m.lloji === "fol") fol(m);
+  else if (m.lloji === "rrjedhe_fillo") rrFillo(m);
+  else if (m.lloji === "rrjedhe_pcm") rrPcm(m);
+  else if (m.lloji === "rrjedhe_mbaroi") rrMbaroi(m);
   else if (m.lloji === "ndalo") ndalo();
   else if (m.lloji === "degjon") degjon(m.po === true);
   else if (m.lloji === "mendon") mendon();

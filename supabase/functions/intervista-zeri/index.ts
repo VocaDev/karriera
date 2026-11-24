@@ -15,6 +15,17 @@
 //    sapo kandidati mbaron së foluri, ndërsa pret kthesën.
 //    Dalja: { zeri: { fjalite: [{ teksti, audio_base64, mime }] } } (fjalite bosh kur pjesa s'ka tekst)
 //
+// 3) Me rrjedhë (24.11): të njëjtat dy veprime, por përgjigjja është `application/x-ndjson` (një JSON për rresht) dhe zëri
+//    vjen në copa PCM sapo Gemini i krijon (byte-i i parë pas ~2 s, jo ~4,5 s pas tekstit). Kërkohet me fushën
+//    `rrjedhe=1` (multipart) ose `"rrjedhe": true` (JSON "fol"). Ngjarjet:
+//      {"e":"degjuar","transkripti"}                  pas STT-së (vetëm multipart)
+//      {"e":"kthesa", ...dalja e intervista-kthesa}   teksti i pyetjes së re, pa pritur zërin
+//      {"e":"pcm","b":"<base64 PCM16 mono>","s":24000} copa zëri (reagimi + pyetja, ose reagimi + mbyllja, në një audio)
+//      {"e":"gabim_zerit","mesazhi"}                  zëri u ndërpre: teksti është tashmë në ekran
+//      {"e":"gabim","error","kodi","status","transkripti"?}  kthesa dështoi (si trupi i gabimit HTTP)
+//      {"e":"mbaroi"}                                 gjithçka u dërgua
+//    Vlerësimi i përgjigjes (që s'e përdor askush gjatë intervistës) vazhdon në sfond, para "mbaroi".
+//
 // Gabimet e zërit: 502 "zeri" (riprovo ose shkruaj), 503 "zeri_pa_konfigurim" (vazhdo me shkrim),
 // 429 "kufiri_zerit" (minutat e zërit për sot mbaruan). Të tjerat si te intervista-kthesa.
 //
@@ -33,6 +44,7 @@ import {
 import { perpunoKthesen } from "../_shared/intervista-kthesa.ts";
 import { CORS_HEADERS, json, kontrolloThirresin, type Thirresi } from "../_shared/thirresi.ts";
 import {
+  type CopaAudio,
   type Degjuesi,
   MBUSHESIT,
   type Folesi,
@@ -169,6 +181,94 @@ async function thuaj(tekstet: (string | null)[], iv: IntervistaEZerit): Promise<
   return { fjalite: [{ teksti, audio_base64: neBase64(a.audio), mime: a.mime }], sekonda: a.sekonda };
 }
 
+// ---------- Rrjedha NDJSON ----------
+type Dergo = (ngjarja: Objekt) => void;
+const koduesi = new TextEncoder();
+
+/** Përgjigje me rrjedhë: `pune` shkruan ngjarje; gabimi i papritur bëhet ngjarje "gabim", jo rrjedhë e prerë. */
+function rrjedhaNdjson(pune: (d: Dergo) => Promise<void>): Response {
+  const rrjedha = new ReadableStream<Uint8Array>({
+    async start(c) {
+      const d: Dergo = (o) => {
+        try {
+          c.enqueue(koduesi.encode(`${JSON.stringify(o)}\n`));
+        } catch {
+          // klienti u shkëput: puna vazhdon që gjendja në DB të mbetet e plotë
+        }
+      };
+      try {
+        await pune(d);
+      } catch {
+        console.error("[intervista-zeri] Gabim i papritur në rrjedhë.");
+        d({ e: "gabim", error: "Diçka shkoi keq. Provo përsëri.", kodi: "tjeter", status: 500 });
+      }
+      try {
+        c.close();
+      } catch {
+        // tashmë e mbyllur
+      }
+    },
+  });
+  return new Response(rrjedha, {
+    headers: { ...CORS_HEADERS, "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
+
+/** Copa e parë dërgohet menjëherë; pastaj përbashkohen ~200 ms audio për çdo mesazh (më pak punë për urën e telefonit). */
+const COPA_E_PARE_BAJT = 1;
+const COPA_BAJT = 9_600;
+
+/** Audio nga ofruesi → copa PCM te `d`. Kthen sekondat e audios. Hedh GabimIZerit. */
+async function transmetoZerin(d: Dergo, copat: AsyncGenerator<CopaAudio>): Promise<number> {
+  let tampon: Uint8Array[] = [];
+  let bajtNeTampon = 0;
+  let gjithsej = 0;
+  let shkalla = 24_000;
+  let ePara = true;
+  const fshij = () => {
+    if (bajtNeTampon === 0) return;
+    const bashku = new Uint8Array(bajtNeTampon);
+    let i = 0;
+    for (const c of tampon) {
+      bashku.set(c, i);
+      i += c.length;
+    }
+    tampon = [];
+    bajtNeTampon = 0;
+    d({ e: "pcm", b: neBase64(bashku), s: shkalla });
+  };
+  for await (const c of copat) {
+    shkalla = c.shkalla;
+    tampon.push(c.pcm);
+    bajtNeTampon += c.pcm.length;
+    gjithsej += c.pcm.length;
+    if (bajtNeTampon >= (ePara ? COPA_E_PARE_BAJT : COPA_BAJT)) {
+      ePara = false;
+      fshij();
+    }
+  }
+  fshij();
+  return gjithsej / 2 / shkalla;
+}
+
+/** Zëri i një teksti si rrjedhë copash (ofruesit pa rrjedhë japin një copë të vetme). */
+async function* copatE(teksti: string, iv: IntervistaEZerit): AsyncGenerator<CopaAudio> {
+  if (folesi.rrjedhe) {
+    yield* folesi.rrjedhe(teksti, iv.gjuha, iv.intervistuesi);
+    return;
+  }
+  const a = await folesi.fol(teksti, iv.gjuha, iv.intervistuesi);
+  const wav = lexoWav(a.audio);
+  if (!wav) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
+  yield { pcm: new Uint8Array(wav.mostrat.buffer, wav.mostrat.byteOffset, wav.mostrat.byteLength), shkalla: wav.shkalla };
+}
+
+const bashkoTekstet = (tekstet: (string | null)[]) =>
+  tekstet
+    .filter((t): t is string => !!t && !!t.trim())
+    .map((t) => t.trim())
+    .join(" ");
+
 // ---------- 2) Zëri i pyetjes aktuale ----------
 async function fol(t: Thirresi, b: Objekt): Promise<Response> {
   const intervistaId = b.intervista_id;
@@ -192,6 +292,34 @@ async function fol(t: Thirresi, b: Objekt): Promise<Response> {
         : pjesa === "mbushesi"
           ? [MBUSHESIT[iv.gjuha]]
           : [iv.kthesa.reagimi, iv.kthesa.pyetja];
+  if (b.rrjedhe === true) {
+    const teksti = bashkoTekstet(tekstet);
+    if (!teksti) return rrjedhaNdjson((d) => Promise.resolve(d({ e: "mbaroi" })));
+    // Copa e parë merret para përgjigjes: një gabim i ofruesit del si status HTTP, si më parë.
+    const copat = copatE(teksti, iv);
+    let e1: IteratorResult<CopaAudio>;
+    try {
+      e1 = await copat.next();
+    } catch (e) {
+      return gabimIZerit(e);
+    }
+    if (e1.done) return gabimIZerit(new GabimIZerit("Zëri doli bosh. Provo përsëri."));
+    const copaEPare = e1.value;
+    async function* meCopenEPare(): AsyncGenerator<CopaAudio> {
+      yield copaEPare;
+      yield* copat;
+    }
+    return rrjedhaNdjson(async (d) => {
+      let sekonda = 0;
+      try {
+        sekonda = await transmetoZerin(d, meCopenEPare());
+      } catch (e) {
+        d({ e: "gabim_zerit", mesazhi: e instanceof GabimIZerit ? e.message : "Zëri s'u krijua." });
+      }
+      await regjistro(t, intervistaId, "fol", 0, sekonda);
+      d({ e: "mbaroi" });
+    });
+  }
   try {
     const { fjalite, sekonda } = await thuaj(tekstet, iv);
     await regjistro(t, intervistaId, "fol", 0, sekonda);
@@ -256,6 +384,42 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
       .eq("id", intervistaId)
       .eq("user_id", t.userId);
     if (error) console.error("[intervista-zeri] Shënimi i zërit te konteksti dështoi.");
+  }
+
+  if (forma.get("rrjedhe") === "1") {
+    return rrjedhaNdjson(async (d) => {
+      d({ e: "degjuar", transkripti });
+      const nePlan: Promise<unknown>[] = [];
+      const r = await perpunoKthesen(t, {
+        intervistaId,
+        nr,
+        perfundo: false,
+        pergjigja: transkripti,
+        meZe: true,
+        nePlan: (p) => nePlan.push(p),
+      });
+      if (r.status !== 200) {
+        await regjistro(t, intervistaId, "pergjigje", sekonda, 0);
+        d({ ...r.trupi, e: "gabim", status: r.status, transkripti });
+        return;
+      }
+      const k = r.trupi;
+      d({ ...k, e: "kthesa" });
+      // Zëri: reagimi + pyetja (ose reagimi + mbyllja) në një audio, nga copa e parë e Gemini-t.
+      const kt = k.fund === true ? null : (k.kthesa as { reagimi: string | null; pyetja: string });
+      const teksti = bashkoTekstet(
+        kt ? [kt.reagimi, kt.pyetja] : [typeof k.reagimi === "string" ? k.reagimi : null, MBYLLJA[iv.gjuha]],
+      );
+      let sekondaTts = 0;
+      try {
+        sekondaTts = await transmetoZerin(d, copatE(teksti, iv));
+      } catch (e) {
+        d({ e: "gabim_zerit", mesazhi: e instanceof GabimIZerit ? e.message : "Zëri s'u krijua." });
+      }
+      await regjistro(t, intervistaId, "pergjigje", sekonda, sekondaTts);
+      await Promise.allSettled(nePlan); // vlerësimi i përgjigjes mbaron para se kërkesa të mbyllet
+      d({ e: "mbaroi" });
+    });
   }
 
   // ---------- Kthesa: i njëjti kod si me shkrim ----------

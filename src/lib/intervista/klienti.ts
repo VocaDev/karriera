@@ -8,6 +8,8 @@
 //
 // Çelësi i AI-së s'del kurrë në telefon. Pyetjet dhe përgjigjet s'shkruhen në log.
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
+import { File } from "expo-file-system";
+import { fetch as fetchMeRrjedhe } from "expo/fetch";
 
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
 import { HYR_PERSERI, PA_INTERNET_SHKURT, VONON } from "@/lib/mesazhet";
@@ -289,6 +291,221 @@ export async function zeriIPyetjes(intervistaId: string, nr: number, pjesa?: Pje
   const fjalite = eshteObjekt(data) ? lexoFjalite(data.zeri) : null;
   if (!fjalite) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "zeri");
   return fjalite;
+}
+
+// ---------- Zëri me rrjedhë (24.11) ----------
+// Të njëjtat dy veprime të intervista-zeri, por përgjigjja është NDJSON: transkripti, teksti i pyetjes dhe zëri (PCM) vijnë
+// sapo janë gati. `supabase.functions.invoke` nuk e lexon trupin pjesë-pjesë, ndaj këtu përdoret `expo/fetch` (streaming,
+// SDK 58). Kontrata e ngjarjeve është te koka e supabase/functions/intervista-zeri/index.ts.
+
+export type PerRrjedhen = {
+  /** Transkripti i përgjigjes (para se të vijë pyetja e re). */
+  onDegjuar?: (transkripti: string) => void;
+  /** Teksti i pyetjes së re (ose fundi) erdhi. Thirret para copës së parë të zërit. */
+  onKthesa?: (pas: PasPergjigjes) => void;
+  /** Një copë zëri: PCM 16 bit mono, base64, me shkallën e mostrimit. */
+  onPcm: (b: string, shkalla: number) => void;
+  /** Zëri dështoi ose u ndërpre pasi teksti erdhi: pyetja është në ekran, intervista vazhdon. */
+  onGabimZerit: (mesazhi: string) => void;
+};
+
+const kodiIGabimit = (v: unknown): KodiIGabimit =>
+  typeof v === "string" && KODET.includes(v) ? (v as KodiIGabimit) : "tjeter";
+
+/** POST te intervista-zeri me rrjedhë; 401 → një rifreskim sesioni (si te `thirr`). Gabimet HTTP bëhen GabimIIntervistes. */
+async function hapRrjedhen(trupi: string | Uint8Array<ArrayBuffer>, tipi: string, rezerva: string): Promise<Response> {
+  const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/intervista-zeri`;
+  const celesi = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+  const provo = async (): Promise<Response> => {
+    const { data } = await supabase.auth.getSession();
+    const kontrolli = new AbortController();
+    const ora = setTimeout(() => kontrolli.abort(), KOHA_E_AI);
+    try {
+      return await fetchMeRrjedhe(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}`, apikey: celesi, "Content-Type": tipi },
+        body: trupi,
+        signal: kontrolli.signal,
+      });
+    } catch {
+      if (kontrolli.signal.aborted) throw new GabimIIntervistes(VONON.intervista, "vonese");
+      throw new GabimIIntervistes(PA_INTERNET_SHKURT, "rrjeti");
+    } finally {
+      clearTimeout(ora); // koha vlen deri te përgjigjja e parë; rrjedha vazhdon pa të
+    }
+  };
+  let r = await provo();
+  if (r.status === 401) {
+    const { error } = await supabase.auth.refreshSession();
+    if (error) {
+      await supabase.auth.signOut({ scope: "local" });
+      throw new GabimIIntervistes(HYR_PERSERI.cfare, "sesioni", 401);
+    }
+    r = await provo();
+  }
+  if (r.ok) return r;
+  let trupiIGabimit: unknown = null;
+  try {
+    trupiIGabimit = await r.json();
+  } catch {
+    // pa JSON
+  }
+  if (eshteObjekt(trupiIGabimit) && typeof trupiIGabimit.error === "string") {
+    const transkripti =
+      typeof trupiIGabimit.transkripti === "string" && trupiIGabimit.transkripti.trim() ? trupiIGabimit.transkripti : null;
+    throw new GabimIIntervistes(
+      trupiIGabimit.error,
+      r.status === 401 ? "sesioni" : kodiIGabimit(trupiIGabimit.kodi),
+      r.status,
+      lexoKthesen(trupiIGabimit.kthesa),
+      transkripti,
+    );
+  }
+  throw new GabimIIntervistes(rezerva, r.status === 401 ? "sesioni" : "tjeter", r.status);
+}
+
+/** Lexon rreshtat JSON të përgjigjes ndërsa vijnë. Rreshti i dëmtuar kapërcehet; `ng` mund të hedhë (gabim i kthesës). */
+async function lexoNdjson(r: Response, ng: (n: Record<string, unknown>) => void): Promise<void> {
+  const lexuesi = r.body?.getReader();
+  if (!lexuesi) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "zeri");
+  const dekoduesi = new TextDecoder();
+  let tampon = "";
+  const trajto = (rreshti: string) => {
+    let v: unknown;
+    try {
+      v = JSON.parse(rreshti);
+    } catch {
+      return;
+    }
+    if (eshteObjekt(v)) ng(v);
+  };
+  for (;;) {
+    const { value, done } = await lexuesi.read();
+    if (done) break;
+    tampon += dekoduesi.decode(value, { stream: true });
+    let i = tampon.indexOf("\n");
+    while (i >= 0) {
+      const rreshti = tampon.slice(0, i).trim();
+      tampon = tampon.slice(i + 1);
+      if (rreshti) trajto(rreshti);
+      i = tampon.indexOf("\n");
+    }
+  }
+  if (tampon.trim()) trajto(tampon.trim());
+}
+
+/** Trupi multipart me dorë: `expo/fetch` s'e pranon `{ uri }` të React Native, por pranon bajte. */
+function multipart(fushat: Record<string, string>, audio: Uint8Array): { trupi: Uint8Array<ArrayBuffer>; tipi: string } {
+  const kufiri = `----karriera${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  const kodues = new TextEncoder();
+  const pjeset: Uint8Array[] = [];
+  for (const [k, v] of Object.entries(fushat)) {
+    pjeset.push(kodues.encode(`--${kufiri}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));
+  }
+  pjeset.push(
+    kodues.encode(
+      `--${kufiri}\r\nContent-Disposition: form-data; name="audio"; filename="pergjigja.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
+    ),
+    audio,
+    kodues.encode(`\r\n--${kufiri}--\r\n`),
+  );
+  const gjatesia = pjeset.reduce((s, p) => s + p.length, 0);
+  const trupi = new Uint8Array(new ArrayBuffer(gjatesia));
+  let nga = 0;
+  for (const p of pjeset) {
+    trupi.set(p, nga);
+    nga += p.length;
+  }
+  return { trupi, tipi: `multipart/form-data; boundary=${kufiri}` };
+}
+
+/**
+ * Përgjigjja me zë, me rrjedhë. `{ degjuar: false }` = s'u dëgjua asnjë fjalë. Gabimet para pyetjes së re hidhen si
+ * GabimIIntervistes (me transkriptin kur u dëgjua); pas saj, zëri që dështon thërret vetëm `onGabimZerit`.
+ */
+export async function dergoZerinMeRrjedhe(
+  intervistaId: string,
+  nr: number,
+  uri: string,
+  ng: PerRrjedhen,
+): Promise<{ degjuar: boolean }> {
+  const audio = new Uint8Array(await new File(uri).arrayBuffer());
+  const { trupi, tipi } = multipart({ intervista_id: intervistaId, nr: String(nr), rrjedhe: "1" }, audio);
+  const r = await hapRrjedhen(trupi, tipi, "Përgjigjja me zë s'u dërgua. Provo përsëri.");
+  if ((r.headers.get("content-type") ?? "").includes("application/json")) {
+    // S'u dëgjua asnjë fjalë: përgjigje e zakonshme JSON, pa rrjedhë.
+    const data: unknown = await r.json().catch(() => null);
+    if (eshteObjekt(data) && data.degjuar === false) return { degjuar: false };
+    throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "tjeter");
+  }
+  let transkripti = "";
+  let kthesaErdhi = false;
+  let mbaroi = false;
+  try {
+    await lexoNdjson(r, (n) => {
+      switch (n.e) {
+        case "degjuar":
+          transkripti = typeof n.transkripti === "string" ? n.transkripti : "";
+          ng.onDegjuar?.(transkripti);
+          break;
+        case "kthesa":
+          kthesaErdhi = true;
+          ng.onKthesa?.(lexoPasPergjigjes(n));
+          break;
+        case "pcm":
+          if (typeof n.b === "string" && typeof n.s === "number") ng.onPcm(n.b, n.s);
+          break;
+        case "gabim_zerit":
+          ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.");
+          break;
+        case "gabim":
+          throw new GabimIIntervistes(
+            typeof n.error === "string" ? n.error : "Diçka shkoi keq. Provo përsëri.",
+            kodiIGabimit(n.kodi),
+            typeof n.status === "number" ? n.status : null,
+            lexoKthesen(n.kthesa),
+            transkripti || null,
+          );
+        case "mbaroi":
+          mbaroi = true;
+          break;
+      }
+    });
+  } catch (e) {
+    if (e instanceof GabimIIntervistes) throw e;
+    // Lidhja u këput gjatë leximit.
+    if (!kthesaErdhi) throw new GabimIIntervistes(PA_INTERNET_SHKURT, "rrjeti", null, null, transkripti || null);
+    ng.onGabimZerit("Zëri u ndërpre. Pyetja është në ekran.");
+    return { degjuar: true };
+  }
+  if (!kthesaErdhi) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "rrjeti", null, null, transkripti || null);
+  if (!mbaroi) ng.onGabimZerit("Zëri u ndërpre. Pyetja është në ekran.");
+  return { degjuar: true };
+}
+
+/** Zëri i pyetjes aktuale me rrjedhë (pyetja e parë, ose kur intervista rihapet në Fol). Hedh GabimIIntervistes para zërit. */
+export async function zeriIPyetjesMeRrjedhe(
+  intervistaId: string,
+  nr: number,
+  ng: Pick<PerRrjedhen, "onPcm" | "onGabimZerit">,
+): Promise<void> {
+  const r = await hapRrjedhen(
+    JSON.stringify({ veprimi: "fol", intervista_id: intervistaId, nr, rrjedhe: true }),
+    "application/json",
+    "Zëri i pyetjes s'u krijua.",
+  );
+  let mbaroi = false;
+  try {
+    await lexoNdjson(r, (n) => {
+      if (n.e === "pcm" && typeof n.b === "string" && typeof n.s === "number") ng.onPcm(n.b, n.s);
+      else if (n.e === "gabim_zerit") ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.");
+      else if (n.e === "mbaroi") mbaroi = true;
+    });
+  } catch {
+    ng.onGabimZerit("Zëri u ndërpre. Pyetja është në ekran.");
+    return;
+  }
+  if (!mbaroi) ng.onGabimZerit("Zëri u ndërpre. Pyetja është në ekran.");
 }
 
 /** Raporti përfundimtar. Nëse ekziston, serveri e kthen pa thirrur AI-në. Zgjat 10–40 sekonda herën e parë. */

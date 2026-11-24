@@ -20,6 +20,10 @@ export type MesazhPerFaqen =
     }
   /** shto: radhitet pas asaj që po thuhet (pjesa e dytë e kthesës); përndryshe ndalon gjithçka dhe fillon këtë. */
   | { lloji: "fol"; id: string; fjalite: FjaliaMeZe[]; shprehja: Shprehja; pershendetje: boolean; shto: boolean }
+  /** Zëri në rrjedhë (24.11): fillon, copa PCM 16 bit mono (base64) sapo vijnë, mbaron. Faqja i luan pa pritur fundin. */
+  | { lloji: "rrjedhe_fillo"; id: string; shprehja: Shprehja; pershendetje: boolean }
+  | { lloji: "rrjedhe_pcm"; id: string; b: string; s: number }
+  | { lloji: "rrjedhe_mbaroi"; id: string }
   | { lloji: "ndalo" }
   | { lloji: "degjon"; po: boolean }
   | { lloji: "mendon" };

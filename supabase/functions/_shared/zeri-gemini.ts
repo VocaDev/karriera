@@ -11,6 +11,7 @@
 import type { Gjuha, Intervistuesi } from "./intervista-ai.ts";
 import {
   type AudioIFolur,
+  type CopaAudio,
   type Folesi,
   GabimIZerit,
   headerAtEKufijve,
@@ -59,23 +60,105 @@ function ngaBase64(b64: string): Uint8Array {
   return a;
 }
 
+function trupiIKerkeses(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi, rrjedhe: boolean) {
+  return {
+    model: MODELI_TTS,
+    ...(rrjedhe ? { stream: true } : {}),
+    input: [
+      {
+        type: "user_input",
+        content: [{ type: "text", text: teksti, annotations: [{ type: "speech_metadata", style: STILI[gjuha] }] }],
+      },
+    ],
+    response_format: { type: "audio" },
+    generation_config: { speech_config: [{ voice: ZERAT[intervistuesi] }] },
+  };
+}
+
+function celesiIGemini(): string {
+  const celesi = Deno.env.get("GEMINI_API_KEY") ?? "";
+  if (!celesi) throw new GabimIZerit("Zëri s'është konfiguruar ende. Vazhdo me shkrim.", true);
+  return celesi;
+}
+
+/**
+ * Rrjedha SSE e Interactions API (`stream: true`, matur 24.11): ngjarje `step.delta` me `delta.type: "audio"`,
+ * `mime_type: "audio/l16"` (PCM 16 bit mono, `sample_rate` 24000), copa 40–80 ms; byte-i i parë vjen pas ~2 s dhe
+ * pjesa tjetër brenda <1 s (shumë më shpejt se koha reale). Përfundon me `interaction.completed` dhe `[DONE]`.
+ */
+async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): AsyncGenerator<CopaAudio> {
+  const celesi = celesiIGemini();
+  const r = await thirrOfruesin(
+    URL,
+    {
+      method: "POST",
+      headers: { "x-goog-api-key": celesi, "Content-Type": "application/json" },
+      body: JSON.stringify(trupiIKerkeses(teksti, gjuha, intervistuesi, true)),
+    },
+    "Zëri",
+    "zeri-gemini",
+    60_000,
+  );
+  if (!r.body) throw new GabimIZerit("Zëri ktheu një përgjigje të paplotë. Provo përsëri.");
+  const lexuesi = r.body.getReader();
+  const dek = new TextDecoder();
+  let tampon = "";
+  let pjesaPaGjysem: Uint8Array | null = null; // bajti tek që mbetet mes dy copave
+  let pati = false;
+  try {
+    for (;;) {
+      const { value, done } = await lexuesi.read();
+      if (done) break;
+      tampon += dek.decode(value, { stream: true });
+      let i: number;
+      while ((i = tampon.indexOf("\n\n")) >= 0) {
+        const ngjarja = tampon.slice(0, i);
+        tampon = tampon.slice(i + 2);
+        const m = /^event: ?(.*)\ndata: ?(.*)$/s.exec(ngjarja);
+        if (!m) continue;
+        if (m[1] === "error") throw new GabimIZerit("Zëri dështoi. Provo përsëri.");
+        if (m[1] !== "step.delta") continue;
+        let d: Record<string, unknown> | undefined;
+        try {
+          d = (JSON.parse(m[2]) as { delta?: Record<string, unknown> }).delta;
+        } catch {
+          continue;
+        }
+        if (!d || d.type !== "audio" || typeof d.data !== "string" || !d.data) continue;
+        let b = ngaBase64(d.data);
+        if (pjesaPaGjysem) {
+          const bashku = new Uint8Array(pjesaPaGjysem.length + b.length);
+          bashku.set(pjesaPaGjysem);
+          bashku.set(b, pjesaPaGjysem.length);
+          b = bashku;
+          pjesaPaGjysem = null;
+        }
+        if (b.length % 2 === 1) {
+          pjesaPaGjysem = b.subarray(b.length - 1);
+          b = b.subarray(0, b.length - 1);
+        }
+        if (b.length === 0) continue;
+        pati = true;
+        const shkalla = typeof d.sample_rate === "number" && d.sample_rate >= 8000 ? d.sample_rate : SHKALLA_TTS;
+        yield { pcm: b, shkalla };
+      }
+    }
+  } catch (e) {
+    if (e instanceof GabimIZerit) throw e;
+    throw new GabimIZerit("Zëri u ndërpre. Provo përsëri.");
+  } finally {
+    lexuesi.cancel().catch(() => {});
+  }
+  if (!pati) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
+}
+
 export function gemini(): Folesi {
   return {
     emri: "gemini",
+    rrjedhe: rrjedhaGemini,
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
-      const celesi = Deno.env.get("GEMINI_API_KEY") ?? "";
-      if (!celesi) throw new GabimIZerit("Zëri s'është konfiguruar ende. Vazhdo me shkrim.", true);
-      const trupi = {
-        model: MODELI_TTS,
-        input: [
-          {
-            type: "user_input",
-            content: [{ type: "text", text: teksti, annotations: [{ type: "speech_metadata", style: STILI[gjuha] }] }],
-          },
-        ],
-        response_format: { type: "audio" },
-        generation_config: { speech_config: [{ voice: ZERAT[intervistuesi] }] },
-      };
+      const celesi = celesiIGemini();
+      const trupi = trupiIKerkeses(teksti, gjuha, intervistuesi, false);
       const r = await thirrOfruesin(
         URL,
         {
