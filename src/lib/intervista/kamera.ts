@@ -39,12 +39,26 @@ export const MIN_KORNIZA_ME_FYTYRE = 80;
 
 const celesi = (intervistaId: string) => `karriera.kamera.${intervistaId}`;
 
-export async function ruajStatistiken(intervistaId: string, s: StatistikaKameres): Promise<void> {
-  try {
-    await AsyncStorage.setItem(celesi(intervistaId), JSON.stringify(s));
-  } catch {
-    // matja është shtesë: s'ka çka të ndalojë intervistën
-  }
+// Shkrimet radhiten një nga një: dy raporte në të njëjtën kohë s'duhet të lexojnë të njëjtin total të vjetër.
+let radhaEShkrimeve: Promise<void> = Promise.resolve();
+
+/**
+ * SHTON një delta (kornizat e reja nga faqja) te totalet e ruajtura të kësaj interviste. Faqja raporton vetëm shtesat, ndaj
+ * një rinisje e WebView-it (rihapje e intervistës, ringarkim) s'i fshin matjet e mëparshme.
+ */
+export function shtoStatistiken(intervistaId: string, delta: StatistikaKameres): Promise<void> {
+  radhaEShkrimeve = radhaEShkrimeve.then(async () => {
+    try {
+      const e = (await lexoStatistiken(intervistaId)) ?? { kornizat: 0, fytyra: 0, sy: 0 };
+      const total = { kornizat: e.kornizat + delta.kornizat, fytyra: e.fytyra + delta.fytyra, sy: e.sy + delta.sy };
+      // Rendi kornizat ≥ fytyra ≥ sy ruhet nga shtesat; nëse diçka s'përputhet, s'shkruhet asgjë.
+      if (!(total.kornizat >= total.fytyra && total.fytyra >= total.sy && total.sy >= 0)) return;
+      await AsyncStorage.setItem(celesi(intervistaId), JSON.stringify(total));
+    } catch {
+      // matja është shtesë: s'ka çka të ndalojë intervistën
+    }
+  });
+  return radhaEShkrimeve;
 }
 
 export async function lexoStatistiken(intervistaId: string): Promise<StatistikaKameres | null> {

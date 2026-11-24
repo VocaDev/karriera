@@ -41,7 +41,7 @@ export type MesazhNgaFaqja =
   | { lloji: "kamera_gati"; analiza: boolean }
   /** getUserMedia s'funksionoi në këtë WebView: app-i kalon te kamera native (vetëm pamja, pa analizë). */
   | { lloji: "kamera_gabim"; mesazhi: string }
-  /** Numrat e mbledhur NGA KORNIZAT E VËRTETA gjatë përgjigjeve të kandidatit (jo gjatë të folurit të intervistuesit). */
+  /** DELTA e numrave nga kornizat e vërteta gjatë përgjigjeve të kandidatit (jo gjatë të folurit të intervistuesit); app-i i shton te totalet. */
   | { lloji: "kamera_statistika"; kornizat: number; fytyra: number; sy: number }
   | { lloji: "gabim"; kodi: "faqja" | "zeri"; mesazhi: string };
 

@@ -310,7 +310,7 @@ function fol(m) {
 }
 
 // Kur kandidati flet: avatari e shikon; kur pret përgjigjen e serverit: shikon anash, "po mendon".
-function degjon(po) { kamFlet = po; avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
+function degjon(po) { kamFlet = po; if (!po) kamRaporto(); avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
 function mendon() { avatari((h) => { h.lookAhead(900); h.playGesture("🤔", 1.4); }); }
 
 // ---------- Kamera e kandidatit (getUserMedia + MediaPipe) ----------
@@ -322,6 +322,15 @@ const KAM_MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.0";
 const KAM_MODELI = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 let kamFlux = null, kamSesioni = 0, kamMP = null, kamFlet = false, kamRaporti = null;
 const kamNr = { kornizat: 0, fytyra: 0, sy: 0 };
+const kamDerguar = { kornizat: 0, fytyra: 0, sy: 0 }; // çka i është dhënë app-it tashmë: raportohen vetëm shtesat (deltat)
+// App-i i mbledh deltat te totalet e ruajtura; kështu një rinisje e faqes (WebView ringarkohet) s'i fshin matjet e mëparshme.
+// Thirret çdo 3 s, kur përgjigjja e kandidatit mbaron (degjon false) dhe kur kamera ndalet: asnjë kornizë s'humbet.
+function kamRaporto() {
+  const d = { kornizat: kamNr.kornizat - kamDerguar.kornizat, fytyra: kamNr.fytyra - kamDerguar.fytyra, sy: kamNr.sy - kamDerguar.sy };
+  if (d.kornizat <= 0) return;
+  kamDerguar.kornizat = kamNr.kornizat; kamDerguar.fytyra = kamNr.fytyra; kamDerguar.sy = kamNr.sy;
+  teApp({ lloji: "kamera_statistika", kornizat: d.kornizat, fytyra: d.fytyra, sy: d.sy });
+}
 async function kamNgarkoMP() {
   if (kamMP) return;
   const v = await import(KAM_MP + "/vision_bundle.mjs");
@@ -357,15 +366,15 @@ function kamBuklla(sesioni) {
     requestAnimationFrame(hap);
   };
   hap();
-  let raportuar = -1;
   kamRaporti = setInterval(() => {
     if (sesioni !== kamSesioni) { clearInterval(kamRaporti); return; }
-    if (kamNr.kornizat === raportuar) return;
-    raportuar = kamNr.kornizat;
-    teApp({ lloji: "kamera_statistika", kornizat: kamNr.kornizat, fytyra: kamNr.fytyra, sy: kamNr.sy });
+    kamRaporto();
   }, 3000);
 }
 function kameraNdal() {
+  kamRaporto(); // çka mbeti pa dërguar (deri në 3 s)
+  kamNr.kornizat = 0; kamNr.fytyra = 0; kamNr.sy = 0;
+  kamDerguar.kornizat = 0; kamDerguar.fytyra = 0; kamDerguar.sy = 0;
   kamSesioni++;
   if (kamRaporti) { clearInterval(kamRaporti); kamRaporti = null; }
   if (kamFlux) { kamFlux.getTracks().forEach((t) => t.stop()); kamFlux = null; }

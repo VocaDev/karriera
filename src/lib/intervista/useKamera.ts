@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { Linking } from "react-native";
 
 import type { AvatariRef } from "./Avatari";
-import { kerkoLejenKameres, lexoLejenKameres, ruajStatistiken } from "./kamera";
+import { kerkoLejenKameres, lexoLejenKameres, shtoStatistiken } from "./kamera";
 import type { FazaELejes } from "./LejaModal";
 import type { MesazhNgaFaqja } from "./mesazhet";
 
@@ -116,7 +116,8 @@ export function useKamera(opts: {
         setAnaliza(false);
         njofto("Kamera po të tregon veten. Matja e kontaktit me sy s'është e disponueshme në këtë pajisje.", "info");
       } else {
-        void ruajStatistiken(intervistaId, { kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy });
+        void shtoStatistiken(intervistaId, { kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy });
+        // Faqja dërgon deltat: shtohen te totalet e ruajtura (një rinisje e faqes s'i fshin).
       }
     },
     [avatari, intervistaId, njofto],
