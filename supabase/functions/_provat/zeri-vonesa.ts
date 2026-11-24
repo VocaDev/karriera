@@ -12,7 +12,7 @@
 //   deno run --node-modules-dir=none --env-file=<rruga te .env> \
 //     --allow-env --allow-net=generativelanguage.googleapis.com,api.groq.com,api.anthropic.com \
 //     --allow-read=<dosja e përkohshme> --allow-write=<dosja e përkohshme> \
-//     supabase/functions/_provat/zeri-vonesa.ts <skedari-wav-i-pergjigjes.wav> [rrjedhe|vjeter|te-dyja]
+//     supabase/functions/_provat/zeri-vonesa.ts <skedari-wav-i-pergjigjes.wav> [rrjedhe|reagimi|vjeter|te-dyja]
 import {
   gjeneroKthesen,
   type Konteksti,
@@ -33,7 +33,7 @@ for (const k of ["GEMINI_API_KEY", "GROQ_API_KEY", "ANTHROPIC_API_KEY"]) {
 const rruga = Deno.args[0];
 const modi = Deno.args[1] ?? "te-dyja";
 if (!rruga) {
-  console.log("Përdorimi: zeri-vonesa.ts <skedari.wav> [rrjedhe|vjeter|te-dyja]");
+  console.log("Përdorimi: zeri-vonesa.ts <skedari.wav> [rrjedhe|reagimi|vjeter|te-dyja]");
   Deno.exit(1);
 }
 
@@ -79,7 +79,7 @@ const kthesat = (pergjigja: string): KthesaDB[] => [
   { id: "k1", nr: 1, lloji: "pyetje", reagimi: null, pyetja: pyetjaEPare, pergjigja, vleresimi: null, pergjigjur_me: null },
 ];
 
-type Matja = { stt: number; kthesa: number; audio: number; fundi: number; tekstiGjatesia: number };
+type Matja = { stt: number; kthesa: number; audio: number; fundi: number; tekstiGjatesia: number; reagimi?: number };
 
 async function stt(t0: number): Promise<{ transkripti: string; koha: number }> {
   const transkripti = (await degjuesi.degjo(pcm, "sq")).trim();
@@ -128,6 +128,67 @@ async function rrjedhaERe(): Promise<Matja> {
   return { stt: kStt, kthesa: kKthesa, audio: kAudio, fundi, tekstiGjatesia: teksti.length };
 }
 
+/**
+ * Rrjedha më e re (24.11): Claude me rrjedhë; TTS i reagimit nis sapo fusha "reagimi" mbyllet; TTS i pyetjes nis kur kthesa
+ * mbaron dhe pret reagimin. Ashtu si te intervista-zeri; matet byte-i i parë i audios (i reagimit).
+ */
+async function rrjedhaMeReagimTeHershem(): Promise<Matja> {
+  const t0 = performance.now();
+  const { transkripti, koha: kStt } = await stt(t0);
+  const menyra = vendosMenyren({ nrPyetjeve: 1, gjatesia: "shkurter", lejohetVazhdim: true, pergjigja: transkripti });
+  const vleresimiNeSfond = vleresoPergjigjen({
+    konteksti,
+    intervistuesi: "arta",
+    roli: "SWE",
+    gjuha: "sq",
+    meZe: true,
+    kthesa: { reagimi: null, pyetja: pyetjaEPare, pergjigja: transkripti },
+  }).catch(() => null);
+  let kReagimi = -1;
+  let kAudio = -1;
+  let reagimiTeksti = "";
+  let reagimiMbaroi: Promise<void> = Promise.resolve();
+  let bajt = 0;
+  const ai = await gjeneroKthesen({
+    konteksti,
+    intervistuesi: "arta",
+    roli: "SWE",
+    gjuha: "sq",
+    gjatesia: "shkurter",
+    kthesat: kthesat(transkripti),
+    nrPyetjeve: 1,
+    menyra,
+    lejohetVazhdim: true,
+    meZe: true,
+    onReagimi: (r) => {
+      if (!r.trim() || kReagimi >= 0) return;
+      kReagimi = ms(t0);
+      reagimiTeksti = r;
+      reagimiMbaroi = (async () => {
+        for await (const c of folesi.rrjedhe!(r, "sq", "arta")) {
+          if (kAudio < 0) kAudio = ms(t0);
+          bajt += c.pcm.length;
+        }
+      })();
+    },
+  });
+  const kKthesa = ms(t0);
+  // Pyetja: nis tani, por radhitet pas reagimit (si te serveri).
+  const pyetjaPrej = folesi.rrjedhe!(ai.pyetja, "sq", "arta");
+  const eParaEPyetjes = pyetjaPrej.next();
+  await reagimiMbaroi;
+  const kReagimiMbaroi = ms(t0);
+  const e1 = await eParaEPyetjes;
+  const kPyetjaEPare = ms(t0);
+  if (!e1.done) for await (const c of pyetjaPrej) bajt += c.pcm.length;
+  const fundi = ms(t0);
+  await vleresimiNeSfond;
+  const ngaReagimi = kReagimi >= 0 && reagimiTeksti === ai.reagimi.trim().slice(0, 600);
+  console.log(`  reagimi gati pas ${kReagimi} ms (i njëjtë me atë që ruhet: ${ngaReagimi}) · reagimi përfundon së thëni (audio e shkarkuar) pas ${kReagimiMbaroi} ms`);
+  console.log(`  pyetja: byte-i i parë pas ${kPyetjaEPare} ms (pret reagimin, ndaj s'ka pushim mes tyre nëse reagimi luhet ≥ ${Math.max(0, kPyetjaEPare - kAudio)} ms)`);
+  return { stt: kStt, kthesa: kKthesa, audio: kAudio, fundi, tekstiGjatesia: reagimiTeksti.length + ai.pyetja.length, reagimi: kReagimi };
+}
+
 /** Rrjedha e vjetër: kthesa pret vlerësimin; pastaj reagimi dhe pyetja si dy thirrje TTS të plota, paralelisht. */
 async function rrjedhaEVjeter(): Promise<Matja> {
   const t0 = performance.now();
@@ -173,6 +234,10 @@ console.log(`Pranimi nga kesh-i luhet në ~0 ms (${JSON.stringify(MBUSHESIT.sq)}
 if (modi === "rrjedhe" || modi === "te-dyja") {
   console.log("— rrjedha e re —");
   shtyp("RRJEDHA E RE", await rrjedhaERe());
+}
+if (modi === "reagimi" || modi === "te-dyja") {
+  console.log("— rrjedha me reagimin e hershëm (Claude me rrjedhë) —");
+  shtyp("RRJEDHA ME REAGIM TË HERSHËM", await rrjedhaMeReagimTeHershem());
 }
 if (modi === "vjeter" || modi === "te-dyja") {
   console.log("— rrjedha e vjetër (për krahasim) —");

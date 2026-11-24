@@ -46,6 +46,8 @@ export type HyrjaEKthesës = {
    * Vlerësimi dhe mbyllja e kthesës vazhdojnë në sfond; ky thirret me premtimin që kërkesa ta presë para se të mbarojë.
    */
   nePlan?: (premtimi: Promise<unknown>) => void;
+  /** Vetëm zëri: teksti i reagimit sapo modeli e mbaron (para pyetjes); zëri i tij nis pa pritur pjesën tjetër. */
+  onReagimi?: (reagimi: string) => void;
 };
 
 /** Rezultati si JSON + status HTTP. Trupi është kontrata e intervista-kthesa (shih krye të atij skedari). */
@@ -179,6 +181,7 @@ export async function perpunoKthesen(t: Thirresi, hyrja: HyrjaEKthesës): Promis
       menyra,
       lejohetVazhdim,
       meZe,
+      onReagimi: hyrja.onReagimi,
     });
     const nePlan = hyrja.nePlan;
     const [vleresimi, kthesaAI] = nePlan

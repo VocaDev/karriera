@@ -224,8 +224,11 @@ async function pyet<T extends z.ZodType>(
   prompt: string,
   maxTokens: number,
   timeout: number,
+  /** Vetëm për kthesën me zë: thirret një herë, sapo fusha "reagimi" e JSON-it përfundon (modeli e shkruan para "pyetja"). */
+  onReagimi?: (reagimi: string) => void,
 ): Promise<z.infer<T>> {
   const klienti = merrKlientin(timeout);
+  if (onReagimi) return await pyetMeRrjedhe(klienti, schema, modeli, perpjekja, system, prompt, maxTokens, onReagimi);
   let pergjigjja;
   try {
     pergjigjja = await klienti.messages.parse({
@@ -257,6 +260,64 @@ function pastroThelle(x: unknown): unknown {
     return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, pastroThelle(v)]));
   }
   return x;
+}
+
+/**
+ * E njëjta kërkesë si te `pyet`, por me rrjedhë: JSON-i vjen pjesë-pjesë dhe `onReagimi` merr tekstin e "reagimi" sapo
+ * mbyllet. Teksti kalon nga e njëjta `pastro` si rezultati përfundimtar (pastroThelle), ndaj ajo që thuhet me zë është
+ * saktësisht ajo që ruhet (vendosKthesen vetëm e shkurton në 600 shkronja). Rezultati vlerësohet me të njëjtën skemë.
+ */
+async function pyetMeRrjedhe<T extends z.ZodType>(
+  klienti: Anthropic,
+  schema: T,
+  modeli: string,
+  perpjekja: "low" | "medium",
+  system: string,
+  prompt: string,
+  maxTokens: number,
+  onReagimi: (reagimi: string) => void,
+): Promise<z.infer<T>> {
+  let teksti = "";
+  let dhene = false;
+  let mesazhi;
+  try {
+    const rrjedha = klienti.messages.stream({
+      model: modeli,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: prompt }],
+      output_config: { effort: perpjekja, format: zodOutputFormat(schema) },
+    });
+    rrjedha.on("text", (pjesa: string) => {
+      teksti += pjesa;
+      if (dhene) return;
+      const m = /"reagimi"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(teksti);
+      if (!m) return;
+      dhene = true;
+      try {
+        onReagimi(pastro(JSON.parse(`"${m[1]}"`) as string).trim().slice(0, 600));
+      } catch {
+        // reagimi s'u lexua herët: zëri nis kur kthesa mbaron
+      }
+    });
+    mesazhi = await rrjedha.finalMessage();
+  } catch (e) {
+    throw perktheGabimin(e);
+  }
+  if (mesazhi.stop_reason === "refusal") {
+    throw new GabimIntervista("AI-ja refuzoi ta vazhdojë këtë. Provo me një përgjigje tjetër.", 422, "ai");
+  }
+  const pjeset = mesazhi.content.flatMap((b) => (b.type === "text" ? [b.text] : []));
+  let parsed: unknown;
+  try {
+    parsed = schema.parse(JSON.parse(pjeset.join("")));
+  } catch {
+    parsed = null;
+  }
+  if (mesazhi.stop_reason !== "end_turn" || !parsed) {
+    throw new GabimIntervista("AI-ja ktheu përgjigje të paplotë. Provo përsëri.", 502, "ai");
+  }
+  return pastroThelle(parsed) as z.infer<T>;
 }
 
 // ---------- Rolet dhe gjuhët ----------
@@ -554,6 +615,8 @@ export async function gjeneroKthesen(opts: {
   lejohetVazhdim: boolean;
   /** Përgjigjja e fundit erdhi me zë (intervista-zeri). */
   meZe?: boolean;
+  /** Zëri: teksti i "reagimi" sapo mbaron së shkruari (para pyetjes), që TTS të nisë pa pritur gjithë kthesën. */
+  onReagimi?: (reagimi: string) => void;
 }): Promise<KthesaAI> {
   const { min, max } = GJATESITE[opts.gjatesia];
   const vazhdimi = opts.lejohetVazhdim
@@ -577,6 +640,7 @@ export async function gjeneroKthesen(opts: {
     prompt,
     1200,
     60_000,
+    opts.onReagimi,
   );
 }
 

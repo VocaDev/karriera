@@ -390,6 +390,15 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
     return rrjedhaNdjson(async (d) => {
       d({ e: "degjuar", transkripti });
       const nePlan: Promise<unknown>[] = [];
+      // Reagimi flitet sapo Claude e mbyll atë fushë (para pyetjes): TTS i tij nis menjëherë dhe copat dalin pa pritur
+      // pjesën tjetër të kthesës. Zëri i pyetjes nis kur kthesa mbaron, por pritet derisa reagimi të mbarojë (rendi).
+      let reagimiFolur: string | null = null;
+      let reagimiMbaroi: Promise<number> = Promise.resolve(0);
+      const folReagimin = (teksti: string) => {
+        if (reagimiFolur || !teksti.trim()) return;
+        reagimiFolur = teksti.trim();
+        reagimiMbaroi = transmetoZerin(d, copatE(reagimiFolur, iv)).catch(() => 0); // pa reagim, pyetja del e vetme
+      };
       const r = await perpunoKthesen(t, {
         intervistaId,
         nr,
@@ -397,22 +406,34 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
         pergjigja: transkripti,
         meZe: true,
         nePlan: (p) => nePlan.push(p),
+        onReagimi: folReagimin,
       });
       if (r.status !== 200) {
-        await regjistro(t, intervistaId, "pergjigje", sekonda, 0);
+        const sekondaReagim = await reagimiMbaroi;
+        await regjistro(t, intervistaId, "pergjigje", sekonda, sekondaReagim);
         d({ ...r.trupi, e: "gabim", status: r.status, transkripti });
         return;
       }
       const k = r.trupi;
       d({ ...k, e: "kthesa" });
-      // Zëri: reagimi + pyetja (ose reagimi + mbyllja) në një audio, nga copa e parë e Gemini-t.
       const kt = k.fund === true ? null : (k.kthesa as { reagimi: string | null; pyetja: string });
-      const teksti = bashkoTekstet(
-        kt ? [kt.reagimi, kt.pyetja] : [typeof k.reagimi === "string" ? k.reagimi : null, MBYLLJA[iv.gjuha]],
-      );
-      let sekondaTts = 0;
+      const reagimiIFunditStr = kt ? kt.reagimi : typeof k.reagimi === "string" ? k.reagimi : null;
+      // Nëse reagimi s'u lexua herët (rrjedha s'e dha), thuhet bashkë me pyetjen si më parë.
+      const tekstet = [reagimiFolur ? null : reagimiIFunditStr, kt ? kt.pyetja : MBYLLJA[iv.gjuha]];
+      const teksti = bashkoTekstet(tekstet);
+      const kopatEPyetjes = copatE(teksti, iv);
+      const eParaEPyetjes = kopatEPyetjes.next(); // fillon thirrjen te Gemini tani, ndërsa reagimi ende flitet
+      eParaEPyetjes.catch(() => {});
+      let sekondaTts = await reagimiMbaroi;
       try {
-        sekondaTts = await transmetoZerin(d, copatE(teksti, iv));
+        const e1 = await eParaEPyetjes;
+        if (e1.done) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
+        const copaEPare = e1.value;
+        const meCopenEPare = async function* (): AsyncGenerator<CopaAudio> {
+          yield copaEPare;
+          yield* kopatEPyetjes;
+        };
+        sekondaTts += await transmetoZerin(d, meCopenEPare());
       } catch (e) {
         d({ e: "gabim_zerit", mesazhi: e instanceof GabimIZerit ? e.message : "Zëri s'u krijua." });
       }

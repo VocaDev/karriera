@@ -207,6 +207,8 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
       zene.current = true;
       dispatch({ lloji: "dergo_zerin" });
       let zeriFilloi = false;
+      // Reagimi flitet para se të vijë teksti i kthesës: copat e para presin këtu derisa zëri të "fillojë" (onKthesa).
+      const copatNePritje: [string, number][] = [];
       let gabimiZerit: string | null = null;
       try {
         const r = await dergoZerinMeRrjedhe(intervistaId, nr, uri, {
@@ -218,10 +220,13 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
             // Zëri shënohet para dispatch-it: efekti i panelit e di që kjo pyetje po vjen me rrjedhë dhe s'e kërkon vetë.
             zeriFilloi = true;
             zeri.fillon(pas.fund ? "mbyllja" : `a${pas.kthesa.nr}`, pas.fund ? "buzeqeshje" : pas.kthesa.shprehja);
+            for (const [b, shkalla] of copatNePritje.splice(0)) zeri.pcm(b, shkalla);
             pasPergjigjes(pas);
           },
           onPcm: (b, shkalla) => {
-            if (aktiv.current) zeri.pcm(b, shkalla);
+            if (!aktiv.current) return;
+            if (zeriFilloi) zeri.pcm(b, shkalla);
+            else copatNePritje.push([b, shkalla]);
           },
           onGabimZerit: (mesazhi) => {
             gabimiZerit = mesazhi;
