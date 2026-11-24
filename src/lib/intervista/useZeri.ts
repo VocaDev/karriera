@@ -14,13 +14,14 @@
 // Çdo dështim i zërit e lë intervistën të paprekur: pyetja është në ekran si tekst dhe kandidati mund të provojë sërish
 // ose të kalojë te Shkruaj. Leja e mikrofonit kërkohet vetëm kur fillon Fol, pasi shpjegohet pse.
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Alert, Linking } from "react-native";
+import { Linking } from "react-native";
 
 import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { prekja } from "@/lib/prekja";
 
 import type { AvatariRef } from "./Avatari";
 import type { Gjendja } from "./gjendja";
+import type { FazaELejes } from "./LejaModal";
 import { GabimIIntervistes, zeriIPyetjes, zeriIPyetjesMeRrjedhe } from "./klienti";
 import type { FjaliaMeZe } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tipet";
@@ -276,53 +277,52 @@ export function useZeri(opts: {
   }, [faqjaGati, kaloTeShkruaj, pamja.emri]);
 
   // ---------- Leja e mikrofonit: vetëm kur fillon Fol, me arsyen ----------
+  // Fletë që shpjegon pse (bordi 38) para dritares së sistemit; nëse refuzohet ose është e bllokuar, ekrani "leja u refuzua"
+  // (bordi 39) me "Hap Cilësimet" dhe "Vazhdo me shkrim". Vendimi kthehet te sigurohuPerLejen përmes një premtimi.
+  const [leja, setLeja] = useState<FazaELejes | null>(null);
+  const lejaPremtimi = useRef<((ok: boolean) => void) | null>(null);
+  const zgjidhLejen = useCallback((ok: boolean) => {
+    lejaPremtimi.current?.(ok);
+    lejaPremtimi.current = null;
+  }, []);
+
   const sigurohuPerLejen = useCallback(async (): Promise<boolean> => {
-    const leja = await lexoLejen();
-    if (leja === "lejuar") return true;
-    if (leja === "bllokuar") {
-      Alert.alert(
-        "Mikrofoni është i bllokuar",
-        "Për t'u përgjigjur me zë, lejoje mikrofonin për Karrierën te Cilësimet e telefonit. Deri atëherë vazhdon me shkrim.",
-        [
-          { text: "Vazhdo me shkrim", style: "cancel", onPress: () => kaloTeShkruaj(null) },
-          {
-            text: "Hap Cilësimet",
-            onPress: () => {
-              kaloTeShkruaj(null);
-              Linking.openSettings().catch(() => {});
-            },
-          },
-        ],
-        { cancelable: true, onDismiss: () => kaloTeShkruaj(null) },
-      );
+    const l = await lexoLejen();
+    if (l === "lejuar") return true;
+    if (l === "bllokuar") {
+      setLeja("refuzuar");
       return false;
     }
     return await new Promise<boolean>((resolve) => {
-      const jo = () => {
-        kaloTeShkruaj(null);
-        resolve(false);
-      };
-      Alert.alert(
-        "Përgjigju me zë",
-        `${pamja.emri} të pyet me zë dhe ti përgjigjesh duke folur. Mikrofoni hapet vetëm kur prek butonin e tij; zëri kthehet në tekst dhe nuk ruhet.`,
-        [
-          { text: "Jo, me shkrim", style: "cancel", onPress: jo },
-          {
-            text: "Lejo mikrofonin",
-            onPress: () => {
-              kerkoLejen()
-                .then((ok) => {
-                  if (!ok) kaloTeShkruaj("Pa mikrofon, intervista vazhdon me shkrim.");
-                  resolve(ok);
-                })
-                .catch(jo);
-            },
-          },
-        ],
-        { cancelable: true, onDismiss: jo },
-      );
+      lejaPremtimi.current = resolve;
+      setLeja("shpjegim");
     });
-  }, [kaloTeShkruaj, pamja.emri]);
+  }, []);
+
+  /** "Vazhdo" në fletë: dritarja e sistemit; pritet vetëm pasi fleta e ka shpjeguar. */
+  const lejaVazhdo = useCallback(async () => {
+    let ok = false;
+    try {
+      ok = await kerkoLejen();
+    } catch {
+      ok = false;
+    }
+    setLeja(ok ? null : "refuzuar");
+    zgjidhLejen(ok);
+  }, [zgjidhLejen]);
+  const lejaJo = useCallback(() => {
+    setLeja("refuzuar");
+    zgjidhLejen(false);
+  }, [zgjidhLejen]);
+  const lejaHapCilesimet = useCallback(() => {
+    // Kandidati mbetet në Fol: kur kthehet dhe prek mikrofonin, leja kontrollohet sërish.
+    setLeja(null);
+    Linking.openSettings().catch(() => {});
+  }, []);
+  const lejaVazhdoMeShkrim = useCallback(() => {
+    setLeja(null);
+    kaloTeShkruaj(null);
+  }, [kaloTeShkruaj]);
 
   const lejaUKerkua = useRef(false);
   useEffect(() => {
@@ -503,6 +503,11 @@ export function useZeri(opts: {
     statusi,
     radha,
     kaInternet,
+    leja,
+    lejaVazhdo,
+    lejaJo,
+    lejaHapCilesimet,
+    lejaVazhdoMeShkrim,
     prekMikrofonin,
     anuloRegjistrimin,
     ndaloFolesin,

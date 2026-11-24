@@ -11,6 +11,7 @@ import { Ikona, T } from "@/components/ui";
 import { useTema } from "@/lib/tema";
 
 import { Avatari, type AvatariRef } from "./Avatari";
+import { LejaModal } from "./LejaModal";
 import type { Gjendja } from "./gjendja";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi } from "./tipet";
 import type { RezultatiIZerit, ZeriRrjedhe } from "./useIntervista";
@@ -76,6 +77,14 @@ export function PaneliIZerit({
         onPrek={z.onPrek}
         onGabim={z.onGabim}
         style={[styles.avatari, { height: Math.round(height * 0.3) }]}
+      />
+      <LejaModal
+        faza={z.leja}
+        emri={emri}
+        onVazhdo={z.lejaVazhdo}
+        onJo={z.lejaJo}
+        onHapCilesimet={z.lejaHapCilesimet}
+        onVazhdoMeShkrim={z.lejaVazhdoMeShkrim}
       />
       <Statusi teksti={z.statusi} radha={z.radha} mendon={z.mendon} />
       {children}

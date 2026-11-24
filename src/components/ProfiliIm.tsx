@@ -161,6 +161,13 @@ export default function ProfiliIm() {
             />
             <RreshtiLista
               kufi
+              ikona={IKONAT.mikrofoni}
+              titulli="Intervistat e tua"
+              nentitulli="Rezultatet dhe ndryshimi i gatishmërisë"
+              onPress={() => router.push("/intervista/historiku")}
+            />
+            <RreshtiLista
+              kufi
               ikona={IKONAT.grafiku}
               titulli="Përmbledhja ime"
               nentitulli="Rezultatet e fundit, edhe pa internet"

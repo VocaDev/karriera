@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { lexoIntervistuesinPer, ruajIntervistuesinPer } from "./intervistuesi";
 import type { FjaliaMeZe } from "./mesazhet";
 import {
+  eshteGjuhe,
   eshteIntervistues,
   eshteObjekt,
   eshteRaport,
@@ -563,6 +564,51 @@ export async function lexoIntervisten(intervistaId: string): Promise<IntervistaE
     pergjigja: k.pergjigja,
   }));
   return { info, biseda, raporti };
+}
+
+export type RreshtiIHistorikut = {
+  id: string;
+  nota: number | null;
+  data: string;
+  puna: string | null;
+  gjuha: Gjuha;
+  nrPyetjeve: number;
+  /** Ndryshimi i gatishmërisë nga kjo intervistë (pas − para); null kur s'matet. */
+  ndryshimi: number | null;
+};
+
+/** Historiku (bordi, ekrani 31): intervistat e mia që kanë mbaruar, më e reja e para. RLS: vetëm të miat. */
+export async function lexoHistorikun(kufiri = 50): Promise<RreshtiIHistorikut[]> {
+  const { data, error } = await supabase
+    .from("intervistat")
+    .select("id, nota, krijuar_me, perfunduar_me, gjuha, nr_pyetjeve, raporti, punet(titulli, kompania)")
+    .in("gjendja", ["mbaroi", "po_vleresohet", "perfunduar"])
+    .order("krijuar_me", { ascending: false })
+    .limit(kufiri);
+  if (error) throw new GabimIIntervistes(mesazhiIGabimit(error), "rrjeti");
+  return (data ?? []).flatMap((r) => {
+    const rreshti = r as Record<string, unknown>;
+    if (typeof rreshti.id !== "string" || !eshteGjuhe(rreshti.gjuha)) return [];
+    const punet = rreshti.punet as { titulli?: unknown; kompania?: unknown } | null;
+    const raporti = eshteRaport(rreshti.raporti) ? rreshti.raporti : null;
+    const g = raporti?.gatishmeria;
+    return [
+      {
+        id: rreshti.id,
+        nota: typeof rreshti.nota === "number" ? rreshti.nota : null,
+        data: typeof rreshti.perfunduar_me === "string" ? rreshti.perfunduar_me : String(rreshti.krijuar_me ?? ""),
+        puna:
+          punet && typeof punet.titulli === "string"
+            ? typeof punet.kompania === "string"
+              ? `${punet.titulli} · ${punet.kompania}`
+              : punet.titulli
+            : null,
+        gjuha: rreshti.gjuha,
+        nrPyetjeve: typeof rreshti.nr_pyetjeve === "number" ? rreshti.nr_pyetjeve : 0,
+        ndryshimi: g && g.para !== null && g.pas !== null ? g.pas - g.para : null,
+      },
+    ];
+  });
 }
 
 export type PerMbledhjeIntervistes = { id: string; nota: number | null; data: string; puna: string | null };
