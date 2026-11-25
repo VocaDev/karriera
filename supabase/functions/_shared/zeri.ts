@@ -51,6 +51,8 @@ export interface Folesi {
 /** Gabim i ofruesit të zërit: mesazhi është për app-in (shqip), pa detaje teknike. */
 export class GabimIZerit extends Error {
   readonly konfigurim: boolean;
+  /** Kufiri ditor i ofruesit të zërit mbaroi: s'ka kuptim të provohet sërish sot. */
+  kufiriDitor = false;
   /** Vetëm për skriptet e provës: statusi, header-at e kufijve dhe fillimi i trupit të gabimit. Funksionet s'e shkruajnë në log. */
   readonly detaje: { status: number; kufijte: Record<string, string>; trupi: string } | null;
   constructor(
@@ -106,7 +108,9 @@ export function lexoKufirin(
   const ngaHeaderi = header && /^\d+(\.\d+)?$/.test(header.trim()) ? Number(header) * 1000 : null;
   const m = /"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/.exec(d.trupi);
   const vonesaMs = ngaHeaderi ?? (m ? Number(m[1]) * 1000 : null);
-  const kufiri = /"quota(?:Id|Metric)"\s*:\s*"([^"]{1,120})"/.exec(d.trupi)?.[1] ?? null;
+  // Interactions API e thotë kufirin vetëm me fjalë: "(limit: 10 requests per day on Free Tier)" (parë 25.11).
+  const kufiri =
+    /"quota(?:Id|Metric)"\s*:\s*"([^"]{1,120})"/.exec(d.trupi)?.[1] ?? /\(limit: ([^)]{1,80})\)/.exec(d.trupi)?.[1] ?? null;
   return { vonesaMs: vonesaMs === null ? null : Math.round(vonesaMs), kufiri };
 }
 

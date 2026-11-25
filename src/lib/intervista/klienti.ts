@@ -45,6 +45,7 @@ export type KodiIGabimit =
   | "zeri" // dëgjimi ose zëri dështoi: riprovo ose shkruaj
   | "zeri_pa_konfigurim" // zëri s'është gati në server: vetëm me shkrim
   | "kufiri_zerit" // minutat e zërit për sot mbaruan
+  | "zeri_ditor" // ofruesi i zërit e arriti kufirin ditor: pyetjet dalin me tekst, përgjigjet vazhdojnë me zë
   | "rrjeti"
   | "vonese" // s'u përgjigj në kohë (VONON)
   | "sesioni"
@@ -97,6 +98,7 @@ const KODET: readonly string[] = [
   "zeri",
   "zeri_pa_konfigurim",
   "kufiri_zerit",
+  "zeri_ditor",
 ];
 
 async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimIIntervistes> {
@@ -306,8 +308,8 @@ export type PerRrjedhen = {
   onKthesa?: (pas: PasPergjigjes) => void;
   /** Një copë zëri: PCM 16 bit mono, base64, me shkallën e mostrimit. */
   onPcm: (b: string, shkalla: number) => void;
-  /** Zëri dështoi ose u ndërpre pasi teksti erdhi: pyetja është në ekran, intervista vazhdon. */
-  onGabimZerit: (mesazhi: string) => void;
+  /** Zëri dështoi ose u ndërpre pasi teksti erdhi: pyetja është në ekran, intervista vazhdon. `kufiriDitor`: s'ka zë sot. */
+  onGabimZerit: (mesazhi: string, kufiriDitor?: boolean) => void;
 };
 
 const kodiIGabimit = (v: unknown): KodiIGabimit =>
@@ -457,7 +459,7 @@ export async function dergoZerinMeRrjedhe(
           if (typeof n.b === "string" && typeof n.s === "number") ng.onPcm(n.b, n.s);
           break;
         case "gabim_zerit":
-          ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.");
+          ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.", n.kodi === "zeri_ditor");
           break;
         case "gabim":
           throw new GabimIIntervistes(
@@ -499,7 +501,8 @@ export async function zeriIPyetjesMeRrjedhe(
   try {
     await lexoNdjson(r, (n) => {
       if (n.e === "pcm" && typeof n.b === "string" && typeof n.s === "number") ng.onPcm(n.b, n.s);
-      else if (n.e === "gabim_zerit") ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.");
+      else if (n.e === "gabim_zerit")
+        ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.", n.kodi === "zeri_ditor");
       else if (n.e === "mbaroi") mbaroi = true;
     });
   } catch {

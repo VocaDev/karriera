@@ -37,7 +37,7 @@ export type ZeriRrjedhe = {
   fillon: (celesi: CelesiIZerit, shprehja: Shprehja) => void;
   pcm: (b: string, shkalla: number) => void;
   /** Zëri dështoi ose u ndërpre (thirret para "mbaroi"): paneli luan audion pa rrjedhë për pjesën që mbeti. */
-  deshtoi: () => void;
+  deshtoi: (kufiriDitor: boolean) => void;
   /** Rrjedha mbaroi (me sukses ose pas një ndërprerjeje): s'vjen më zë. */
   mbaroi: () => void;
 };
@@ -212,6 +212,7 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
       // Reagimi flitet para se të vijë teksti i kthesës: copat e para presin këtu derisa zëri të "fillojë" (onKthesa).
       const copatNePritje: [string, number][] = [];
       let gabimiZerit: string | null = null;
+      let kufiriDitorIZerit = false;
       try {
         const r = await dergoZerinMeRrjedhe(intervistaId, nr, uri, {
           onDegjuar: (teksti) => {
@@ -230,8 +231,9 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
             if (zeriFilloi) zeri.pcm(b, shkalla);
             else copatNePritje.push([b, shkalla]);
           },
-          onGabimZerit: (mesazhi) => {
+          onGabimZerit: (mesazhi, kufiriDitor) => {
             gabimiZerit = mesazhi;
+            kufiriDitorIZerit = kufiriDitor === true;
           },
         });
         if (!aktiv.current) return { lloji: "zene" };
@@ -239,13 +241,13 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
           dispatch({ lloji: "s_degjova" });
           return { lloji: "s_degjova" };
         }
-        if (gabimiZerit) zeri.deshtoi();
+        if (gabimiZerit) zeri.deshtoi(kufiriDitorIZerit);
         zeri.mbaroi();
         return { lloji: "u_degjua", gabimiZerit };
       } catch (e) {
         if (!aktiv.current) return { lloji: "zene" };
         if (zeriFilloi) {
-          zeri.deshtoi();
+          zeri.deshtoi(false);
           zeri.mbaroi();
         }
         const g = siGabim(e);

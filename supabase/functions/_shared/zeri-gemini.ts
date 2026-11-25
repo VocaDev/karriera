@@ -82,6 +82,10 @@ function celesiIGemini(): string {
   return celesi;
 }
 
+/** Vonesë më e gjatë se kaq ose "per day" te kufiri = kufiri ditor i ofruesit. */
+const VONESA_E_KUFIRIT_DITOR_MS = 60 * 60 * 1000;
+export const MESAZHI_I_KUFIRIT_DITOR = "Zëri i intervistuesit e arriti kufirin e sotëm. Pyetjet dalin në ekran.";
+
 /** Më shumë se kaq s'presim brenda një kërkese: kandidati sheh tekstin dhe app-i ka rrugën e vet rezervë. */
 const MAKS_PRITJA_429_MS = 8_000;
 
@@ -96,6 +100,11 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
     if (!(e instanceof GabimIZerit) || e.detaje?.status !== 429) throw e;
     const { vonesaMs, kufiri } = lexoKufirin(e.detaje);
     console.error(`[zeri-gemini] 429: kufiri ${kufiri ?? "i pathënë"} · vonesa ${vonesaMs ?? "?"} ms`);
+    if ((vonesaMs !== null && vonesaMs >= VONESA_E_KUFIRIT_DITOR_MS) || /per day/i.test(kufiri ?? "")) {
+      const d = new GabimIZerit(MESAZHI_I_KUFIRIT_DITOR, false, e.detaje);
+      d.kufiriDitor = true;
+      throw d;
+    }
     const pritja = vonesaMs ?? 3_000;
     if (pritja > MAKS_PRITJA_429_MS) throw e;
     await new Promise((r) => setTimeout(r, pritja + 250));

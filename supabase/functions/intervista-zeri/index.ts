@@ -79,8 +79,15 @@ const eshteObjekt = (v: unknown): v is Objekt => typeof v === "object" && v !== 
 type FjaliaMeZe = { teksti: string; audio_base64: string; mime: string };
 type IntervistaEZerit = { gjuha: Gjuha; intervistuesi: Intervistuesi; konteksti: Konteksti };
 
+/** Ngjarja "gabim_zerit" e rrjedhës; "kodi" i thotë app-it të mos kërkojë më zë sot. */
+function ngjarjaEGabimitTeZerit(e: unknown): Objekt {
+  const mesazhi = e instanceof GabimIZerit ? e.message : "Zëri s'u krijua.";
+  return { e: "gabim_zerit", mesazhi, ...(e instanceof GabimIZerit && e.kufiriDitor ? { kodi: "zeri_ditor" } : {}) };
+}
+
 function gabimIZerit(e: unknown): Response {
   if (e instanceof GabimIZerit) {
+    if (e.kufiriDitor) return gabim(e.message, 429, "zeri_ditor");
     return e.konfigurim ? gabim(e.message, 503, "zeri_pa_konfigurim") : gabim(e.message, 502, "zeri");
   }
   console.error("[intervista-zeri] Gabim i papritur te zëri.");
@@ -321,7 +328,7 @@ async function fol(t: Thirresi, b: Objekt): Promise<Response> {
       try {
         sekonda = await transmetoZerin(d, meCopenEPare());
       } catch (e) {
-        d({ e: "gabim_zerit", mesazhi: e instanceof GabimIZerit ? e.message : "Zëri s'u krijua." });
+        d(ngjarjaEGabimitTeZerit(e));
       }
       await regjistro(t, intervistaId, "fol", 0, sekonda);
       d({ e: "mbaroi" });
@@ -442,7 +449,7 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
         };
         sekondaTts += await transmetoZerin(d, meCopenEPare());
       } catch (e) {
-        d({ e: "gabim_zerit", mesazhi: e instanceof GabimIZerit ? e.message : "Zëri s'u krijua." });
+        d(ngjarjaEGabimitTeZerit(e));
       }
       await regjistro(t, intervistaId, "pergjigje", sekonda, sekondaTts);
       await Promise.allSettled(nePlan); // vlerësimi i përgjigjes mbaron para se kërkesa të mbyllet
