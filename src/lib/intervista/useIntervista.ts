@@ -36,6 +36,8 @@ export type ZeriRrjedhe = {
   /** Teksti i pyetjes së re (ose fundi) erdhi: zëri i saj do të vijë menjëherë pas kësaj. */
   fillon: (celesi: CelesiIZerit, shprehja: Shprehja) => void;
   pcm: (b: string, shkalla: number) => void;
+  /** Zëri dështoi ose u ndërpre (thirret para "mbaroi"): paneli luan audion pa rrjedhë për pjesën që mbeti. */
+  deshtoi: () => void;
   /** Rrjedha mbaroi (me sukses ose pas një ndërprerjeje): s'vjen më zë. */
   mbaroi: () => void;
 };
@@ -237,11 +239,15 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
           dispatch({ lloji: "s_degjova" });
           return { lloji: "s_degjova" };
         }
+        if (gabimiZerit) zeri.deshtoi();
         zeri.mbaroi();
         return { lloji: "u_degjua", gabimiZerit };
       } catch (e) {
         if (!aktiv.current) return { lloji: "zene" };
-        if (zeriFilloi) zeri.mbaroi();
+        if (zeriFilloi) {
+          zeri.deshtoi();
+          zeri.mbaroi();
+        }
         const g = siGabim(e);
         if (g.kodi === "jashte_radhe" || g.kodi === "mbaroi") {
           await ngarko();

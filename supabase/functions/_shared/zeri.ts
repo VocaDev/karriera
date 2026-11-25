@@ -83,7 +83,7 @@ export async function thirrOfruesin(url: string, init: RequestInit, cka: string,
     throw new GabimIZerit(`${cka} s'u përgjigj. Provo përsëri.`);
   }
   if (r.ok) return r;
-  const detaje = { status: r.status, kufijte: headerAtEKufijve(r.headers), trupi: (await r.text().catch(() => "")).slice(0, 600) };
+  const detaje = { status: r.status, kufijte: headerAtEKufijve(r.headers), trupi: (await r.text().catch(() => "")).slice(0, 3000) };
   console.error(`[${emri}] ${cka}: HTTP ${r.status}`);
   if (r.status === 401 || r.status === 403) {
     throw new GabimIZerit("Zëri s'është konfiguruar mirë. Vazhdo me shkrim.", true, detaje);
@@ -92,6 +92,22 @@ export async function thirrOfruesin(url: string, init: RequestInit, cka: string,
     throw new GabimIZerit("Shërbimi i zërit është i zënë tani. Provo pas pak ose vazhdo me shkrim.", false, detaje);
   }
   throw new GabimIZerit(`${cka} dështoi. Provo përsëri.`, false, detaje);
+}
+
+/**
+ * Çka thotë ofruesi për një 429: sa të presim (retry-after ose "retryDelay": "7s" te trupi i gabimit të Google-it) dhe cili
+ * kufi u godit (quotaId / quotaMetric: emra kufijsh, jo të dhëna përdoruesi). null kur s'e thotë.
+ */
+export function lexoKufirin(
+  d: { kufijte: Record<string, string>; trupi: string } | null,
+): { vonesaMs: number | null; kufiri: string | null } {
+  if (!d) return { vonesaMs: null, kufiri: null };
+  const header = d.kufijte["retry-after"];
+  const ngaHeaderi = header && /^\d+(\.\d+)?$/.test(header.trim()) ? Number(header) * 1000 : null;
+  const m = /"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/.exec(d.trupi);
+  const vonesaMs = ngaHeaderi ?? (m ? Number(m[1]) * 1000 : null);
+  const kufiri = /"quota(?:Id|Metric)"\s*:\s*"([^"]{1,120})"/.exec(d.trupi)?.[1] ?? null;
+  return { vonesaMs: vonesaMs === null ? null : Math.round(vonesaMs), kufiri };
 }
 
 // ---------- WAV ----------

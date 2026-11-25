@@ -62,6 +62,13 @@ import {
 import { gemini } from "../_shared/zeri-gemini.ts";
 import { groq } from "../_shared/zeri-groq.ts";
 
+/**
+ * Zëri i reagimit para se kthesa të mbarojë (Claude me rrjedhë) e sjell zërin ~1,3 s më shpejt, por bën DY kërkesa TTS për
+ * një kthesë. Me kufirin falas të Gemini TTS (429 në prodhim, 25.11) e dyta dështonte dhe Arta ndalej pas reagimit.
+ * Prandaj: NJË kërkesë për kthesë (reagimi + pyetja në një audio). Kthehet në true kur kufiri i TTS rritet (me pagesë).
+ */
+const REAGIMI_I_HERSHEM = false;
+
 // Ofruesit, secili pas përshtatësit të vet (zeri.ts): ndërrohen këtu.
 const degjuesi: Degjuesi = groq();
 const folesi: Folesi = gemini();
@@ -406,7 +413,7 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
         pergjigja: transkripti,
         meZe: true,
         nePlan: (p) => nePlan.push(p),
-        onReagimi: folReagimin,
+        onReagimi: REAGIMI_I_HERSHEM ? folReagimin : undefined,
       });
       if (r.status !== 200) {
         const sekondaReagim = await reagimiMbaroi;

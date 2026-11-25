@@ -22,6 +22,7 @@ import { prekja } from "@/lib/prekja";
 import type { AvatariRef } from "./Avatari";
 import type { Gjendja } from "./gjendja";
 import type { FazaELejes } from "./LejaModal";
+import { merrMbushesin } from "./mbushesi";
 import { GabimIIntervistes, zeriIPyetjes, zeriIPyetjesMeRrjedhe } from "./klienti";
 import type { FjaliaMeZe } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tipet";
@@ -32,6 +33,8 @@ const PRITJA_E_AVATARIT_MS = 25_000;
 /** Pranimi luhet vetëm pas një përgjigjeje të vërtetë, jo pas një prekjeje të shkurtër. */
 const MBUSHESI_PAS_SEKONDAVE = 1.5;
 const ID_E_MBUSHESIT = "mbushesi";
+/** Pritja para zërit rezervë: kufiri i kërkesave të TTS-së (429) zakonisht lirohet pas pak sekondash. */
+const PRITJA_E_REZERVES_MS = 2_500;
 
 const PA_INTERNET_ZERI = paInternet("pyetja mbetet në ekran dhe përgjigjja me zë s'mund të niset tani", false);
 
@@ -81,7 +84,16 @@ export function useZeri(opts: {
   const thenePer = useRef<CelesiIZerit | null>(null); // çka është kërkuar ose thënë (kundër dyfishimit)
   const pyetjaMeZe = useRef<{ nr: number; fjalite: FjaliaMeZe[] } | null>(null); // për "Përsërit pyetjen" (një herë e kërkuar)
   // Rrjedha e zërit që po vjen: faqes i thuhet "fillo" vetëm kur vjen copa e parë (që përshëndetja të bjerë me zërin).
-  const rrjedha = useRef<{ celesi: CelesiIZerit; id: string; filloi: boolean; shprehja: Shprehja; pershendetje: boolean } | null>(null);
+  const rrjedha = useRef<{
+    celesi: CelesiIZerit;
+    id: string;
+    filloi: boolean;
+    deshtoi: boolean;
+    shprehja: Shprehja;
+    pershendetje: boolean;
+  } | null>(null);
+  /** Rrjedha u ndërpre: kur faqja e mbaron pjesën që erdhi, luhet zëri rezervë i pyetjes. */
+  const rezerva = useRef<CelesiIZerit | null>(null);
   const mbushesi = useRef<FjaliaMeZe[] | null>(null);
   const mbushesiUKerkua = useRef(false);
   const sigurimi = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -105,6 +117,7 @@ export function useZeri(opts: {
       if (thenia.current?.celesi !== celesi) return;
       thenia.current = null;
       rrjedha.current = null;
+      rezerva.current = null;
       if (sigurimi.current) clearTimeout(sigurimi.current);
       sigurimi.current = null;
       setFlet(false);
@@ -156,7 +169,7 @@ export function useZeri(opts: {
     (celesi: CelesiIZerit, shprehja: Shprehja, pershendetje: boolean) => {
       thenePer.current = celesi;
       thenia.current = { celesi, pjeset: 1, mbaruan: 0, ndalur: false };
-      rrjedha.current = { celesi, id: `${celesi}:0`, filloi: false, shprehja, pershendetje };
+      rrjedha.current = { celesi, id: `${celesi}:0`, filloi: false, deshtoi: false, shprehja, pershendetje };
       vendosSigurine(celesi, 40);
     },
     [vendosSigurine],
@@ -173,15 +186,51 @@ export function useZeri(opts: {
     },
     [avatari],
   );
+  /**
+   * Zëri rezervë pa rrjedhë për pyetjen (kur rrjedha dështon ose pritet në mes): luhet pas pjesës që erdhi, që fjalia të
+   * mos mbetet përgjysmë. Nëse dështon edhe kjo, pyetja mbetet në ekran dhe radha kalon te kandidati.
+   */
+  const luajRezerven = useCallback(
+    (celesi: CelesiIZerit) => {
+      const nr = Number(celesi.slice(1));
+      setFlet(false);
+      vendosSigurine(celesi, 35);
+      setTimeout(() => {
+        const th = thenia.current;
+        if (!mounted.current || th?.celesi !== celesi || th.ndalur) return;
+        zeriIPyetjes(intervistaId, nr, "pyetja").then(
+          (f) => {
+            if (!mounted.current) return;
+            pyetjaMeZe.current = { nr, fjalite: f };
+            dergoPjesen(celesi, 1, f, "neutrale", false, true);
+          },
+          () => {
+            if (!mounted.current) return;
+            pjesaMbaroi(celesi);
+            njofto(`Zëri i ${pamja.gjenitivi} u ndërpre. Lexoje pyetjen në ekran.`, "info");
+          },
+        );
+      }, PRITJA_E_REZERVES_MS);
+    },
+    [dergoPjesen, intervistaId, njofto, pamja.gjenitivi, pjesaMbaroi, vendosSigurine],
+  );
   const rrjedhaMbaroi = useCallback(
     (celesi: CelesiIZerit) => {
       const r = rrjedha.current;
       if (!r || r.celesi !== celesi) return;
-      // Pa asnjë copë zëri s'ka çka të thuhet: radha kalon te kandidati (pyetja është në ekran).
-      if (!r.filloi) pjesaMbaroi(celesi);
-      else avatari.current?.rrjedheMbaroi(r.id);
+      const duhetRezerva = r.deshtoi && celesi !== "mbyllja" && !!thenia.current && !thenia.current.ndalur;
+      if (duhetRezerva && thenia.current) thenia.current.pjeset = 2;
+      else if (r.deshtoi) njofto("Zëri u ndërpre. Teksti është në ekran.", "info");
+      if (!r.filloi) {
+        // Pa asnjë copë zëri: pjesa e rrjedhës numërohet menjëherë.
+        pjesaMbaroi(celesi);
+        if (duhetRezerva) luajRezerven(celesi);
+        return;
+      }
+      if (duhetRezerva) rezerva.current = celesi;
+      avatari.current?.rrjedheMbaroi(r.id);
     },
-    [avatari, pjesaMbaroi],
+    [avatari, luajRezerven, njofto, pjesaMbaroi],
   );
   const zeriRrjedhe = useMemo<ZeriRrjedhe>(
     () => ({
@@ -189,6 +238,9 @@ export function useZeri(opts: {
       pcm: (b, shkalla) => {
         const th = thenia.current;
         if (th) rrjedhaPcm(th.celesi, b, shkalla);
+      },
+      deshtoi: () => {
+        if (rrjedha.current) rrjedha.current.deshtoi = true;
       },
       mbaroi: () => {
         const th = thenia.current;
@@ -220,13 +272,20 @@ export function useZeri(opts: {
     }).then(
       () => {
         if (!mounted.current) return;
-        if (deshtoi) njofto(`Zëri i ${pamja.gjenitivi} u ndërpre. Lexoje pyetjen ose përgjigju me zë.`, "info");
+        if (deshtoi && rrjedha.current?.celesi === celesi) rrjedha.current.deshtoi = true;
         rrjedhaMbaroi(celesi);
       },
       (e: unknown) => {
         if (!mounted.current) return;
-        pjesaMbaroi(celesi);
         const g = e instanceof GabimIIntervistes ? e : null;
+        // Dështim i ofruesit të zërit para copës së parë (p.sh. 429): provohet zëri rezervë pa rrjedhë.
+        if (g?.kodi === "zeri" && thenia.current?.celesi === celesi) {
+          thenia.current.pjeset = 2;
+          pjesaMbaroi(celesi);
+          luajRezerven(celesi);
+          return;
+        }
+        pjesaMbaroi(celesi);
         if (g && (g.kodi === "zeri_pa_konfigurim" || g.kodi === "kufiri_zerit")) kaloTeShkruaj(g.message);
         else if (g?.kodi === "rrjeti") njofto(tekstiIPlote(PA_INTERNET_ZERI), "info");
         else if (g?.kodi === "vonese") njofto(`${VONON.titulli}. Pyetja është në ekran: përgjigju me zë ose me shkrim.`, "info");
@@ -239,6 +298,7 @@ export function useZeri(opts: {
     gjendja,
     intervistaId,
     kaloTeShkruaj,
+    luajRezerven,
     njofto,
     nisRrjedhen,
     pamja.gjenitivi,
@@ -247,19 +307,21 @@ export function useZeri(opts: {
     rrjedhaPcm,
   ]);
 
-  // Pranimi i shkurtër merret një herë për intervistë, sapo dihet pyetja aktuale (një thirrje e vetme).
-  const nrAktual = gjendja.faza === "pyet" || gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;
+  // Pranimi i shkurtër: nga cache-i i telefonit; përndryshe kërkohet vetëm pasi pyetja e parë u tha (jo njëkohësisht me
+  // të, që kërkesat e TTS-së të mos grumbullohen).
+  const nrAktual = gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;
+  const gjuha = gjendja.faza === "pret_pergjigjen" ? gjendja.seanca.info.gjuha : null;
   useEffect(() => {
-    if (!faqjaGati || nrAktual === null || mbushesiUKerkua.current) return;
+    if (!faqjaGati || nrAktual === null || !gjuha || mbushesiUKerkua.current) return;
     mbushesiUKerkua.current = true;
-    zeriIPyetjes(intervistaId, nrAktual, "mbushesi")
+    merrMbushesin(intervistuesi, gjuha, () => zeriIPyetjes(intervistaId, nrAktual, "mbushesi"))
       .then((f) => {
         if (f.length) mbushesi.current = f;
       })
       .catch(() => {
         // Pa pranim: kandidati sheh vetëm "po mendon"; asgjë s'prishet.
       });
-  }, [faqjaGati, intervistaId, nrAktual]);
+  }, [faqjaGati, gjuha, intervistaId, intervistuesi, nrAktual]);
 
   // Rezultatet hapen kur raporti erdhi dhe intervistuesi s'po flet më (mbyllja dëgjohet deri në fund).
   useEffect(() => {
@@ -357,9 +419,8 @@ export function useZeri(opts: {
         const k = rez.gabimi.kodi;
         if (k === "zeri_pa_konfigurim" || k === "kufiri_zerit") kaloTeShkruaj(rez.gabimi.message);
         else njofto(rez.gabimi.message, "gabim");
-      } else if (rez.lloji === "u_degjua" && rez.gabimiZerit) {
-        njofto(rez.gabimiZerit, "info");
       }
+      // "u_degjua" me zë të dështuar: zëri rezervë e merr përsipër (rrjedhaMbaroi); njoftim vetëm nëse dështon edhe ai.
     } finally {
       fshiRegjistrimin(r.uri);
       if (mounted.current) setDergon(false);
@@ -476,10 +537,15 @@ export function useZeri(opts: {
 
   const onFoliMbaroi = useCallback(
     (id: string) => {
-      const celesi = id.split(":")[0];
-      if (celesi === "mbyllja" || /^a\d+$/.test(celesi)) pjesaMbaroi(celesi as CelesiIZerit);
+      const [celesi, pjesa] = id.split(":");
+      if (celesi !== "mbyllja" && !/^a\d+$/.test(celesi)) return;
+      pjesaMbaroi(celesi as CelesiIZerit);
+      if (pjesa === "0" && rezerva.current === celesi) {
+        rezerva.current = null;
+        luajRezerven(celesi as CelesiIZerit);
+      }
     },
-    [pjesaMbaroi],
+    [luajRezerven, pjesaMbaroi],
   );
   const onFoliFilloi = useCallback((id: string) => {
     // Pranimi s'e ndryshon statusin ("po mendon" mbetet); vetëm pjesët e thënies aktuale e bëjnë "Po flet".

@@ -63,7 +63,15 @@ window.addEventListener("unhandledrejection", (e) => teApp({ lloji: "gabim", kod
 
 // ---------- Zëri: një AudioContext; iPhone-it i themi "playback" (altoparlanti, edhe në Silent) ----------
 let head = null, ctxRezerve = null;
-function ctx() { return head ? head.audioCtx : (ctxRezerve || (ctxRezerve = new (window.AudioContext || window.webkitAudioContext)())); }
+function ctx() {
+  const c = head ? head.audioCtx : (ctxRezerve || (ctxRezerve = new (window.AudioContext || window.webkitAudioContext)()));
+  if (c && !c.vezhguar) {
+    // Sistemi mund ta pezullojë kontekstin (ndërrimi i sesionit të audios, një njoftim, telefonata): sa po flitet, rinise.
+    c.vezhguar = true;
+    c.addEventListener("statechange", () => { if (c.state !== "running" && rr) c.resume().catch(() => {}); });
+  }
+  return c;
+}
 function sesioni() {
   try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) { /* s'ka gjë */ }
 }
@@ -230,6 +238,8 @@ async function rrPcm(m) {
   if (!r || r.id !== m.id) return;
   await r.gati;
   if (rr !== r) return;
+  if (ctx().state !== "running") await gatiPerTeFolur();
+  if (rr !== r) return;
   const b = new Uint8Array(neBajte(m.b));
   const mostrat = new Int16Array(b.buffer, 0, b.length >> 1);
   if (mostrat.length === 0) return;
@@ -258,11 +268,21 @@ async function rrMbaroi(m) {
   if (!r || r.id !== m.id) return;
   await r.gati;
   r.mbaroi = true;
+  let koha = ctx().currentTime, ngeci = 0;
   for (;;) {
     if (rr !== r) return;
     const mbetur = r.fundi - ctx().currentTime;
     if (mbetur <= 0.05) break;
-    await pritje(Math.max(60, Math.min(250, mbetur * 1000)));
+    const hapi = Math.max(60, Math.min(250, mbetur * 1000));
+    await pritje(hapi);
+    // Ora e audios s'ecën ndërsa ka ende zë: konteksti u pezullua në mes të fjalisë. Rinise (ose kërko prekje).
+    if (ctx().currentTime === koha) {
+      ngeci += hapi;
+      if (ngeci >= 1500) { ngeci = 0; await gatiPerTeFolur(); }
+    } else {
+      ngeci = 0;
+      koha = ctx().currentTime;
+    }
   }
   rr = null;
   avatari((h) => { h.isSpeaking = false; h.stateName = "idle"; });
