@@ -10,7 +10,7 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
-import { aftesiteMeTeShpeshta, meTeMiretSipasKandidatit, PRAGU_GATI } from "@/lib/kandidatet";
+import { aftesiteMeTeShpeshta, MAS_PAK_SE_K, PRAGU_GATI } from "@/lib/kandidatet";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 
@@ -22,19 +22,26 @@ export default function Kompania() {
 
   const analitika = useMemo(() => {
     if (!kandidatet) return null;
-    const teMiret = meTeMiretSipasKandidatit(kandidatet);
-    const mesatarja = teMiret.length
-      ? Math.round(teMiret.reduce((s, k) => s + k.kandidati.perqindja, 0) / teMiret.length)
+    // Kandidatura = kandidat × pozitë: serveri s'e lidh të njëjtin person mes pozitave, prandaj numërojmë kandidaturat.
+    const mesatarja = kandidatet.length
+      ? Math.round(kandidatet.reduce((s, k) => s + k.perqindja, 0) / kandidatet.length)
       : null;
     return {
-      teGatshem: teMiret.length,
+      teGatshem: kandidatet.length,
       mesatarja,
-      meIntervisten: teMiret.filter((k) => k.kandidati.intervista_nota !== null).length,
+      meIntervisten: kandidatet.filter((k) => k.intervista_nota !== null).length,
       mungojne: aftesiteMeTeShpeshta(kandidatet, "mungon"),
       kane: aftesiteMeTeShpeshta(kandidatet, "ke"),
     };
   }, [kandidatet]);
-  const kontrolle = useMemo(() => (numrat ? [...numrat.values()].reduce((s, n) => s + n.kontrolluan, 0) : null), [numrat]);
+  // Kontrollet "A jam gati?" përfshijnë edhe kërkues pa pëlqim: serveri i jep vetëm kur një pozitë ka ≥ 5 (përndryshe null).
+  // Mbledhim vetëm ato që erdhën; nëse disa pozita kanë më pak se 5, e themi "të paktën".
+  const kontrolle = useMemo(() => {
+    if (!numrat || numrat.size === 0) return null;
+    const vlerat = [...numrat.values()].map((n) => n.kontrolluan);
+    const teNjohura = vlerat.filter((v): v is number => v !== null);
+    return { shuma: teNjohura.reduce((s, v) => s + v, 0), kaTeFshehura: teNjohura.length < vlerat.length };
+  }, [numrat]);
 
   const gabimi = gjendjaEGabimit(te_dhenat);
 
@@ -84,7 +91,7 @@ export default function Kompania() {
               <View style={styles.rrjeta}>
                 {(
                   [
-                    [`gati (≥ ${PRAGU_GATI}%)`, analitika.teGatshem],
+                    [`kandidatura gati (≥ ${PRAGU_GATI}%)`, analitika.teGatshem],
                     ["gatishmëria mes.", analitika.mesatarja !== null ? `${analitika.mesatarja}%` : "–"],
                     ["me intervistë", analitika.meIntervisten],
                   ] as const
@@ -122,7 +129,9 @@ export default function Kompania() {
               )}
               {kontrolle !== null && (
                 <T zbehur madhesia={12.5}>
-                  {`${kontrolle} ${kontrolle === 1 ? "kërkues e ka" : "kërkues e kanë"} kontrolluar "A jam gati?" për pozitat tuaja (vetëm numri: edhe ata që s'kanë zgjedhur të duken).`}
+                  {kontrolle.shuma === 0
+                    ? `Kontrollet "A jam gati?" për pozitat tuaja: ${MAS_PAK_SE_K} për secilën pozitë (nën 5 s'tregojmë numër, që të mos dallohet askush).`
+                    : `${kontrolle.kaTeFshehura ? "Të paktën " : ""}${kontrolle.shuma} kontrolle "A jam gati?" për pozitat tuaja (vetëm numri; pozitat me më pak se 5 s'numërohen).`}
                 </T>
               )}
             </>

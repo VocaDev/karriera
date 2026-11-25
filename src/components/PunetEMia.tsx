@@ -10,7 +10,7 @@ import { KartaSkelet } from "@/components/Skeleti";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { Chip, IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { merrNumratEQendres, type NumratEQendres } from "@/lib/hyrja";
-import { GabimPaAktivizim, merrNumratEPozitave, type NumratEPozites } from "@/lib/kandidatet";
+import { GabimPaAktivizim, MAS_PAK_SE_K, merrNumratEPozitave, type NumratEPozites } from "@/lib/kandidatet";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { paInternet, PA_INTERNET_SHKURT } from "@/lib/mesazhet";
@@ -25,12 +25,16 @@ const PA_INTERNET_PA_LISTE = "s'kemi ende punë të ruajtura për t'i shfaqur";
 const LEVIZJA = LinearTransition.duration(KOHA.mesme).easing(LEHTESIMI.levizje);
 const HYRJA = FadeIn.duration(320).easing(LEHTESIMI.hyrje);
 
-/** "3 gati · ⭐ 2 · 5 kontrolle": vetëm totale nga serveri (numrat_e_pozitave). */
+/**
+ * "3 kandidatë gati · ⭐ 7 · 12 kontrolle": vetëm totale nga serveri (numrat_e_pozitave).
+ * ⭐ dhe kontrollet përfshijnë kërkues pa pëlqim: nën 5 serveri kthen null dhe këtu shkruhet "më pak se 5".
+ */
 function rreshtiINumrave(n: NumratEPozites): string {
-  const pjeset = [`${n.gati} ${n.gati === 1 ? "kandidat gati" : "kandidatë gati"}`];
-  if (n.ruajtur > 0) pjeset.push(`⭐ ${n.ruajtur}`);
-  if (n.kontrolluan > 0) pjeset.push(`${n.kontrolluan} ${n.kontrolluan === 1 ? "kontroll" : "kontrolle"} "A jam gati?"`);
-  return pjeset.join(" · ");
+  return [
+    `${n.gati} ${n.gati === 1 ? "kandidat gati" : "kandidatë gati"}`,
+    `⭐ ${n.ruajtur ?? MAS_PAK_SE_K}`,
+    `${n.kontrolluan ?? MAS_PAK_SE_K} kontrolle`,
+  ].join(" · ");
 }
 
 // Lista e punëve të mia, me "Shto" dhe "Fshi".

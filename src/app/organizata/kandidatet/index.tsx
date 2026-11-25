@@ -1,5 +1,6 @@
 // Kandidatët (bordi, ekrani 62): renditja e kandidatëve anonimë për pozitat e mia.
-// "Të gjitha": secili kandidat një herë, me pozitën ku përputhet më mirë. Ose një pozitë e vetme.
+// "Të gjitha": çdo kandidaturë (kandidat × pozitë) me titullin e pozitës. Ose një pozitë e vetme.
+// Serveri i jep secilës pozitë etiketë tjetër, që i njëjti person të mos lidhet mes pozitave: s'i bashkojmë dot, me qëllim.
 // (Kërkimi i talenteve pa shpallje, sipas rolit, s'ekziston: gatishmëria llogaritet gjithmonë për një punë konkrete.)
 import { useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
@@ -18,7 +19,6 @@ import Prekshme from "@/components/Prekshme";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { Chip } from "@/components/ui";
-import { meTeMiretSipasKandidatit } from "@/lib/kandidatet";
 import { prekja } from "@/lib/prekja";
 import { useTema } from "@/lib/tema";
 
@@ -41,10 +41,9 @@ export default function Kandidatet() {
   const rreshtat = useMemo(() => {
     if (!kandidatet) return [];
     if (filtri === TE_GJITHA) {
-      return meTeMiretSipasKandidatit(kandidatet).map(({ kandidati, punetTjera }) => ({
-        kandidati,
-        nentitulli: `${titulliIPunes(kandidati.puna_id)}${punetTjera > 0 ? ` · +${punetTjera} ${punetTjera === 1 ? "pozitë tjetër" : "pozita të tjera"}` : ""}`,
-      }));
+      return [...kandidatet]
+        .sort((a, b) => b.perqindja - a.perqindja)
+        .map((kandidati) => ({ kandidati, nentitulli: titulliIPunes(kandidati.puna_id) }));
     }
     return kandidatet.filter((k) => k.puna_id === filtri).map((kandidati) => ({ kandidati, nentitulli: undefined }));
   }, [kandidatet, filtri, titulliIPunes]);
@@ -77,7 +76,7 @@ export default function Kandidatet() {
         >
           {[{ id: TE_GJITHA, titulli: "Të gjitha" }, ...pozitat].map((p) => {
             const aktiv = p.id === filtri;
-            const sa = p.id === TE_GJITHA ? meTeMiretSipasKandidatit(kandidatet ?? []).length : (numrat?.get(p.id)?.gati ?? null);
+            const sa = p.id === TE_GJITHA ? (kandidatet?.length ?? null) : (numrat?.get(p.id)?.gati ?? null);
             return (
               <Prekshme
                 key={p.id}

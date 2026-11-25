@@ -17,6 +17,7 @@ import Prekshme from "@/components/Prekshme";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
+import { MAS_PAK_SE_K } from "@/lib/kandidatet";
 import { useTema } from "@/lib/tema";
 
 export default function KandidatetEPozites() {
@@ -62,10 +63,17 @@ export default function KandidatetEPozites() {
                 ['kontrolle "A jam gati?"', n.kontrolluan],
               ] as const
             ).map(([emri, vlera]) => (
-              <View key={emri} style={styles.numri} accessible accessibilityLabel={`${vlera} ${emri}`}>
-                <T pesha="shumeTrashe" madhesia={24} maxFontSizeMultiplier={1.3}>
-                  {vlera}
-                </T>
+              // ⭐ dhe kontrollet nën 5 vijnë null nga serveri (k-anonimiteti): "më pak se 5", jo numri.
+              <View key={emri} style={styles.numri} accessible accessibilityLabel={`${vlera ?? MAS_PAK_SE_K} ${emri}`}>
+                {vlera === null ? (
+                  <T pesha="trashe" madhesia={14} style={styles.qendra}>
+                    {MAS_PAK_SE_K}
+                  </T>
+                ) : (
+                  <T pesha="shumeTrashe" madhesia={24} maxFontSizeMultiplier={1.3}>
+                    {vlera}
+                  </T>
+                )}
                 <T zbehur madhesia={12} style={styles.qendra}>
                   {emri}
                 </T>

@@ -18,7 +18,6 @@ import Prekshme from "@/components/Prekshme";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
-import { meTeMiretSipasKandidatit } from "@/lib/kandidatet";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
 
@@ -27,7 +26,7 @@ export default function KreuIPunedhenesit() {
   const router = useRouter();
   const { profili } = useSesioni();
   const te_dhenat = useKandidatet();
-  const { punet, kandidatet, numrat, rifreskim, rifresko } = te_dhenat;
+  const { punet, kandidatet, rifreskim, rifresko } = te_dhenat;
 
   // Pozita që shfaqet: më e reja që ka të paktën një kandidat (punet vjen nga më e reja).
   const pozita = useMemo(() => {
@@ -38,8 +37,12 @@ export default function KreuIPunedhenesit() {
     () => (pozita && kandidatet ? kandidatet.filter((k) => k.puna_id === pozita.id).slice(0, 3) : []),
     [pozita, kandidatet],
   );
-  const teGatshem = useMemo(() => (kandidatet ? meTeMiretSipasKandidatit(kandidatet).length : null), [kandidatet]);
-  const teRuajtura = useMemo(() => (numrat ? [...numrat.values()].reduce((s, n) => s + n.ruajtur, 0) : null), [numrat]);
+  // Vetëm numra nga kandidatë me pëlqim (kandidatura = kandidat × pozitë; serveri s'i lidh mes pozitave).
+  const teGatshem = kandidatet?.length ?? null;
+  const meIntervisten = useMemo(
+    () => (kandidatet ? kandidatet.filter((k) => k.intervista_nota !== null).length : null),
+    [kandidatet],
+  );
 
   const gabimi = gjendjaEGabimit(te_dhenat);
 
@@ -63,8 +66,8 @@ export default function KreuIPunedhenesit() {
           {(
             [
               ["pozita", punet?.length ?? null],
-              ["kandidatë gati", teGatshem],
-              ["⭐ të ruajtura", teRuajtura],
+              ["kandidatura gati", teGatshem],
+              ["me intervistë", meIntervisten],
             ] as const
           ).map(([emri, vlera]) => (
             <View key={emri} style={styles.numri} accessible accessibilityLabel={`${vlera ?? "pa të dhëna"} ${emri}`}>

@@ -269,7 +269,7 @@ export function ShenimiIPrivatesise() {
         </T>
       </View>
       <T zbehur madhesia={12.5}>
-        {`Vetëm kandidatë që kanë zgjedhur të jenë të dukshëm, të paktën ${PRAGU_GATI}% gati sipas kontrollit të tyre të fundit "A jam gati?" (${DITET_E_DUKSHME} ditët e fundit). Pa emër, email, CV apo kontakt. Përqindja është vlerësim i AI-së nga CV-ja, jo garanci.`}
+        {`Vetëm kandidatë që kanë zgjedhur të jenë të dukshëm, të paktën ${PRAGU_GATI}% gati sipas kontrollit të tyre të fundit "A jam gati?" (${DITET_E_DUKSHME} ditët e fundit). Pa emër, email, CV apo kontakt. Etiketa është tjetër te çdo pozitë, kështu që i njëjti person mund të dalë te dy pozita pa u lidhur. Përqindja është vlerësim i AI-së, jo garanci.`}
       </T>
     </Karta>
   );

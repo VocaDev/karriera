@@ -16,7 +16,7 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, Progresi, T } from "@/components/ui";
-import { dataShqip } from "@/lib/kandidatet";
+import { EMRAT_E_KOVAVE } from "@/lib/kandidatet";
 import { useTema } from "@/lib/tema";
 
 export default function RaportiIKandidatit() {
@@ -25,10 +25,11 @@ export default function RaportiIKandidatit() {
   const te_dhenat = useKandidatet();
   const { kandidatet, rifreskim, rifresko, titulliIPunes } = te_dhenat;
 
-  // I njëjti kandidat (i njëjti kod) mund të jetë gati për disa pozita: kjo e zgjedhur, pastaj të tjerat.
-  const rreshtat = useMemo(() => (kandidatet ?? []).filter((k) => k.kodi === kodi), [kandidatet, kodi]);
-  const kandidati = rreshtat.find((k) => k.puna_id === puna) ?? rreshtat[0] ?? null;
-  const tjerat = rreshtat.filter((k) => k !== kandidati);
+  // Kodi është për punë (serveri s'e lidh të njëjtin person mes pozitave), prandaj kodi + puna japin një rresht.
+  const kandidati = useMemo(
+    () => (kandidatet ?? []).find((k) => k.kodi === kodi && (!puna || k.puna_id === puna)) ?? null,
+    [kandidatet, kodi, puna],
+  );
   const gabimi = gjendjaEGabimit(te_dhenat);
 
   return (
@@ -73,7 +74,7 @@ export default function RaportiIKandidatit() {
               </View>
               <Progresi vlera={kandidati.perqindja / 100} />
               <T zbehur madhesia={12.5}>
-                {`Vlerësim i AI-së nga ${kandidati.burimi === "intervista" ? "intervista praktike" : "CV-ja"} e kandidatit, më ${dataShqip(kandidati.llogaritur_me)}. Jo garanci.`}
+                {`Vlerësim i AI-së nga ${kandidati.burimi === "intervista" ? "intervista praktike" : "CV-ja"} e kandidatit, ${EMRAT_E_KOVAVE[kandidati.llogaritur_kur]}. Jo garanci.`}
               </T>
             </Karta>
 
@@ -124,19 +125,6 @@ export default function RaportiIKandidatit() {
               </View>
             </Karta>
 
-            {tjerat.length > 0 && (
-              <Karta style={styles.grupi}>
-                <T pesha="trashe" madhesia={16} accessibilityRole="header">
-                  Gati edhe për
-                </T>
-                {tjerat.map((k) => (
-                  <T key={k.puna_id} madhesia={14}>
-                    {titulliIPunes(k.puna_id)} · {k.perqindja}%
-                  </T>
-                ))}
-              </Karta>
-            )}
-
             <Karta style={styles.rreshti}>
               <Ikona emri={IKONAT.kycja} madhesia={18} ngjyra={t.zbehur} />
               <View style={styles.flexGap}>
@@ -144,7 +132,7 @@ export default function RaportiIKandidatit() {
                   Nuk e shihni: emrin, CV-në, kontaktin
                 </T>
                 <T zbehur madhesia={13}>
-                  Kandidati ka zgjedhur të duket vetëm anonimisht. Ftesat, ku emri ndahet vetëm kur kandidati pranon, s&apos;janë ndërtuar ende.
+                  Kandidati ka zgjedhur të duket vetëm anonimisht, dhe etiketa e tij është tjetër te çdo pozitë. Ftesat, ku emri ndahet vetëm kur kandidati pranon, s&apos;janë ndërtuar ende.
                 </T>
               </View>
             </Karta>

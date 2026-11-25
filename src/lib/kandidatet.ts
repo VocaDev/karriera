@@ -1,11 +1,12 @@
 // "Kandidatët" e punëdhënësit dhe pëlqimi i kërkuesit për t'u parë anonimisht. Ekranet thërrasin vetëm këto funksione.
 //
-// Ku jetojnë të dhënat (supabase/migrations/20261125100000_kandidatet_anonim.sql):
+// Ku jetojnë të dhënat (supabase/migrations/20261125110000_kandidatet_anonim.sql):
 //   dukshmeria            pëlqimi i kërkuesit (i fikur si parazgjedhje). Lexohet vetëm rreshti im; ndryshohet vetëm
 //                         me vendos_dukshmerine() (vetëm kërkuesi).
 //   kandidatet_anonim()   vetëm punëdhënësi, vetëm për punët e veta: kandidatë që kanë dhënë pëlqimin, ≥ 60% gati,
-//                         nga 90 ditët e fundit. Pa emër, email, CV apo dëshmi: etiketë ("Kandidati #K27") dhe emrat e aftësive.
-//   numrat_e_pozitave()   vetëm totale për secilën punë timen.
+//                         nga 90 ditët e fundit. Pa emër, email, CV apo dëshmi: etiketë ("Kandidati #K27"), etiketa të shkurtra
+//                         aftësish, koha vetëm si kovë. Kodi/etiketa janë PËR PUNË: i njëjti person s'lidhet dot mes pozitave.
+//   numrat_e_pozitave()   vetëm totale për secilën punë timen; ⭐ dhe kontrollet nën 5 vijnë null ("më pak se 5").
 // Privatësia zbatohet në bazë; këtu vetëm kontrollojmë formën e përgjigjes.
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
 import { supabase } from "@/lib/supabase";
@@ -13,21 +14,33 @@ import { supabase } from "@/lib/supabase";
 /** Pragu dhe dritarja që zbaton serveri (vetëm për tekstet në ekran; vendimi është te funksioni SQL). */
 export const PRAGU_GATI = 60;
 export const DITET_E_DUKSHME = 90;
+/** k-anonimiteti i totaleve (numrat_e_pozitave): nën këtë numër serveri kthen null. */
+export const K_MIN = 5;
+export const MAS_PAK_SE_K = `më pak se ${K_MIN}`;
+
+/** Kur u llogarit gatishmëria: serveri jep vetëm kovën, jo datën. */
+export type KovaEKohes = "kete_jave" | "kete_muaj" | "me_heret";
+export const EMRAT_E_KOVAVE: Record<KovaEKohes, string> = {
+  kete_jave: "këtë javë",
+  kete_muaj: "këtë muaj",
+  me_heret: `në ${DITET_E_DUKSHME} ditët e fundit`,
+};
 
 export type Kandidati = {
   puna_id: string;
-  kodi: string; // çelësi i kandidatit vetëm për këtë punëdhënës (16 hex)
-  etiketa: string; // "Kandidati #K27"
+  kodi: string; // çelësi i kandidatit vetëm për këtë punëdhënës dhe këtë punë (16 hex)
+  etiketa: string; // "Kandidati #K27" (po ashtu për punë)
   perqindja: number;
   ke: string[];
   mungon: string[];
   burimi: "cv" | "intervista";
-  llogaritur_me: string; // YYYY-MM-DD
+  llogaritur_kur: KovaEKohes;
   intervista_nota: number | null;
   intervista_nr: number;
 };
 
-export type NumratEPozites = { puna_id: string; gati: number; ruajtur: number; kontrolluan: number };
+/** `ruajtur` dhe `kontrolluan` përfshijnë edhe kërkues pa pëlqim: null = më pak se 5 (s'del numri i saktë). */
+export type NumratEPozites = { puna_id: string; gati: number; ruajtur: number | null; kontrolluan: number | null };
 
 /** Migrimi s'është aplikuar ende në server: ekrani e thotë hapur, pa sajuar të dhëna. */
 export class GabimPaAktivizim extends Error {
@@ -66,7 +79,7 @@ function eshteKandidat(v: unknown): v is Kandidati {
     listeTekstesh(v.ke) &&
     listeTekstesh(v.mungon) &&
     (v.burimi === "cv" || v.burimi === "intervista") &&
-    eshteTekst(v.llogaritur_me) &&
+    (v.llogaritur_kur === "kete_jave" || v.llogaritur_kur === "kete_muaj" || v.llogaritur_kur === "me_heret") &&
     numerOseNull(v.intervista_nota) &&
     typeof v.intervista_nr === "number"
   );
@@ -92,29 +105,17 @@ export async function merrNumratEPozitave(): Promise<Map<string, NumratEPozites>
     harta.set(r.puna_id, {
       puna_id: r.puna_id,
       gati: Number(r.gati) || 0,
-      ruajtur: Number(r.ruajtur) || 0,
-      kontrolluan: Number(r.kontrolluan) || 0,
+      ruajtur: r.ruajtur === null || r.ruajtur === undefined ? null : Number(r.ruajtur),
+      kontrolluan: r.kontrolluan === null || r.kontrolluan === undefined ? null : Number(r.kontrolluan),
     });
   }
   return harta;
 }
 
-/** Një kandidat me përputhjen më të mirë te punët e mia, dhe sa punë të tjera i kalon pragun. */
-export type KandidatiMeIMire = { kandidati: Kandidati; punetTjera: number };
-
-/** Një rresht për kandidat (lista vjen e renditur, kështu që i pari për çdo kod është më i miri). */
-export function meTeMiretSipasKandidatit(lista: Kandidati[]): KandidatiMeIMire[] {
-  const harta = new Map<string, KandidatiMeIMire>();
-  for (const k of lista) {
-    const ekziston = harta.get(k.kodi);
-    if (!ekziston) harta.set(k.kodi, { kandidati: k, punetTjera: 0 });
-    else if (k.perqindja > ekziston.kandidati.perqindja) harta.set(k.kodi, { kandidati: k, punetTjera: ekziston.punetTjera + 1 });
-    else ekziston.punetTjera += 1;
-  }
-  return [...harta.values()].sort((a, b) => b.kandidati.perqindja - a.kandidati.perqindja);
-}
-
-/** Aftësitë që përsëriten më shpesh te kandidatët (secili kandidat numërohet një herë për aftësi). */
+/**
+ * Aftësitë që përsëriten më shpesh te kandidaturat (një kandidaturë = një kandidat për një pozitë; i njëjti person
+ * te dy pozita numërohet dy herë, sepse serveri s'i lidh, me qëllim).
+ */
 export function aftesiteMeTeShpeshta(lista: Kandidati[], fusha: "ke" | "mungon", sa = 3): { aftesia: string; numri: number }[] {
   const numri = new Map<string, { aftesia: string; kandidatet: Set<string> }>();
   for (const k of lista) {
@@ -130,12 +131,6 @@ export function aftesiteMeTeShpeshta(lista: Kandidati[], fusha: "ke" | "mungon",
     .map((r) => ({ aftesia: r.aftesia, numri: r.kandidatet.size }))
     .sort((a, b) => b.numri - a.numri || a.aftesia.localeCompare(b.aftesia, "sq"))
     .slice(0, sa);
-}
-
-/** "2026-11-25" → "25.11.2026" (pa varësi nga ora e telefonit). */
-export function dataShqip(iso: string): string {
-  const [v, m, d] = iso.slice(0, 10).split("-");
-  return v && m && d ? `${d}.${m}.${v}` : iso;
 }
 
 // ---------- Kërkuesi ----------
