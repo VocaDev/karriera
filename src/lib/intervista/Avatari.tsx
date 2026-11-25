@@ -84,6 +84,7 @@ export function Avatari({
           intervistuesi,
           emri: PAMJA_E_INTERVISTUESIT[intervistuesi].emri,
           ngjyrat: { sfondi: t.karta, teksti: t.teksti, unaza: t.zbehur },
+          erret: t.errët,
         });
         break;
       case "gati":

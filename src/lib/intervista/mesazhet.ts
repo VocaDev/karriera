@@ -17,6 +17,8 @@ export type MesazhPerFaqen =
       intervistuesi: Intervistuesi;
       emri: string;
       ngjyrat: { sfondi: string; teksti: string; unaza: string };
+      /** Tema e errët: zyra prapa Artës zbehet si në mbrëmje. */
+      erret: boolean;
     }
   /** shto: radhitet pas asaj që po thuhet (pjesa e dytë e kthesës); përndryshe ndalon gjithçka dhe fillon këtë. */
   | { lloji: "fol"; id: string; fjalite: FjaliaMeZe[]; shprehja: Shprehja; pershendetje: boolean; shto: boolean }

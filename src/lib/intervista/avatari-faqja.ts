@@ -14,6 +14,8 @@
 //
 // Kujdes: brenda faqes s'përdoren backtick as "${", sepse e gjithë faqja është një String.raw.
 
+import { SFONDI_I_ZYRES } from "./sfondi-zyra";
+
 /** Modeli i Artës: i njëjti skedar si assets/avatar/arta.glb (blob 01d4e1b), i publikuar te commit-i i ngrirë. */
 export const URL_I_MODELIT =
   "https://cdn.jsdelivr.net/gh/VocaDev/karriera@461cbaa47946cba42a087ec58db022fc512b69d0/spike/mpfb-opt.glb";
@@ -34,6 +36,10 @@ export const FAQJA_E_AVATARIT = String.raw`<!doctype html>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; }
   html, body { height: 100%; overflow: hidden; background: var(--sfondi, #F5F5F4); }
+  /* Zyra prapa Artës: vizatim yni (sfondi-zyra.ts), me mjegullim të lehtë (thellësi fushe); në temën e errët zbehet si në mbrëmje. */
+  #zyra { position: fixed; inset: -8px; filter: blur(2.4px) saturate(0.95); }
+  #zyra svg { width: 100%; height: 100%; display: block; }
+  body.erret #zyra { filter: blur(2.4px) brightness(0.42) saturate(0.7); }
   #avatar { position: fixed; inset: 0; pointer-events: none; touch-action: none; }
   #unaza { position: fixed; left: 50%; top: 50%; width: 132px; height: 132px; margin: -66px 0 0 -66px; border-radius: 50%;
     border: 9px solid var(--unaza, #A8A29E); display: flex; align-items: center; justify-content: center;
@@ -47,6 +53,7 @@ export const FAQJA_E_AVATARIT = String.raw`<!doctype html>
 </style>
 </head>
 <body>
+<div id="zyra" aria-hidden="true" hidden>__SFONDI_I_ZYRES__</div>
 <div id="avatar"></div>
 <div id="unaza" hidden></div>
 <button id="prek" hidden>Prek për ta dëgjuar</button>
@@ -141,6 +148,7 @@ function pulsoUnazen() {
   hap();
 }
 function tregoUnazen(emri) {
+  $("zyra").hidden = true;
   if (head) { try { head.stop(); } catch (e) { /* s'ka gjë */ } head = null; }
   $("avatar").hidden = true;
   $("unaza").textContent = emri;
@@ -550,10 +558,15 @@ async function nis(m) {
     r.setProperty("--teksti", m.ngjyrat.teksti);
     r.setProperty("--unaza", m.ngjyrat.unaza);
   }
+  document.body.classList.toggle("erret", m.erret === true);
   if (m.intervistuesi !== "arta") { tregoUnazen(m.emri || ""); teApp({ lloji: "gati", avatari: false }); return; }
+  $("zyra").hidden = false;
   try {
     const { TalkingHead } = await import("talkinghead");
-    head = new TalkingHead($("avatar"), { lipsyncModules: ["fi"], cameraView: "upper", cameraRotateEnable: false,
+    // Kuadri: koka dhe supet, sytë rreth një të tretës nga lart (matur 25.11 me projektimin e eshtrave të syve: 0,32–0,34
+    // në kornizën 358×254 të telefonit; supet brenda kornizës).
+    head = new TalkingHead($("avatar"), { lipsyncModules: ["fi"], cameraView: "upper", cameraDistance: -1.15, cameraY: -0.07,
+      cameraRotateEnable: false,
       cameraPanEnable: false, cameraZoomEnable: false, avatarIdleEyeContact: 0.6, avatarSpeakingEyeContact: 0.8 });
     await head.showAvatar({ url: URL_MODELI, body: "F", avatarMood: "neutral", lipsyncLang: "fi", avatarListeningEyeContact: 0.9 });
     teApp({ lloji: "gati", avatari: true });
@@ -582,4 +595,6 @@ document.addEventListener("message", ngaApp);
 teApp({ lloji: "ngarkuar" });
 </script>
 </body>
-</html>`.replace("__URL_I_MODELIT__", URL_I_MODELIT);
+</html>`
+  .replace("__URL_I_MODELIT__", URL_I_MODELIT)
+  .replace("__SFONDI_I_ZYRES__", () => SFONDI_I_ZYRES);
