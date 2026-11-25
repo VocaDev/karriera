@@ -499,14 +499,14 @@ function KartaEKameres({ intervistaId }: { intervistaId: string }) {
   return (
     <Karta style={styles.karta}>
       <T pesha="trashe" madhesia={14} zbehur>
-        Gjuha e trupit (nga kamera)
+        Vëmendja te kamera · vlerësim i përafërt
       </T>
-      <View style={styles.rresht} accessible accessibilityLabel={`Kontakti me sy: ${v.sy} për qind`}>
+      <View style={styles.rresht} accessible accessibilityLabel={`Vlerësim i përafërt: rreth ${v.sy} për qind e kohës shikoje kamerën`}>
         <T pesha="shumeTrashe" madhesia={30} maxFontSizeMultiplier={1.2}>
-          {v.sy}%
+          ≈ {v.sy}%
         </T>
-        <T zbehur madhesia={14}>
-          e kohës shikoje kamerën
+        <T zbehur madhesia={14} style={styles.flex}>
+          e kohës me fytyrë të dukshme shikoje kamerën
         </T>
       </View>
       <Progresi vlera={v.sy / 100} />
@@ -519,7 +519,8 @@ function KartaEKameres({ intervistaId }: { intervistaId: string }) {
         </T>
       ))}
       <T zbehur madhesia={12}>
-        Matje e përafërt nga kamera e telefonit, vetëm gjatë përgjigjeve të tua. Nuk është gjykim dhe videoja nuk u ruajt.
+        Vlerësim i përafërt nga kamera e telefonit (drejtimi i syve), vetëm gjatë përgjigjeve të tua; llogaritur në telefon. Nuk
+        është gjykim, nuk hyn te nota, dhe asnjë imazh s&apos;u ruajt.
       </T>
     </Karta>
   );

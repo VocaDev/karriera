@@ -10,7 +10,10 @@ import { FAQJA_E_AVATARIT } from "./avatari-faqja";
 import { koduoPerFaqen, lexoMesazhinNgaFaqja, type FjaliaMeZe, type MesazhNgaFaqja, type MesazhPerFaqen } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tipet";
 
-export type MesazhiIKameres = Extract<MesazhNgaFaqja, { lloji: "kamera_gati" | "kamera_gabim" | "kamera_statistika" | "kamera_gjendje" }>;
+export type MesazhiIKameres = Extract<
+  MesazhNgaFaqja,
+  { lloji: "kamera_gati" | "kamera_gabim" | "kamera_statistika" | "kamera_gjendje" | "kamera_vemendja" }
+>;
 
 export type AvatariRef = {
   fol: (id: string, fjalite: FjaliaMeZe[], shprehja: Shprehja, pershendetje: boolean, shto?: boolean) => void;
@@ -99,6 +102,7 @@ export function Avatari({
       case "kamera_gabim":
       case "kamera_statistika":
       case "kamera_gjendje":
+      case "kamera_vemendja":
         onKamera?.(m);
         break;
       case "gabim":

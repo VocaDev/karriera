@@ -332,7 +332,7 @@ function fol(m) {
 // Kur kandidati flet: avatari e shikon; kur pret përgjigjen e serverit: shikon anash, "po mendon".
 function degjon(po) {
   kamFlet = po;
-  if (!po) kamRaporto();
+  if (!po) { kamRaporto(); kamVemendjaNga0(); }
   // App-i e ndërron sesionin e audios rreth çdo përgjigjeje; nëse WebKit e vendosi pamjen në pauzë, rinise shpejt.
   if (kamFlux) setTimeout(() => { const v = $("kamera"); if (kamFlux && v.paused) v.play().catch(() => {}); }, 700);
   avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
@@ -356,6 +356,28 @@ function kamRaporto() {
   kamDerguar.kornizat = kamNr.kornizat; kamDerguar.fytyra = kamNr.fytyra; kamDerguar.sy = kamNr.sy;
   teApp({ lloji: "kamera_statistika", kornizat: d.kornizat, fytyra: d.fytyra, sy: d.sy });
 }
+// ---------- Vëmendja te kamera (25.11) ----------
+// Gjatë përgjigjes së kandidatit: nëse shikimi (ose fytyra) mungon për ~3 s radhazi, app-it i thuhet "larg" që të shfaqë
+// butësisht "Shiko kamerën"; dy korniza radhazi me shikim e heqin. Pa zë, pa asgjë të ruajtur: vetëm ky sinjal në çast.
+const KAM_LARG_MS = 3000;
+let kamLargQe = null, kamLarg = false, kamShikimeRresht = 0;
+function kamVemendja(shikon, tani) {
+  if (shikon) {
+    if (++kamShikimeRresht < 2) return;
+    kamLargQe = null;
+    if (kamLarg) { kamLarg = false; teApp({ lloji: "kamera_vemendja", larg: false }); }
+    return;
+  }
+  kamShikimeRresht = 0;
+  if (kamLargQe === null) kamLargQe = tani;
+  else if (!kamLarg && tani - kamLargQe >= KAM_LARG_MS) { kamLarg = true; teApp({ lloji: "kamera_vemendja", larg: true }); }
+}
+function kamVemendjaNga0() {
+  kamLargQe = null;
+  kamShikimeRresht = 0;
+  if (kamLarg) { kamLarg = false; teApp({ lloji: "kamera_vemendja", larg: false }); }
+}
+
 async function kamNgarkoMP(vetemCPU) {
   if (kamMP) return;
   const v = await import(KAM_MP + "/vision_bundle.mjs");
@@ -455,6 +477,7 @@ function kamBuklla(sesioni) {
         const r = kamMP.detectForVideo(video, tani);
         gabime = 0;
         kamNr.kornizat++;
+        let shikon = false;
         if (r.faceLandmarks && r.faceLandmarks.length >= 1) {
           kamNr.fytyra++;
           const b = r.faceBlendshapes && r.faceBlendshapes[0];
@@ -463,9 +486,10 @@ function kamBuklla(sesioni) {
             b.categories.forEach((c) => { m[c.categoryName] = c.score; });
             const largon = Math.max(m.eyeLookOutLeft || 0, m.eyeLookOutRight || 0, m.eyeLookInLeft || 0, m.eyeLookInRight || 0,
               m.eyeLookDownLeft || 0, m.eyeLookDownRight || 0, m.eyeLookUpLeft || 0, m.eyeLookUpRight || 0);
-            if (largon < 0.45) kamNr.sy++;
+            if (largon < 0.45) { kamNr.sy++; shikon = true; }
           }
         }
+        kamVemendja(shikon, tani);
       } catch (e) {
         // Shumë gabime radhazi (p.sh. konteksti i GPU-së humbi): MediaPipe rihapet një herë, vetëm në CPU.
         if (++gabime > KAM_KUFIRI_GABIMEVE_MP && !riprovuarMP) {
@@ -486,6 +510,7 @@ function kamBuklla(sesioni) {
 }
 function kameraNdal() {
   kamRaporto(); // çka mbeti pa dërguar (deri në 3 s)
+  kamVemendjaNga0();
   kamNr.kornizat = 0; kamNr.fytyra = 0; kamNr.sy = 0;
   kamDerguar.kornizat = 0; kamDerguar.fytyra = 0; kamDerguar.sy = 0;
   kamSesioni++;

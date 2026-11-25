@@ -8,7 +8,14 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { Linking } from "react-native";
 
 import type { AvatariRef, MesazhiIKameres } from "./Avatari";
-import { kerkoLejenKameres, lexoLejenKameres, shtoStatistiken } from "./kamera";
+import {
+  kerkoLejenKameres,
+  lexoLejenKameres,
+  lexoStatistiken,
+  perqindjaEVemendjes,
+  shtoStatistiken,
+  type StatistikaKameres,
+} from "./kamera";
 import type { FazaELejes } from "./LejaModal";
 
 /** Pas kësaj kohe pa asnjë përgjigje nga faqja (getUserMedia varet), kalojmë te kamera native. */
@@ -33,6 +40,18 @@ export function useKamera(opts: {
   const [analiza, setAnaliza] = useState(false);
   const [leja, setLeja] = useState<FazaELejes | null>(null);
   const [gjendja, setGjendja] = useState<GjendjaEKameres>("ne_rregull");
+  // Shiriti i vëmendjes: totalet e kësaj interviste (të ruajturat + deltat e reja) dhe sinjali "larg" i çastit.
+  const [totalet, setTotalet] = useState<StatistikaKameres | null>(null);
+  const [larg, setLarg] = useState(false);
+  useEffect(() => {
+    let aktiv = true;
+    lexoStatistiken(intervistaId).then((s) => {
+      if (aktiv && s) setTotalet((p) => p ?? s);
+    });
+    return () => {
+      aktiv = false;
+    };
+  }, [intervistaId]);
   const pergjigjaEFaqes = useRef(false);
   const mounted = useRef(true);
   useEffect(() => {
@@ -47,6 +66,7 @@ export function useKamera(opts: {
     setMenyra(null);
     setAnaliza(false);
     setGjendja("ne_rregull");
+    setLarg(false);
     avatari.current?.kamera(false);
   }, [avatari]);
 
@@ -121,9 +141,17 @@ export function useKamera(opts: {
         njofto("Kamera po të tregon veten. Matja e kontaktit me sy s'është e disponueshme në këtë pajisje.", "info");
       } else if (m.lloji === "kamera_gjendje") {
         setGjendja(m.gjendja);
+        if (m.gjendja !== "ne_rregull") setLarg(false);
+      } else if (m.lloji === "kamera_vemendja") {
+        setLarg(m.larg);
       } else {
         // Faqja dërgon deltat: shtohen te totalet e ruajtura (një rinisje e faqes s'i fshin).
         void shtoStatistiken(intervistaId, { kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy });
+        setTotalet((p) => ({
+          kornizat: (p?.kornizat ?? 0) + m.kornizat,
+          fytyra: (p?.fytyra ?? 0) + m.fytyra,
+          sy: (p?.sy ?? 0) + m.sy,
+        }));
       }
     },
     [avatari, intervistaId, njofto],
@@ -136,5 +164,7 @@ export function useKamera(opts: {
     avatari.current?.kamera(true);
   }, [avatari]);
 
-  return { aktive, menyra, analiza, leja, gjendja, rilidh, ndrysho, lejaVazhdo, lejaJo, lejaHapCilesimet, lejaVazhdoPaKamere, onKamera };
+  const vemendja = perqindjaEVemendjes(totalet);
+
+  return { aktive, menyra, analiza, leja, gjendja, rilidh, vemendja, larg, ndrysho, lejaVazhdo, lejaJo, lejaHapCilesimet, lejaVazhdoPaKamere, onKamera };
 }

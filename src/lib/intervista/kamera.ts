@@ -76,6 +76,13 @@ export async function lexoStatistiken(intervistaId: string): Promise<StatistikaK
   }
 }
 
+/** Vëmendja te kamera (vlerësim i përafërt) për shiritin gjatë intervistës: % e kornizave me fytyrë ku shikimi ishte te
+ * kamera. null derisa të ketë matje të mjaftueshme (disa sekonda përgjigje). */
+export function perqindjaEVemendjes(s: StatistikaKameres | null, minimumi = MIN_KORNIZA_PER_SHIRITIN): number | null {
+  return s && s.fytyra >= minimumi ? Math.round((s.sy / s.fytyra) * 100) : null;
+}
+export const MIN_KORNIZA_PER_SHIRITIN = 12;
+
 export type VleresimiIKameres = {
   /** Sa e kohës fytyra ishte e dukshme gjatë përgjigjeve (0–100). */
   fytyra: number;

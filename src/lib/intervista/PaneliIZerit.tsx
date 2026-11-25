@@ -142,6 +142,7 @@ export function PaneliIZerit({
         onHapCilesimet={z.lejaHapCilesimet}
         onVazhdoMeShkrim={z.lejaVazhdoMeShkrim}
       />
+      {k.aktive && k.menyra === "faqja" && k.analiza && !mbaroi && <ShiritiIVemendjes perqind={k.vemendja} larg={k.larg} />}
       <Statusi teksti={z.statusi} radha={z.radha} mendon={z.mendon} />
       {children}
       {!mbaroi && (
@@ -159,6 +160,34 @@ export function PaneliIZerit({
           poshte={poshte}
         />
       )}
+    </View>
+  );
+}
+
+/**
+ * Vëmendja te kamera (vlerësim i përafërt, gjatë përgjigjeve; llogaritet në telefon). I qetë: pa zë, pa dridhje, pa ngjyra
+ * alarmi; pas ~3 s pa shikim teksti bëhet "Shiko kamerën". Shiriti është neutral (portokallia është vetëm për progres).
+ */
+function ShiritiIVemendjes({ perqind, larg }: { perqind: number | null; larg: boolean }) {
+  const t = useTema();
+  const vlera = perqind === null ? "po matet…" : `≈ ${perqind}%`;
+  const teksti = larg ? "Shiko kamerën" : "Shikimi te kamera";
+  return (
+    <View
+      style={[styles.vemendja, { backgroundColor: larg ? t.karta2 : "transparent", borderColor: larg ? t.teksti : t.vija }]}
+      accessible
+      accessibilityLiveRegion={larg ? "polite" : "none"}
+      accessibilityLabel={`${teksti}. ${perqind === null ? "Po matet" : `Rreth ${perqind} për qind e kohës gjatë përgjigjeve`}`}
+    >
+      <T pesha={larg ? "trashe" : "gjysme"} madhesia={13}>
+        {teksti}
+      </T>
+      <View style={[styles.vemendjaBari, { backgroundColor: t.vija }]}>
+        <View style={[styles.vemendjaMbushja, { backgroundColor: t.zbehur, width: `${perqind ?? 0}%` }]} />
+      </View>
+      <T zbehur madhesia={12.5} style={styles.vemendjaVlera}>
+        {vlera}
+      </T>
     </View>
   );
 }
@@ -301,6 +330,20 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
   },
+  vemendja: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 8,
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  vemendjaBari: { flex: 1, height: 4, borderRadius: 2, overflow: "hidden" },
+  vemendjaMbushja: { height: 4, borderRadius: 2 },
+  vemendjaVlera: { minWidth: 64, textAlign: "right" },
   pasqyra: { position: "absolute", right: 10, bottom: 10, width: 84, height: 112, borderRadius: 14, overflow: "hidden" },
   butoniKamera: {
     position: "absolute",
