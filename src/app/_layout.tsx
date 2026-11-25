@@ -8,14 +8,16 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Ngarkimi from "@/components/Ngarkimi";
 import { NjoftimetProvider } from "@/components/Njoftimet";
+import { fikTeGjitha, useHapjaNgaNjoftimi } from "@/lib/kujtesat";
 import { useKthimi } from "@/lib/mysafiri";
+import { regjistroPerPush } from "@/lib/push";
 import { SesioniProvider, useSesioni } from "@/lib/sesioni";
 import { SHKRONJAT, useTema, type Tema } from "@/lib/tema";
-import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
+import { CV_PAS_DEMO_DAY_HAPUR, PUSH_NGA_SERVERI } from "@/lib/vecorite";
 
 // Splash-i i telefonit mbetet derisa të ngarkohen fontet dhe ekrani i hapjes (Ngarkimi) të vizatohet
 // mbi app: atëherë fshihet, dhe kalimi nga splash-i te app-i bëhet pa kërcim.
@@ -79,6 +81,18 @@ function Navigimi({ t }: { t: Tema }) {
   // kërkuesi → tab-at; organizata → Punët e mia.
   const kreu = mysafir ? "/pune" : !profili ? "/hyrja" : organizate ? "/organizata" : "/";
 
+  // Prekja e një njoftimi (kujtesat, J10) hap Punët ose nisjen e intervistës, pasi ekrani i hapjes mbaron.
+  useHapjaNgaNjoftimi(!duke_ngarkuar && hapja_mbaroi);
+  // Kujtesat i takojnë llogarisë: pa llogari (dalja, ose sesioni mbaroi) fiken dhe anulohen në telefon.
+  useEffect(() => {
+    if (mysafir) fikTeGjitha();
+  }, [mysafir]);
+  // Push nga serveri: i fikur deri në development build (docs/njoftimet.md).
+  const uid = sesioni?.user.id ?? null;
+  useEffect(() => {
+    if (PUSH_NGA_SERVERI && uid && kerkues) regjistroPerPush();
+  }, [uid, kerkues]);
+
   return (
     <>
       {(!duke_ngarkuar || hapja_mbaroi) && (
@@ -103,6 +117,17 @@ function Navigimi({ t }: { t: Tema }) {
             <Stack.Screen name="praktika/kartat" options={{ title: "" }} />
             <Stack.Screen name="praktika/keshillat/index" options={{ title: "" }} />
             <Stack.Screen name="praktika/keshillat/[id]" options={{ title: "" }} />
+            {/* "Afër meje" (J10): vendndodhja një herë ose qyteti me dorë. Pa llogari: qyteti mbetet vetëm në telefon. */}
+            <Stack.Screen
+              name="pune/qyteti"
+              options={{
+                presentation: "formSheet",
+                headerShown: false,
+                sheetGrabberVisible: true,
+                sheetAllowedDetents: [0.75, 1],
+                sheetCornerRadius: 24,
+              }}
+            />
           </Stack.Protected>
           {/* Vetëm mysafiri: "Krijo llogari që të …", kur prek një veçori që kërkon llogari. */}
           <Stack.Protected guard={mysafir} redirectTo={kreu}>

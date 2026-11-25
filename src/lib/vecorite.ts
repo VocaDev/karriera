@@ -59,6 +59,10 @@ export const VECORITE: Vecoria[] = [
 export const CV_PAS_DEMO_DAY_HAPUR = false;
 export const TEKSTI_PAS_DEMO_DAY = "Vjen pas Demo Day-t";
 
+// Push nga serveri (J10): kërkon development build, tabelën push_tokenat dhe një sender (docs/njoftimet.md).
+// Deri atëherë false: njoftimet janë vetëm lokale (src/lib/kujtesat.ts) dhe punojnë edhe në Expo Go.
+export const PUSH_NGA_SERVERI = false;
+
 export function tekstiIGjendjes(g: Gjendja): string {
   if (g.lloji === "gati") return "Gati";
   if (g.lloji === "ndertim") return `Në ndërtim · ${g.kush}`;

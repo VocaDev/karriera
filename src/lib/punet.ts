@@ -108,6 +108,22 @@ export async function listoPunet(mysafir = false): Promise<Puna[]> {
   return data.map(nePune);
 }
 
+/**
+ * Sa punë publike aktive për një rol kanë dalë pas një çasti (ISO). Vetëm numri (head: pa rreshta): për njoftimin
+ * "punë të reja për rolin tënd" (src/lib/kujtesat.ts). Punët private (Sill linkun tënd) s'numërohen: i shtove vetë.
+ */
+export async function numroPunetERe(roli: Puna["roli"], pas: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("punet")
+    .select("id", { count: "exact", head: true })
+    .eq("aktive", true)
+    .eq("private", false)
+    .eq("roli", roli)
+    .gt("krijuar_me", pas);
+  if (error) throw new Error(mesazhiIGabimit(error));
+  return count ?? 0;
+}
+
 // Ekrani i detajeve: null nëse id-ja s'ekziston (roja e /pune/x99), ose (për mysafirin) s'është publike dhe aktive.
 export async function gjePunen(id: string, mysafir = false): Promise<Puna | null> {
   const { data, error } = await supabase.from("punet").select(fushat(mysafir)).eq("id", id).maybeSingle();

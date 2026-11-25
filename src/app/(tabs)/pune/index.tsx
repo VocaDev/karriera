@@ -1,7 +1,7 @@
-import { Link, useFocusEffect } from "expo-router";
+import { Link, useFocusEffect, useRouter } from "expo-router";
 import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeIn, LinearTransition, useReducedMotion } from "react-native-reanimated";
 
 import KartaPunes from "@/components/KartaPunes";
@@ -11,10 +11,18 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { KartaSkelet } from "@/components/Skeleti";
 import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, T } from "@/components/ui";
+import {
+  gjejQytetinTim,
+  lejaEVendndodhjes,
+  useAferMejeAktiv,
+  useQytetiIm,
+  vendosAferMeje,
+} from "@/lib/afer-meje";
 import { cvEFundit, gatishmeriaPerPune } from "@/lib/gati";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
 import { useKycja } from "@/lib/mysafiri";
 import { prekja } from "@/lib/prekja";
+import { vendiIPunes } from "@/lib/qytetet";
 import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
 import { lexoListenEPunes, ruajListenEPunes } from "@/lib/punet-kesh";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
@@ -34,6 +42,16 @@ const ROLET = [
   { emri: "SWE", roli: "SWE" },
   { emri: "Zyrë", roli: "Asistent/PR" },
 ] as const satisfies readonly { emri: string; roli: Puna["roli"] | null }[];
+
+/**
+ * "Afër meje": 0 = qyteti yt, 1 = nga distanca ose për gjithë Kosovën (dalin gjithmonë, pas qytetit), null = jo afër.
+ * Krahasimi bëhet në telefon me emrat e komunave (src/lib/qytetet.ts), pa koordinata.
+ */
+function renditjaAferMeje(qytetiIPunes: string, qytetiIm: string): 0 | 1 | null {
+  const v = vendiIPunes(qytetiIPunes);
+  if (v.qyteti === qytetiIm) return 0;
+  return v.distance || v.gjitheKosova ? 1 : null;
+}
 
 // Kërkimi pa shenja: "prishtine" gjen "Prishtinë", "zyre" gjen "Zyrë".
 function normalizo(teksti: string): string {
@@ -67,8 +85,15 @@ export default function Punet() {
   // "A jam gati?" te kartat: përqindja e fundit për çdo punë dhe a ka CV. Shtesë: pa internet kartat mbeten si më parë.
   const [gatiPerPune, setGatiPerPune] = useState<Map<string, number>>(() => new Map());
   const [kaCv, setKaCv] = useState(false);
+  // "Afër meje" (J10): qyteti ruhet vetëm në telefon; filtri vlen derisa ta fikësh ose të mbyllet app-i.
+  const router = useRouter();
+  const qytetiIm = useQytetiIm();
+  const aferMejeNdezur = useAferMejeAktiv();
+  const aferMeje = aferMejeNdezur && qytetiIm !== null;
+  const [dukeGjeturQytetin, setDukeGjeturQytetin] = useState(false);
 
-  const punetEFiltruara = useMemo(() => {
+  // Kërkimi dhe roli; "Afër meje" sipër tyre (numri te chip-i numëron punët afër me këta filtra).
+  const punetPaVendin = useMemo(() => {
     if (punet === null) return null;
     const fjala = normalizo(kerkimi);
     const roli = ROLET[iRolit].roli;
@@ -78,12 +103,49 @@ export default function Punet() {
         (fjala === "" || normalizo(`${p.titulli} ${p.kompania} ${p.qyteti}`).includes(fjala)),
     );
   }, [punet, kerkimi, iRolit]);
-  const kaFiltra = kerkimi.trim() !== "" || iRolit !== 0;
+  const punetAferMeje = useMemo(() => {
+    if (punetPaVendin === null || qytetiIm === null) return null;
+    // Qyteti yt lart, pastaj punët nga distanca; brenda secilit grup mbetet renditja (më të rejat lart).
+    return punetPaVendin
+      .map((p) => ({ p, r: renditjaAferMeje(p.qyteti, qytetiIm) }))
+      .filter((x) => x.r !== null)
+      .sort((a, b) => (a.r ?? 0) - (b.r ?? 0))
+      .map((x) => x.p);
+  }, [punetPaVendin, qytetiIm]);
+  const punetEFiltruara = aferMeje ? punetAferMeje : punetPaVendin;
+  const kaFiltra = kerkimi.trim() !== "" || iRolit !== 0 || aferMeje;
 
   function pastroFiltrat() {
     prekja.zgjedhje();
     setKerkimi("");
     setIRolit(0);
+    vendosAferMeje(false);
+  }
+
+  // Leja kërkohet vetëm këtu, kur prek chip-in. Me qytet të ruajtur: ndizet menjëherë. Pa qytet, me leje të dhënë
+  // më parë: qyteti gjendet pa fletë. Përndryshe fleta shpjegon pse (një fjali), pastaj pyet sistemi, ose zgjedh me dorë.
+  async function prekAferMeje() {
+    if (dukeGjeturQytetin) return;
+    prekja.zgjedhje();
+    if (aferMeje) {
+      vendosAferMeje(false);
+      return;
+    }
+    if (qytetiIm) {
+      vendosAferMeje(true);
+      return;
+    }
+    if ((await lejaEVendndodhjes()) === "dhene") {
+      setDukeGjeturQytetin(true);
+      const gjetja = await gjejQytetinTim();
+      setDukeGjeturQytetin(false);
+      if (gjetja.lloji === "gjetur") {
+        vendosAferMeje(true);
+        njofto(`Afër meje: ${gjetja.qyteti}`, "sukses");
+        return;
+      }
+    }
+    router.push("/pune/qyteti");
   }
 
   // Kthen "ok", "rrjeti" (pa internet), "vonese" (s'u përgjigj në kohë; të dyja: lista e fundit mbetet në ekran) ose "gabim".
@@ -222,6 +284,53 @@ export default function Punet() {
         appearance={t.errët ? "dark" : "light"}
         accessibilityLabel="Filtri i rolit"
       />
+      <View style={styles.chipet}>
+        <Prekshme
+          onPress={prekAferMeje}
+          accessibilityRole="button"
+          accessibilityState={{ selected: aferMeje, busy: dukeGjeturQytetin }}
+          accessibilityLabel={aferMeje ? `Afër meje, ${qytetiIm}, ndezur` : "Afër meje"}
+          accessibilityHint={aferMeje ? "Fik filtrin" : "Shfaq punët në qytetin tënd dhe ato nga distanca"}
+          hitSlop={{ top: 5, bottom: 5 }}
+          style={[
+            styles.chip,
+            { backgroundColor: aferMeje ? t.teksti : t.karta, shadowColor: t.hija },
+            !t.errët && !aferMeje && styles.chipHija,
+          ]}
+        >
+          {dukeGjeturQytetin ? (
+            <ActivityIndicator size="small" color={t.zbehur} />
+          ) : (
+            <Ikona emri={IKONAT.pin} madhesia={14} ngjyra={aferMeje ? t.sfondi : t.teksti} />
+          )}
+          <T pesha="gjysme" madhesia={14} ngjyra={aferMeje ? t.sfondi : t.teksti}>
+            Afër meje
+          </T>
+          {punetAferMeje !== null && (
+            <View style={[styles.numri, { backgroundColor: aferMeje ? t.zbehur : t.karta2 }]}>
+              <T pesha="trashe" madhesia={11.5} ngjyra={aferMeje ? t.sfondi : t.teksti}>
+                {punetAferMeje.length}
+              </T>
+            </View>
+          )}
+        </Prekshme>
+        {aferMeje && (
+          <Prekshme
+            onPress={() => router.push("/pune/qyteti")}
+            accessibilityRole="button"
+            accessibilityLabel={`Qyteti: ${qytetiIm}, bashkë me punët nga distanca. Ndrysho`}
+            hitSlop={{ top: 5, bottom: 5 }}
+            style={styles.ndrysho}
+          >
+            <T zbehur madhesia={13.5} numberOfLines={1}>
+              {qytetiIm} ·{" "}
+              <T pesha="gjysme" madhesia={13.5}>
+                Ndrysho
+              </T>
+            </T>
+          </Prekshme>
+        )}
+      </View>
     </View>
   );
 
@@ -267,10 +376,12 @@ export default function Punet() {
     ) : kaFiltra && punet.length > 0 ? (
       <View style={styles.bosh}>
         <T pesha="trashe" madhesia={16}>
-          Asnjë punë s&apos;përputhet
+          {aferMeje ? `Asnjë punë në ${qytetiIm} ende` : "Asnjë punë s'përputhet"}
         </T>
         <T zbehur madhesia={14} style={styles.qendroj}>
-          Provo një fjalë tjetër ose një rol tjetër.
+          {aferMeje
+            ? "Punët nga distanca dalin edhe këtu. Fik \"Afër meje\" ose ndrysho qytetin për të parë të tjerat."
+            : "Provo një fjalë tjetër ose një rol tjetër."}
         </T>
         <Prekshme onPress={pastroFiltrat} accessibilityRole="button" style={[styles.butoni, { backgroundColor: t.teksti }]}>
           <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
@@ -338,6 +449,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   fusha: { flex: 1, fontFamily: SHKRONJAT.normal, fontSize: 15, paddingVertical: 10 },
+  // Chip-i i bordit (drejtimi D): 34 pt i lartë, i rrumbullakët, hije shumë e lehtë në temën e çelët.
+  chipet: { flexDirection: "row", alignItems: "center", gap: 10 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 999 },
+  chipHija: { shadowOpacity: 0.06, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  numri: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  ndrysho: { flexShrink: 1, minHeight: 34, justifyContent: "center" },
   lista: { padding: 18, gap: 10, paddingBottom: 120 },
   skeletet: { gap: 10 },
   gabimi: { alignItems: "center", gap: 8, paddingTop: 40, paddingHorizontal: 12 },

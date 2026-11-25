@@ -7,6 +7,7 @@ import { StyleSheet, View } from "react-native";
 
 import ButoniDil from "@/components/ButoniDil";
 import DukshmeriaRreshti from "@/components/DukshmeriaRreshti";
+import KujtesatRreshtat from "@/components/KujtesatRreshtat";
 import { useNjoftim } from "@/components/Njoftimet";
 import { Faqja, IKONAT, Ikona, T } from "@/components/ui";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/lib/hyrja";
 import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
 import { PRAGU_GATI } from "@/lib/kandidatet";
+import { MBESHTETEN_NJOFTIMET } from "@/lib/kujtesat";
 import { PAMJA_E_INTERVISTUESIT } from "@/lib/intervista/tipet";
 import { ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
@@ -180,6 +182,17 @@ export default function CilesimetEkrani() {
       </Grupi>
 
       <Grupi
+        titulli="Njoftimet"
+        shenimi={
+          MBESHTETEN_NJOFTIMET
+            ? "Të dyja të fikura si parazgjedhje. Planifikohen në këtë telefon; kur del nga llogaria, fiken."
+            : undefined
+        }
+      >
+        <KujtesatRreshtat emriIRolit={EMRAT_E_ROLEVE[roli].titulli.toLowerCase()} />
+      </Grupi>
+
+      <Grupi
         titulli="Dukshmëria te punëdhënësit"
         shenimi={`E fikur si parazgjedhje. Kur e ndez, një punëdhënës të sheh vetëm për punët e veta dhe vetëm kur je të paktën ${PRAGU_GATI}% gati: një etiketë si "Kandidati #K27", përqindjen, aftësitë që ke dhe që të mungojnë, dhe notën e intervistës praktike për atë punë. Kurrë emrin, email-in apo CV-në. E fik kur të duash.`}
       >
@@ -203,6 +216,12 @@ export default function CilesimetEkrani() {
           ikona={IKONAT.mikrofoni}
           titulli="Çka nuk ruhet"
           teksti="Video dhe zëri i intervistës: vetëm notat dhe feedback-u. Teksti i plotë i shpalljeve nga portalet: vetëm faktet, një përmbledhje dhe linku."
+        />
+        <Rreshti
+          kufi
+          ikona={IKONAT.pin}
+          titulli="Vendndodhja"
+          teksti={`Lexohet një herë kur prek "Afër meje" te Punët, vetëm për të gjetur qytetin. Koordinatat s'ruhen dhe s'dërgohen; mbetet vetëm emri i qytetit, në këtë telefon.`}
         />
         <Rreshti
           kufi

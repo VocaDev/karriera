@@ -51,6 +51,18 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Karriera e përdor vendndodhjen vetëm kur prek \"Afër meje\", një herë, për të gjetur qytetin tënd. Koordinatat nuk ruhen dhe nuk dërgohen."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#F2611D"
+        }
       ]
     ],
     "experiments": {

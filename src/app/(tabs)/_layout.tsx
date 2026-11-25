@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useNjoftim } from "@/components/Njoftimet";
 import { prekja } from "@/lib/prekja";
 import { HYR_PERSERI, tekstiIPlote } from "@/lib/mesazhet";
+import { useNjoftimiIPuneveTeReja } from "@/lib/kujtesat";
 import { degjoPunetERe } from "@/lib/punet";
 import { useSesioni } from "@/lib/sesioni";
 import { useSesioniSkaduar } from "@/lib/sesioni-skaduar";
@@ -16,7 +17,7 @@ export default function TabLayout() {
   const t = useTema();
   const njofto = useNjoftim();
   const router = useRouter();
-  const { mysafir } = useSesioni();
+  const { mysafir, profili } = useSesioni();
   const sesioniSkaduar = useSesioniSkaduar();
   const rruga = usePathname();
   const neListe = rruga === "/pune";
@@ -48,6 +49,9 @@ export default function TabLayout() {
       setTeReja((n) => n + 1);
     });
   }, [mysafir, njofto]);
+
+  // "Punë të reja për rolin tënd" (Cilësimet → Njoftimet): njoftim lokal pasi e lë app-in. Vetëm me llogari.
+  useNjoftimiIPuneveTeReja({ aktiv: !mysafir, roli: profili?.roli_synuar ?? null, neListe });
 
   return (
     <NativeTabs tintColor={t.theksi}>
