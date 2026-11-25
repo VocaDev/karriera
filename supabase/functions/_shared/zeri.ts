@@ -66,6 +66,8 @@ export class GabimIZerit extends Error {
   kufiriDitor = false;
   /** Dështim nga kufiri i shërbimit (429 ose numëruesi mujor): app-i e thotë sinqerisht (kodi "kuota"). */
   kuota = false;
+  /** Modeli ktheu audio që s'përdoret (bosh, format ose shkallë tjetër, e dëmtuar, shumë e shkurtër për tekstin). */
+  pavlefshem = false;
   /** Vetëm për skriptet e provës: statusi, header-at e kufijve dhe fillimi i trupit të gabimit. Funksionet s'e shkruajnë në log. */
   readonly detaje: { status: number; kufijte: Record<string, string>; trupi: string } | null;
   constructor(
