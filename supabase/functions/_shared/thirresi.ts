@@ -20,8 +20,8 @@ export function json(data: unknown, status = 200): Response {
 
 // "gati" dhe "intervista" kanë kufijtë e tyre (gati_thirrjet, intervistat): ato i japin kontrolloThirresin
 // kufirin Infinity, kështu që etiketa shërben vetëm për log-et. regjistroThirrjen shkruan te cv_ai_thirrjet,
-// ku check-u pranon vetëm "cv-review" dhe "cv-create": mos e thirr për këto dy.
-export type FunksioniAI = "cv-review" | "cv-create" | "gati" | "intervista";
+// ku check-u pranon "cv-review", "cv-create" dhe (pas migrimit 20261125100000) "lexo-linkun": mos e thirr për "gati" dhe "intervista".
+export type FunksioniAI = "cv-review" | "cv-create" | "gati" | "intervista" | "lexo-linkun";
 
 export type Thirresi = {
   userId: string;

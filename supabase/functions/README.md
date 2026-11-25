@@ -71,6 +71,17 @@ Plani i plotë: [docs/zeri-ne-app.md](../../docs/zeri-ne-app.md). E njëjta inte
 - **Privatësia:** audio s'ruhet kurrë (vetëm në memorie gjatë kërkesës); `intervista_zeri` mban vetëm sekonda dhe shkronja.
 - **Zërat:** Arta `Kore`, Arbër `Charon` (të njëjtët për sq / en / de; gjuha zbulohet nga teksti).
 
+## "Sill linkun tënd": lexo-linkun (25.11, s'është deploy-uar ende)
+
+Kur kërkuesi ngjit linkun e një shpalljeje, serveri e hap faqen një herë dhe kthen titullin, kompaninë, qytetin, një përmbledhje me fjalët tona dhe kërkesat (forma `Kerkesat` e `portalet`). App-i: `lexoShpalljenNgaLinku` në `src/lib/punet.ts`, fleta `src/app/pune/sill-linkun.tsx`.
+
+- **Request:** `POST { "linku": "https://...", "roli"?: "SWE" | "Asistent/PR" }` · **Response:** `{ linku, titulli, kompania, qyteti, pershkrimi, kerkesat, aftesite, lexuar_nga }` · gabim: `{ error, kodi: "linku" | "s_lexohet" | "pa_shpallje" | "ai" | "kufiri" }`.
+- **Rojet:** sesion + `kerkues`; 20 lexime në 24 orë (`cv_ai_thirrjet`, funksioni `lexo-linkun`); linku rikontrollohet me rregullat e app-it; vetëm https, porti 443, DNS → çdo adresë duhet publike (pa 10/8, 127/8, 169.254/16, ::1, fc00::/7, IPv4 brenda IPv6...), edhe pas çdo ridrejtimi (ndiqen me dorë, maks. 4); 8 s, 1 MB, vetëm HTML, pa cookies, `User-Agent: KarrieraBot/0.1`. Kufiri i njohur: DNS rebinding mes kontrollit dhe lidhjes.
+- **Nxjerrja:** schema.org `JobPosting` (JSON-LD, edhe brenda `@graph`) për titullin, kompaninë, qytetin dhe përshkrimin; përndryshe teksti i `<main>`/`<article>`/`<body>` pa menu e skripte. Pastaj Haiku me skemën dhe validimin e `portalet/kerkesat.ts` (pa kontakt, pa kopjim mbi 10 fjalë) + `eshte_shpallje`, `titulli`, `kompania`, `qyteti`. Teksti i faqes s'ruhet dhe s'regjistrohet.
+- **LinkedIn:** u kthen lexuesve automatikë 404/429/999 ose murin e hyrjes; funksioni e thotë në një fjali dhe app-i mbetet te fushat me dorë + teksti i ngjitur.
+- **Prova:** `deno test --node-modules-dir=none --allow-read=supabase/functions/lexo-linkun/mostrat supabase/functions/lexo-linkun/lexo-linkun.test.ts` (pa rrjet, pa AI).
+- **Go-live:** migrimi `supabase/migrations/20261125100000_sill_linkun_auto.sql`, pastaj `supabase functions deploy lexo-linkun --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`. Pas deploy-it, një provë me një link të vërtetë: nëse platforma s'e ka `Deno.resolveDns`, çdo lexim kthen "Kjo adresë s'mund të hapet nga Karriera." (roja mbyllet, s'hap verbërisht).
+
 ## 4. Prova lokale e AI-së (pa Supabase)
 
 ```powershell

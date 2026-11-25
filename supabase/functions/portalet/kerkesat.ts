@@ -26,7 +26,7 @@ const FJALE_TE_KOPJUARA = 11; // 11 fjalë njëra pas tjetrës nga shpallja = ko
 // ---------------------------------------------------------------- Skema
 
 /** Ajo që i kërkojmë AI-së. Pa kufij në skemë (kufijtë i zbatojmë vetë më poshtë, që një fjali e gjatë të mos e prishë gjithçka). */
-const SkemaAI = z.object({
+export const SkemaAI = z.object({
   permbledhja: z.string().describe("1-2 Albanian sentences: what the job is, in your own words"),
   detyrat: z.array(z.string()).describe("What the person will do day to day. Max 5, each at most 140 characters"),
   kerkesat: z.array(z.string()).describe("Must-haves the candidate needs (skills, tools, traits). Max 6, each at most 140 characters"),
@@ -57,7 +57,7 @@ const KerkesatSchema = z.object({
 
 // ---------------------------------------------------------------- Prompt-i
 
-const SYSTEM = `
+export const SYSTEM = `
 You turn one Kosovo job posting into a short, honest fact sheet for a student who is deciding whether to apply.
 The posting may be in Albanian, English or German. ALWAYS write the output in natural Albanian (shqip),
 with correct ë and ç.

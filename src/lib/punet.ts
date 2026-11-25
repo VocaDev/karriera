@@ -1,5 +1,8 @@
 // Të gjitha thirrjet e Supabase për shpalljet e punës. Ekranet thërrasin vetëm këto funksione.
+import { FunctionsFetchError, FunctionsHttpError } from "@supabase/supabase-js";
+
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { PA_INTERNET_SHKURT } from "@/lib/mesazhet";
 import { supabase } from "@/lib/supabase";
 
 export type Puna = {
@@ -254,7 +257,70 @@ export function kontrolloLinkun(teksti: string): LinkuIKontrolluar {
   return { ok: true, linku };
 }
 
-export type PunaNgaLinku = { linku: string; titulli: string; kompania: string; qyteti?: string; pershkrimi?: string };
+export type PunaNgaLinku = {
+  linku: string;
+  titulli: string;
+  kompania: string;
+  qyteti?: string;
+  pershkrimi?: string;
+  /** Nga lexoShpalljenNgaLinku, vetëm kur u lexua i njëjti link. */
+  kerkesat?: Kerkesat | null;
+  aftesite?: string[];
+};
+
+/** Çka nxori serveri nga faqja e shpalljes (Edge Function lexo-linkun). Mungesa = null / "" / [], kurrë e sajuar. */
+export type ShpalljaELexuar = {
+  linku: string; // forma kanonike, e njëjtë me kontrolloLinkun
+  titulli: string | null;
+  kompania: string | null;
+  qyteti: string | null;
+  pershkrimi: string; // përmbledhja me fjalët tona (≤ 1000); "" kur s'u nxorën kërkesat
+  kerkesat: Kerkesat | null;
+  aftesite: string[];
+};
+
+const tekstMeKufi = (v: unknown, min: number, maks: number): string | null => {
+  const t = tekst(v);
+  return t && t.length >= min && t.length <= maks ? t : null;
+};
+
+/**
+ * "Sill linkun tënd": serveri e hap faqen e shpalljes një herë dhe kthen titullin, kompaninë, qytetin dhe kërkesat
+ * (supabase/functions/lexo-linkun). Hedh Error me një fjali në shqip kur faqja s'lexohet (mur hyrjeje si LinkedIn,
+ * bllokim, s'u përgjigj, s'ka shpallje): formulari mbetet për t'u plotësuar me dorë. 20 lexime në 24 orë.
+ */
+export async function lexoShpalljenNgaLinku(linku: string, roli?: Puna["roli"] | null): Promise<ShpalljaELexuar> {
+  const kontrolli = kontrolloLinkun(linku);
+  if (!kontrolli.ok) throw new Error(kontrolli.gabimi);
+  const body: Record<string, string> = { linku: kontrolli.linku };
+  if (roli === "SWE" || roli === "Asistent/PR") body.roli = roli;
+
+  const { data, error } = await supabase.functions.invoke("lexo-linkun", { body });
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const mesazhi = await (error.context as Response).json().then(
+        (trupi: unknown) => (trupi && typeof trupi === "object" ? tekst((trupi as Record<string, unknown>).error) : null),
+        () => null, // përgjigje pa JSON
+      );
+      if (mesazhi) throw new Error(mesazhi);
+    }
+    if (error instanceof FunctionsFetchError) throw new Error(PA_INTERNET_SHKURT);
+    throw new Error("S'arritëm ta lexojmë këtë faqe.");
+  }
+
+  const d = data && typeof data === "object" ? (data as Record<string, unknown>) : {};
+  if (d.linku !== kontrolli.linku) throw new Error("S'arritëm ta lexojmë këtë faqe.");
+  const kerkesat = lexoKerkesat(d.kerkesat);
+  return {
+    linku: kontrolli.linku,
+    titulli: tekstMeKufi(d.titulli, 3, KUFIJTE_E_LINKUT.titulli),
+    kompania: tekstMeKufi(d.kompania, 2, KUFIJTE_E_LINKUT.kompania),
+    qyteti: tekstMeKufi(d.qyteti, 2, KUFIJTE_E_LINKUT.qyteti),
+    pershkrimi: tekstMeKufi(d.pershkrimi, 1, 1000) ?? "",
+    kerkesat,
+    aftesite: tekstet(d.aftesite, 10).filter((a) => a.length <= 60),
+  };
+}
 
 /** Gabimet e shtimit: fjalia e bazës për rastet që i njohim, përndryshe mesazhiIGabimit (internet etj.). */
 function gabimiIShtimit(gabimi: { code?: string; hint?: string | null; message?: string }): Error {
@@ -299,11 +365,18 @@ export async function shtoPunenNgaLinku(
   const ekziston = await gjePunenMeLink(kontrolli.linku);
   if (ekziston) return { puna: ekziston, ekzistonte: true };
 
-  const { data, error } = await supabase
-    .from("punet")
-    .insert({ titulli, kompania, qyteti, roli, pershkrimi, linku: kontrolli.linku, burimi: "perdoruesi", private: true })
-    .select(FUSHAT)
-    .single();
+  const rreshti = { titulli, kompania, qyteti, roli, pershkrimi, linku: kontrolli.linku, burimi: "perdoruesi", private: true };
+  const aftesite = (hyrja.aftesite ?? []).slice(0, 10);
+  const shto = (meKerkesat: boolean) =>
+    supabase
+      .from("punet")
+      .insert({ ...rreshti, ...(aftesite.length ? { aftesite } : {}), ...(meKerkesat && hyrja.kerkesat ? { kerkesat: hyrja.kerkesat } : {}) })
+      .select(FUSHAT)
+      .single();
+  let { data, error } = await shto(true);
+  // Para migrimit 20261125100000 baza s'e pranon "kerkesat" te punët private (23514): shtohet pa to. Përmbledhja
+  // (pershkrimi) dhe aftësitë mbeten, kështu që "A jam gati?" ka prapë çka të krahasojë.
+  if (error?.code === "23514" && hyrja.kerkesat) ({ data, error } = await shto(false));
   if (error) {
     // Dy prekje njëra pas tjetrës (ose dy telefona): indeksi unik e ndalon kopjen; kthejmë atë që u shtua.
     if (error.code === "23505") {
