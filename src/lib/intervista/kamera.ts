@@ -42,6 +42,20 @@ const celesi = (intervistaId: string) => `karriera.kamera.${intervistaId}`;
 // Shkrimet radhiten një nga një: dy raporte në të njëjtën kohë s'duhet të lexojnë të njëjtin total të vjetër.
 let radhaEShkrimeve: Promise<void> = Promise.resolve();
 
+export function bashkoStatistikat(a: StatistikaKameres, b: StatistikaKameres | null): StatistikaKameres {
+  return { kornizat: a.kornizat + (b?.kornizat ?? 0), fytyra: a.fytyra + (b?.fytyra ?? 0), sy: a.sy + (b?.sy ?? 0) };
+}
+
+/** Totalet e ruajtura në këtë çast të radhës: pas çdo shkrimi të nisur më parë, para çdo shkrimi që niset më pas. */
+export function lexoStatistikenNeRadhe(intervistaId: string): Promise<StatistikaKameres | null> {
+  const leximi = radhaEShkrimeve.then(() => lexoStatistiken(intervistaId));
+  radhaEShkrimeve = leximi.then(
+    () => {},
+    () => {},
+  );
+  return leximi;
+}
+
 /**
  * SHTON një delta (kornizat e reja nga faqja) te totalet e ruajtura të kësaj interviste. Faqja raporton vetëm shtesat, ndaj
  * një rinisje e WebView-it (rihapje e intervistës, ringarkim) s'i fshin matjet e mëparshme.

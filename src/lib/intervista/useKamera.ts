@@ -9,9 +9,10 @@ import { Linking } from "react-native";
 
 import type { AvatariRef, MesazhiIKameres } from "./Avatari";
 import {
+  bashkoStatistikat,
   kerkoLejenKameres,
   lexoLejenKameres,
-  lexoStatistiken,
+  lexoStatistikenNeRadhe,
   perqindjaEVemendjes,
   shtoStatistiken,
   type StatistikaKameres,
@@ -45,8 +46,10 @@ export function useKamera(opts: {
   const [larg, setLarg] = useState(false);
   useEffect(() => {
     let aktiv = true;
-    lexoStatistiken(intervistaId).then((s) => {
-      if (aktiv && s) setTotalet((p) => p ?? s);
+    // Leximi kalon nga radha e shkrimeve: përfshin çka u ruajt para hapjes së panelit dhe asnjë deltë të mëvonshme. Deltat
+    // që arritën para se të mbaronte leximi janë te gjendja, ndaj mblidhen me të ruajturat (pa humbje, pa numërim dy herë).
+    lexoStatistikenNeRadhe(intervistaId).then((s) => {
+      if (aktiv && s) setTotalet((p) => bashkoStatistikat(s, p));
     });
     return () => {
       aktiv = false;
@@ -147,11 +150,7 @@ export function useKamera(opts: {
       } else {
         // Faqja dërgon deltat: shtohen te totalet e ruajtura (një rinisje e faqes s'i fshin).
         void shtoStatistiken(intervistaId, { kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy });
-        setTotalet((p) => ({
-          kornizat: (p?.kornizat ?? 0) + m.kornizat,
-          fytyra: (p?.fytyra ?? 0) + m.fytyra,
-          sy: (p?.sy ?? 0) + m.sy,
-        }));
+        setTotalet((p) => bashkoStatistikat({ kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy }, p));
       }
     },
     [avatari, intervistaId, njofto],

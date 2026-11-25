@@ -67,7 +67,7 @@ Emrat dhe gjinia u kontrolluan te [lista zyrtare e zërave](https://learn.micros
 - **Lip-sync:** zërat sq-AL s'kanë vizema (docs të Azure). Faqja e lëviz gojën si më parë: nga vala e vërtetë e zërit te rruga me rrjedhë, nga kohët e vlerësuara të fjalëve te rruga pa rrjedhë. Pa ndryshim te faqja.
 - **Rendi:** Azure (vetëm me sekret) → Gemini `3.8-flash-tts` → `3.8-flash-lite-tts` → pyetja me tekst dhe fjalia "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran." (`kodi: "kuota"`). Pa `AZURE_SPEECH_KEY` ose `AZURE_SPEECH_REGION`, Azure kapërcehet pa zë.
 - **429:** Azure dhe Gemini presin sipas `retry-after` dhe riprovojnë një herë kur vonesa është e shkurtër (Azure ≤ 5 s; F0 lejon 20 kërkesa në 60 s); Gemini në kufirin ditor s'riprovohet. "ditor": asnjë ofrues s'ka zë sot, ndaj app-i s'kërkon më dhe kandidati vazhdon me zë me pyetjen në ekran.
-- **Kufiri mujor:** `public.zeri_azure_muaji` + `zeri_azure_rezervo()` (migrimi `20261125120000_zeri_azure.sql`) rezervojnë shkronjat para çdo kërkese dhe ndalen në **480 000** në muaj (UTC), nën 0,5 milion të F0 (shifra nga menaxheri; faqja e çmimeve s'u kontrollua). Numërohet teksti i dërguar (pa etiketat `<speak>` / `<voice>`, si e faturon Azure). **Pa migrimin, Azure kapërcehet** (fail-closed) dhe log-u e thotë.
+- **Kufiri mujor:** `public.zeri_azure_muaji` + `zeri_azure_rezervo()` (migrimi `20261125122000_zeri_azure.sql`) rezervojnë shkronjat para çdo kërkese dhe ndalen në **480 000** në muaj (UTC), nën 0,5 milion të F0 (shifra nga menaxheri; faqja e çmimeve s'u kontrollua). Numërohet teksti i dërguar (pa etiketat `<speak>` / `<voice>`, si e faturon Azure). **Pa migrimin, Azure kapërcehet** (fail-closed) dhe log-u e thotë.
 - **Mostrat për veshin:** `_provat/zeri-azure-mostra.ts` (3 fjali shqip × 2 zëra), vetëm kur sekretet janë në mjedis; ende s'është ekzekutuar.
 
 ### 4c. Gemini: si kursehen kërkesat (25.11)
@@ -170,7 +170,7 @@ Claude mbetet sa te intervista me tekst; zëri s'shton thirrje AI. Kufijtë e fr
 **Me Azure, nëse një ditë hapet llogaria:**
 
 1. **Genti** krijon resursin "Speech" në Azure (niveli falas **F0**) dhe vendos te Supabase → Edge Functions → Secrets: `AZURE_SPEECH_KEY` dhe `AZURE_SPEECH_REGION` (p.sh. `westeurope`). Çelësi s'shkruhet askund tjetër.
-2. **SQL:** `supabase/migrations/20261125120000_zeri_azure.sql` (numëruesi mujor; pa të Azure kapërcehet). Pa Azure, mjafton `20261125121000_zeri_kesh.sql` (kesh-i; opsional).
+2. **SQL:** `supabase/migrations/20261125122000_zeri_azure.sql` (numëruesi mujor; pa të Azure kapërcehet). Pa Azure, mjafton `20261125121000_zeri_kesh.sql` (kesh-i; opsional).
 3. **Deploy:** `supabase functions deploy intervista-zeri --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`.
 4. Prova: një intervistë me Fol; te log-et s'duhet të ketë `[zeri-azure] HTTP` ose "Numëruesi i Azure-s s'u lexua".
 
