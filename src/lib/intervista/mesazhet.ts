@@ -43,6 +43,8 @@ export type MesazhNgaFaqja =
   | { lloji: "kamera_gabim"; mesazhi: string }
   /** DELTA e numrave nga kornizat e vërteta gjatë përgjigjeve të kandidatit (jo gjatë të folurit të intervistuesit); app-i i shton te totalet. */
   | { lloji: "kamera_statistika"; kornizat: number; fytyra: number; sy: number }
+  /** Mbikëqyrja e kamerës në faqe: po rilidhet, u rikuperua, ose s'u rikuperua dot. */
+  | { lloji: "kamera_gjendje"; gjendja: "po_rilidhet" | "ne_rregull" | "u_shkeput" }
   | { lloji: "gabim"; kodi: "faqja" | "zeri"; mesazhi: string };
 
 const objekt = (v: unknown): Record<string, unknown> | null =>
@@ -68,6 +70,10 @@ export function lexoMesazhinNgaFaqja(teksti: string): MesazhNgaFaqja | null {
     case "foli_filloi":
     case "foli_mbaroi":
       return typeof o.id === "string" ? { lloji: o.lloji, id: o.id } : null;
+    case "kamera_gjendje":
+      return o.gjendja === "po_rilidhet" || o.gjendja === "ne_rregull" || o.gjendja === "u_shkeput"
+        ? { lloji: "kamera_gjendje", gjendja: o.gjendja }
+        : null;
     case "kamera_gati":
       return { lloji: "kamera_gati", analiza: o.analiza === true };
     case "kamera_gabim":

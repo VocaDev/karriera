@@ -310,7 +310,12 @@ function fol(m) {
 }
 
 // Kur kandidati flet: avatari e shikon; kur pret përgjigjen e serverit: shikon anash, "po mendon".
-function degjon(po) { kamFlet = po; if (!po) kamRaporto(); avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
+function degjon(po) {
+  kamFlet = po;
+  if (!po) kamRaporto();
+  // App-i e ndërron sesionin e audios rreth çdo përgjigjeje; nëse WebKit e vendosi pamjen në pauzë, rinise shpejt.
+  if (kamFlux) setTimeout(() => { const v = $("kamera"); if (kamFlux && v.paused) v.play().catch(() => {}); }, 700);
+  avatari((h) => { if (po) { h.setMood("neutral"); h.makeEyeContact(4000); } }); }
 function mendon() { avatari((h) => { h.lookAhead(900); h.playGesture("🤔", 1.4); }); }
 
 // ---------- Kamera e kandidatit (getUserMedia + MediaPipe) ----------
@@ -331,24 +336,104 @@ function kamRaporto() {
   kamDerguar.kornizat = kamNr.kornizat; kamDerguar.fytyra = kamNr.fytyra; kamDerguar.sy = kamNr.sy;
   teApp({ lloji: "kamera_statistika", kornizat: d.kornizat, fytyra: d.fytyra, sy: d.sy });
 }
-async function kamNgarkoMP() {
+async function kamNgarkoMP(vetemCPU) {
   if (kamMP) return;
   const v = await import(KAM_MP + "/vision_bundle.mjs");
   const files = await v.FilesetResolver.forVisionTasks(KAM_MP + "/wasm");
   const opts = (delegate) => ({ baseOptions: { modelAssetPath: KAM_MODELI, delegate }, runningMode: "VIDEO", numFaces: 1, outputFaceBlendshapes: true });
-  try { kamMP = await v.FaceLandmarker.createFromOptions(files, opts("GPU")); }
-  catch (e) { kamMP = await v.FaceLandmarker.createFromOptions(files, opts("CPU")); }
+  if (!vetemCPU) {
+    try { kamMP = await v.FaceLandmarker.createFromOptions(files, opts("GPU")); return; } catch (e) { /* bie te CPU */ }
+  }
+  kamMP = await v.FaceLandmarker.createFromOptions(files, opts("CPU"));
 }
+
+// ---------- Mbikëqyrja e kamerës (25.11) ----------
+// Në iPhone pamja ngrin ose gjurma ndalet kur sistemi e ndërpret kapjen (p.sh. kur app-i e ndërron sesionin e audios mes
+// regjistrimit dhe luajtjes, ose kur app-i shkon në sfond). WebKit atëherë e vendos <video> në pauzë, e hesht gjurmën
+// (mute) ose e mbyll (ended), dhe asgjë s'e rinis vetë: prandaj ndalej edhe matja. Këtu ndiqen kornizat e reja
+// (requestVideoFrameCallback): pauza → play(); pa korniza të reja, mute i zgjatur ose gjurmë e mbyllur → rrjedhë e re.
+// Numrat e matjes s'preken: mbahen te kamNr dhe buklla e njohjes vazhdon me të njëjtin <video>.
+const KAM_NGRIRE_MS = 4000, KAM_MUTE_MS = 2500, KAM_PROVAT = 3, KAM_KUFIRI_GABIMEVE_MP = 40;
+let kamMbikqyresi = null, kamKornizaFundit = 0, kamKohaFundit = -1, kamProva = 0, kamDukeRilidhur = false, kamShkeputur = false;
+function kamGjendja(g) { teApp({ lloji: "kamera_gjendje", gjendja: g }); }
+function kamMerrFluxin() {
+  return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } }, audio: false });
+}
+async function kamLidh(flux, sesioni) {
+  kamFlux = flux;
+  const video = $("kamera");
+  video.srcObject = flux;
+  video.hidden = false;
+  kamKornizaFundit = performance.now();
+  kamKohaFundit = -1;
+  flux.getVideoTracks().forEach((t) => {
+    t.addEventListener("ended", () => { if (sesioni === kamSesioni && kamFlux === flux) kamRilidh(sesioni, "ended"); });
+    t.addEventListener("unmute", () => { video.play().catch(() => {}); });
+  });
+  if (video.requestVideoFrameCallback) {
+    const korniza = () => {
+      if (sesioni !== kamSesioni || kamFlux !== flux) return;
+      kamKornizaFundit = performance.now();
+      video.requestVideoFrameCallback(korniza);
+    };
+    video.requestVideoFrameCallback(korniza);
+  }
+  await video.play().catch(() => {});
+}
+function kamKontrollo(sesioni) {
+  if (sesioni !== kamSesioni || kamDukeRilidhur || kamShkeputur) return;
+  const video = $("kamera"), tani = performance.now();
+  if (document.visibilityState === "hidden") { kamKornizaFundit = tani; return; } // në sfond s'ka korniza; s'është prishje
+  if (!video.requestVideoFrameCallback && video.currentTime !== kamKohaFundit) { kamKohaFundit = video.currentTime; kamKornizaFundit = tani; }
+  if (video.paused) video.play().catch(() => {});
+  const gjurma = kamFlux && kamFlux.getVideoTracks()[0];
+  const ngrire = tani - kamKornizaFundit;
+  if (!gjurma || gjurma.readyState === "ended") kamRilidh(sesioni, "ended");
+  else if (gjurma.muted && ngrire > KAM_MUTE_MS) kamRilidh(sesioni, "mute");
+  else if (ngrire > KAM_NGRIRE_MS) kamRilidh(sesioni, "ngrire");
+  else if (kamProva > 0 && ngrire < 1500) { kamProva = 0; kamGjendja("ne_rregull"); }
+}
+async function kamRilidh(sesioni, arsye) {
+  if (sesioni !== kamSesioni || kamDukeRilidhur || kamShkeputur) return;
+  kamDukeRilidhur = true;
+  kamProva++;
+  if (kamProva > KAM_PROVAT) {
+    // S'u rikuperua: app-i e tregon me fjalë dhe ofron rilidhje me një prekje (kamera nga e para).
+    kamShkeputur = true;
+    kamDukeRilidhur = false;
+    $("kamera").hidden = true;
+    kamGjendja("u_shkeput");
+    return;
+  }
+  kamGjendja("po_rilidhet");
+  teApp({ lloji: "gabim", kodi: "faqja", mesazhi: "kamera: rilidhje (" + arsye + "), prova " + kamProva });
+  if (kamFlux) { kamFlux.getTracks().forEach((t) => t.stop()); kamFlux = null; }
+  await pritje(400 * kamProva * kamProva); // 0,4 s, 1,6 s, 3,6 s
+  if (sesioni === kamSesioni) {
+    try {
+      const flux = await kamMerrFluxin();
+      if (sesioni === kamSesioni) await kamLidh(flux, sesioni);
+      else flux.getTracks().forEach((t) => t.stop());
+    } catch (e) { /* pa gjurmë: kontrolli i radhës provon sërish */ }
+  }
+  kamDukeRilidhur = false;
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !kamFlux) return;
+  kamKornizaFundit = performance.now();
+  $("kamera").play().catch(() => {});
+});
 function kamBuklla(sesioni) {
   const video = $("kamera");
-  let fundit = 0, kohaPare = -1;
+  let fundit = 0, kohaPare = -1, gabime = 0, riprovuarMP = false;
   const hap = () => {
     if (sesioni !== kamSesioni) return;
     const tani = performance.now();
-    if (kamFlet && tani - fundit >= 120 && video.readyState >= 2 && video.currentTime !== kohaPare) {
+    if (kamMP && kamFlet && tani - fundit >= 120 && video.readyState >= 2 && video.currentTime !== kohaPare) {
       fundit = tani; kohaPare = video.currentTime;
       try {
         const r = kamMP.detectForVideo(video, tani);
+        gabime = 0;
         kamNr.kornizat++;
         if (r.faceLandmarks && r.faceLandmarks.length >= 1) {
           kamNr.fytyra++;
@@ -361,7 +446,15 @@ function kamBuklla(sesioni) {
             if (largon < 0.45) kamNr.sy++;
           }
         }
-      } catch (e) { /* një kornizë e humbur s'ndryshon asgjë */ }
+      } catch (e) {
+        // Shumë gabime radhazi (p.sh. konteksti i GPU-së humbi): MediaPipe rihapet një herë, vetëm në CPU.
+        if (++gabime > KAM_KUFIRI_GABIMEVE_MP && !riprovuarMP) {
+          riprovuarMP = true;
+          gabime = 0;
+          kamMP = null;
+          kamNgarkoMP(true).catch(() => teApp({ lloji: "kamera_gati", analiza: false }));
+        }
+      }
     }
     requestAnimationFrame(hap);
   };
@@ -376,6 +469,8 @@ function kameraNdal() {
   kamNr.kornizat = 0; kamNr.fytyra = 0; kamNr.sy = 0;
   kamDerguar.kornizat = 0; kamDerguar.fytyra = 0; kamDerguar.sy = 0;
   kamSesioni++;
+  if (kamMbikqyresi) { clearInterval(kamMbikqyresi); kamMbikqyresi = null; }
+  kamProva = 0; kamDukeRilidhur = false; kamShkeputur = false;
   if (kamRaporti) { clearInterval(kamRaporti); kamRaporti = null; }
   if (kamFlux) { kamFlux.getTracks().forEach((t) => t.stop()); kamFlux = null; }
   $("kamera").srcObject = null;
@@ -386,11 +481,10 @@ async function kameraNis() {
   const sesioni = kamSesioni;
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("getUserMedia s'ekziston në këtë WebView");
-    kamFlux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } }, audio: false });
-    if (sesioni !== kamSesioni) { kamFlux.getTracks().forEach((t) => t.stop()); kamFlux = null; return; }
-    $("kamera").srcObject = kamFlux;
-    $("kamera").hidden = false;
-    await $("kamera").play().catch(() => {});
+    const flux = await kamMerrFluxin();
+    if (sesioni !== kamSesioni) { flux.getTracks().forEach((t) => t.stop()); return; }
+    await kamLidh(flux, sesioni);
+    kamMbikqyresi = setInterval(() => kamKontrollo(sesioni), 1000);
   } catch (e) {
     kamFlux = null;
     teApp({ lloji: "kamera_gabim", mesazhi: String((e && e.name) || "") + " " + String((e && e.message) || "") });

@@ -85,6 +85,7 @@ export function PaneliIZerit({
           onPrek={z.onPrek}
           onGabim={z.onGabim}
           onKamera={k.onKamera}
+          onRinisje={z.onRinisje}
           style={styles.flex}
         />
         {/* Kamera: opsionale. Pamja e kandidatit vjen nga faqja (matje) ose, si rezervë, nga kamera native (vetëm pasqyrë). */}
@@ -92,6 +93,20 @@ export function PaneliIZerit({
           <View style={styles.pasqyra} pointerEvents="none" accessibilityLabel="Pamja jote nga kamera">
             <CameraView style={styles.flex} facing="front" mirror />
           </View>
+        )}
+        {k.aktive && k.menyra === "faqja" && k.gjendja !== "ne_rregull" && (
+          <Prekshme
+            accessibilityRole="button"
+            accessibilityLabel={k.gjendja === "u_shkeput" ? "Kamera u shkëput. Prek për ta rilidhur" : "Po rilidhet kamera"}
+            accessibilityState={{ disabled: k.gjendja !== "u_shkeput", busy: k.gjendja === "po_rilidhet" }}
+            disabled={k.gjendja !== "u_shkeput"}
+            onPress={k.rilidh}
+            style={[styles.gjendjaKameres, { backgroundColor: t.karta, borderColor: t.vija }]}
+          >
+            <T pesha="gjysme" madhesia={12.5}>
+              {k.gjendja === "u_shkeput" ? "Kamera u shkëput · prek për ta rilidhur" : "Po rilidhet kamera…"}
+            </T>
+          </Prekshme>
         )}
         <Prekshme
           accessibilityRole="button"
@@ -275,6 +290,17 @@ function ShiritiPoshte({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  gjendjaKameres: {
+    position: "absolute",
+    left: 8,
+    bottom: 8,
+    maxWidth: "70%",
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   pasqyra: { position: "absolute", right: 10, bottom: 10, width: 84, height: 112, borderRadius: 14, overflow: "hidden" },
   butoniKamera: {
     position: "absolute",

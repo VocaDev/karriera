@@ -492,6 +492,12 @@ export function useZeri(opts: {
   return {
     faqjaGati,
     onGati: () => setFaqjaGati(true), // edhe kur avatari s'u ngarkua: unaza flet njësoj
+    // Faqja po rihapet (sistemi e mbylli procesin): çka po thuhej s'do të mbarojë kurrë, radha kalon te kandidati.
+    onRinisje: () => {
+      const th = thenia.current;
+      setFaqjaGati(false);
+      if (th) mbaroiThenia(th.celesi);
+    },
     onFoliFilloi,
     onFoliMbaroi,
     onPrek: () => setDuhetPrekje(true),
