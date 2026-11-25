@@ -89,7 +89,7 @@ export function meKesh(zinxhiri: Folesi, depo: DepoEZerit, ofruesi: string): Fol
       for await (const c of zinxhiri.rrjedhe!(teksti, gjuha, intervistuesi)) {
         copat.push(c.pcm.slice());
         shkalla = c.shkalla;
-        if (c.ofruesi !== ofruesi) vetemIPari = false;
+        if (c.ofruesi !== ofruesi || c.ruaj === false) vetemIPari = false;
         yield c;
       }
       // Arrihet vetëm kur rrjedha përfundoi pa gabim: audio e prerë s'ruhet kurrë.
@@ -111,7 +111,7 @@ export function meKesh(zinxhiri: Folesi, depo: DepoEZerit, ofruesi: string): Fol
         return { audio: shkruajWav(pcm, g.shkalla), mime: "audio/wav", sekonda: pcm.length / g.shkalla, ofruesi };
       }
       const a = await zinxhiri.fol(teksti, gjuha, intervistuesi);
-      const wav = a.ofruesi === ofruesi ? lexoWav(a.audio) : null;
+      const wav = a.ofruesi === ofruesi && a.ruaj !== false ? lexoWav(a.audio) : null;
       if (wav) {
         const pcm = new Uint8Array(wav.mostrat.buffer, wav.mostrat.byteOffset, wav.mostrat.byteLength).slice();
         await ruaj(celesi, { pcm, shkalla: wav.shkalla });

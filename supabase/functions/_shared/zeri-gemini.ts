@@ -101,7 +101,7 @@ const MAKS_PRITJA_429_MS = 8_000;
  * Thirrja te Gemini me NJË riprovim pas një 429 (kufiri i kërkesave në minutë, i parë në prodhim 25.11), me vonesën që
  * thotë vetë Google-i, vetëm nëse është e shkurtër. Në log shkruhet emri i kufirit dhe vonesa (asnjë tekst).
  */
-async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response> {
+async function thirrGemini(init: RequestInit, afatiMs: number, riprovo: boolean): Promise<Response> {
   try {
     return await thirrOfruesin(URL, init, "Zëri", "zeri-gemini", afatiMs);
   } catch (e) {
@@ -112,7 +112,7 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
       throw gabimIKuotes(e.detaje, true);
     }
     const pritja = vonesaMs ?? 3_000;
-    if (pritja > MAKS_PRITJA_429_MS) throw e;
+    if (!riprovo || pritja > MAKS_PRITJA_429_MS) throw e;
     await new Promise((r) => setTimeout(r, pritja + 250));
     return await thirrOfruesin(URL, init, "Zëri", "zeri-gemini", afatiMs);
   }
@@ -125,6 +125,7 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
  */
 async function* rrjedhaGemini(
   modeli: string,
+  riprovo: boolean,
   teksti: string,
   gjuha: Gjuha,
   intervistuesi: Intervistuesi,
@@ -137,6 +138,7 @@ async function* rrjedhaGemini(
       body: JSON.stringify(trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, true)),
     },
     60_000,
+    riprovo,
   );
   if (!r.body) throw new GabimIZerit("Zëri ktheu një përgjigje të paplotë. Provo përsëri.");
   const lexuesi = r.body.getReader();
@@ -194,13 +196,14 @@ async function* rrjedhaGemini(
   if (!perfundoi) throw new GabimIZerit("Zëri u ndërpre para fundit. Provo përsëri.");
 }
 
-export function gemini(modeli: string = MODELI_TTS): Folesi {
+/** `riprovo: false` kur kërkesat i vendos kufizuesi (zeri-rrotullimi.ts): asnjë kërkesë pa vend të rezervuar. */
+export function gemini(modeli: string = MODELI_TTS, { riprovo = true }: { riprovo?: boolean } = {}): Folesi {
   const lite = modeli === MODELI_TTS_LITE;
   return {
     emri: lite ? "gemini-lite" : "gemini",
     ...(lite ? { gjuhet: gjuhetELite() } : {}),
     iGatshem: () => !!Deno.env.get("GEMINI_API_KEY"),
-    rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, teksti, gjuha, intervistuesi),
+    rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, riprovo, teksti, gjuha, intervistuesi),
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
       const celesi = celesiIGemini();
       const trupi = trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, false);
@@ -211,6 +214,7 @@ export function gemini(modeli: string = MODELI_TTS): Folesi {
           body: JSON.stringify(trupi),
         },
         45_000,
+        riprovo,
       );
       const kufijte = headerAtEKufijve(r.headers);
       let json: unknown;
