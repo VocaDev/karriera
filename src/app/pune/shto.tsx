@@ -14,9 +14,13 @@ import Animated from "react-native-reanimated";
 import { Fusha, Udhezimi } from "@/components/Forma";
 import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
+import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { T } from "@/components/ui";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
+import { paInternet, VONON } from "@/lib/mesazhet";
+import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_NGARKIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { uuidIRi } from "@/lib/uuid";
 import { shenoPunenERe, shtoPunen, type Puna } from "@/lib/punet";
 import { useSesioni } from "@/lib/sesioni";
 import { useTema } from "@/lib/tema";
@@ -27,6 +31,8 @@ export default function ShtoPunen() {
   const t = useTema();
   const njofto = useNjoftim();
   const { stili: stiliIButonit, dridhu } = useDridhja();
+  // Id-ja e kësaj pune krijohet një herë për formularin: e njëjta te çdo provë, kështu s'krijohet kopje pas një vonese.
+  const [idEPunes] = useState(uuidIRi);
   const kompaniaRef = useRef<TextInputInstance>(null);
   const qytetiRef = useRef<TextInputInstance>(null);
   const pershkrimiRef = useRef<TextInputInstance>(null);
@@ -39,6 +45,10 @@ export default function ShtoPunen() {
   const [duke_ruajtur, setDukeRuajtur] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
   const [provoi, setProvoi] = useState(false);
+  // Interneti u kthye: mesazhi "pa internet" ose "po vonon" largohet; përdoruesi e provon kur të dojë.
+  useRrjeti(() => {
+    setGabimi((g) => (g !== null && (eshteGabimRrjeti(g) || eshteGabimKohe(g)) ? null : g));
+  });
 
   // Të njëjtat kufij si në bazë (check constraints), që gabimi të dalë para se të dërgohet.
   const mungon = {
@@ -60,13 +70,17 @@ export default function ShtoPunen() {
     setDukeRuajtur(true);
     setGabimi(null);
     try {
-      const puna = await shtoPunen({
-        titulli: titulli.trim(),
-        kompania: kompania.trim(),
-        qyteti: qyteti.trim(),
-        roli,
-        pershkrimi: pershkrimi.trim(),
-      });
+      const puna = await meKohe(
+        shtoPunen({
+          titulli: titulli.trim(),
+          kompania: kompania.trim(),
+          qyteti: qyteti.trim(),
+          roli,
+          pershkrimi: pershkrimi.trim(),
+        }, idEPunes),
+        KOHA_E_NGARKIMIT,
+        VONON.shtimi,
+      );
       prekja.sukses();
       shenoPunenERe(puna.id); // lista e shfaq me animacion hyrjeje
       njofto("Puna u shtua", "sukses");
@@ -88,6 +102,7 @@ export default function ShtoPunen() {
         contentContainerStyle={styles.faqja}
         keyboardShouldPersistTaps="handled"
       >
+        <ShiritiPaInternet teksti={paInternet("të dhënat e formularit mbeten aty", false).cfare} />
         <T pesha="gjysme" madhesia={14} style={styles.etiketa}>
           Titulli i pozitës *
         </T>
@@ -179,8 +194,16 @@ export default function ShtoPunen() {
         />
 
         {gabimi && (
-          <T ngjyra={t.keq} style={styles.etiketa}>
-            S&apos;u shtua: {gabimi}
+          <T
+            ngjyra={eshteGabimRrjeti(gabimi) || eshteGabimKohe(gabimi) ? t.teksti : t.keq}
+            style={styles.etiketa}
+            accessibilityLiveRegion="polite"
+          >
+            {eshteGabimRrjeti(gabimi) || eshteGabimKohe(gabimi)
+              ? eshteGabimKohe(gabimi) && !eshteGabimRrjeti(gabimi)
+                ? `${VONON.titulli}. ${gabimi} ${VONON.bere}`
+                : gabimi
+              : `S'u shtua: ${gabimi}`}
           </T>
         )}
 
@@ -196,7 +219,7 @@ export default function ShtoPunen() {
               <ActivityIndicator color={t.sfondi} />
             ) : (
               <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
-                Shto punën
+                {gabimi && (eshteGabimRrjeti(gabimi) || eshteGabimKohe(gabimi)) ? "Provo përsëri" : "Shto punën"}
               </T>
             )}
           </Prekshme>

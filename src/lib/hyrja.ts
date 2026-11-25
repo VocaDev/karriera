@@ -1,17 +1,42 @@
 // Të gjitha thirrjet e Supabase Auth dhe të profilit. Ekranet thërrasin vetëm këto funksione.
 // Roli (lloji) jeton te tabela profiles dhe e mbron RLS-i; nuk lexohet kurrë nga user_metadata.
 import { mesazhiIGabimit } from "@/lib/hyrja-offline";
+import { HYR_PERSERI } from "@/lib/mesazhet";
+import { pastroPraktiken } from "@/lib/praktika";
+import { pastroProfilinERuajtur } from "@/lib/profili-kesh";
+import { pastroKeshinEPuneve } from "@/lib/punet-kesh";
+import { pastroSnapshot } from "@/lib/snapshot";
+import { shenoDaljenVullnetare } from "@/lib/sesioni-skaduar";
 import { supabase } from "@/lib/supabase";
 
 export type Lloji = "kerkues" | "punedhenes" | "qender";
+
+/** Roli për të cilin përgatitet kërkuesi (HARTA: SWE ose Asistent/PR). Njëlloj si `punet.roli`. */
+export type RoliSynuar = "SWE" | "Asistent/PR";
+/** Gjuha e intervistës: shqip, anglisht, gjermanisht. */
+export type Gjuha = "sq" | "en" | "de";
+
+export const ROLET: readonly RoliSynuar[] = ["SWE", "Asistent/PR"];
+export const GJUHET: readonly Gjuha[] = ["sq", "en", "de"];
+
+export const EMRAT_E_ROLEVE: Record<RoliSynuar, { titulli: string; pershkrimi: string }> = {
+  SWE: { titulli: "Zhvillues/e softueri", pershkrimi: "Frontend, backend, mobile" },
+  "Asistent/PR": { titulli: "Asistent/e ose PR", pershkrimi: "Zyrë, administratë, komunikim me klientët" },
+};
+
+export const EMRAT_E_GJUHEVE: Record<Gjuha, string> = { sq: "Shqip", en: "English", de: "Deutsch" };
 
 export type Profili = {
   id: string;
   lloji: Lloji;
   emri: string;
   organizata: string | null;
-  gjuha: "sq" | "en" | "de";
+  gjuha: Gjuha;
+  /** null = kërkuesi s'e ka zgjedhur ende (onboarding). Punëdhënësi dhe qendra e kanë gjithmonë null. */
+  roli_synuar: RoliSynuar | null;
 };
+
+const KOLONAT_E_PROFILIT = "id, lloji, emri, organizata, gjuha, roli_synuar";
 
 export const EMRAT_E_LLOJEVE: Record<Lloji, string> = {
   kerkues: "Kërkoj punë",
@@ -58,20 +83,49 @@ export async function regjistrohu(d: TeDhenatERegjistrimit): Promise<void> {
   if (!data.session) throw new Error("Llogaria u krijua, por duhet konfirmuar email-i para hyrjes.");
 }
 
+/**
+ * Fshin gjithçka që app-i ruan në telefon për llogaritë: lista e punëve, profili, Përmbledhja ime (snapshot) dhe
+ * progresi i praktikës. Thirret kur dilet (dil) dhe kur sesioni mbaron vetë (SIGNED_OUT te sesioni.tsx).
+ * Asnjë nga katër s'hedh gabim: secila e kap vetë.
+ */
+export async function pastroTeDhenatELokale(): Promise<void> {
+  await Promise.all([pastroKeshinEPuneve(), pastroProfilinERuajtur(), pastroSnapshot(), pastroPraktiken()]);
+}
+
 /** Dalja: fshin sesionin nga telefoni. */
 export async function dil(): Promise<void> {
+  shenoDaljenVullnetare(); // dalja jonë s'është "sesion i mbaruar"
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(mesazhiIGabimit(error));
+  await pastroTeDhenatELokale(); // asgjë e ruajtur për llogaritë s'mbetet në telefon pas daljes
 }
 
 /** Profili im. Pa filtër në kod: RLS-i (profili_lexo) kthen vetëm rreshtin tim. */
 export async function merrProfilin(): Promise<Profili | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, lloji, emri, organizata, gjuha")
+    .select(KOLONAT_E_PROFILIT)
     .maybeSingle();
   if (error) throw new Error(mesazhiIGabimit(error));
   return data as Profili | null;
+}
+
+/**
+ * Ndryshon rolin dhe/ose gjuhën e intervistës. Serveri lejon vetëm këto kolona (+ emrin) dhe vetëm rreshtin tim;
+ * lloji i llogarisë s'ndryshohet dot nga app-i. Kthen profilin e ri që ekrani ta vendosë pa e lexuar sërish.
+ */
+export async function ndryshoProfilin(ndryshimet: { roli_synuar?: RoliSynuar; gjuha?: Gjuha }): Promise<Profili> {
+  const { data: sesioni } = await supabase.auth.getSession();
+  const uid = sesioni.session?.user.id;
+  if (!uid) throw new Error(HYR_PERSERI.cfare);
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(ndryshimet)
+    .eq("id", uid)
+    .select(KOLONAT_E_PROFILIT)
+    .single();
+  if (error) throw new Error(mesazhiIGabimit(error));
+  return data as Profili;
 }
 
 export type NumratEQendres = { kerkues: number; punedhenes: number; punet: number; ruajtje: number };

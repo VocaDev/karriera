@@ -1,17 +1,35 @@
 import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInputInstance } from "react-native";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  type TextInputInstance,
+} from "react-native";
 import Animated, { useSharedValue } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ButoniKryesor, Etiketa, Fusha, Udhezimi } from "@/components/Forma";
+import Fillimi from "@/components/Fillimi";
+import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import Unaza from "@/components/Unaza";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
-import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type TeDhenatERegjistrimit } from "@/lib/hyrja";
+import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type Lloji, type TeDhenatERegjistrimit } from "@/lib/hyrja";
+import { LLOGARITE_DEMO, type LlogariaDemo } from "@/lib/hyrja-demo";
 import { useDridhja } from "@/lib/levizja";
+import { filloKthimin, kthehuISigurt, pastroKthimin, useKthimi, veprimiNgaParametri } from "@/lib/mysafiri";
 import { prekja } from "@/lib/prekja";
+import { HYR_PERSERI } from "@/lib/mesazhet";
+import { ruajPunen } from "@/lib/ruajtura";
+import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit } from "@/lib/rrjeti";
 import { useSesioni } from "@/lib/sesioni";
+import { useSesioniSkaduar } from "@/lib/sesioni-skaduar";
 import { useTema } from "@/lib/tema";
 
 type Menyra = "hyr" | "regjistrohu";
@@ -105,16 +123,22 @@ function HapatERegjistrimit({ hapi }: { hapi: 1 | 2 }) {
   );
 }
 
-// Hyrja dhe regjistrimi (bordi: ekranet 01 dhe 57). Ky është i vetmi ekran që sheh kush s'ka hyrë.
+// Hyrja dhe regjistrimi (bordi: ekranet 01 dhe 57). Mysafiri e hap nga "Hyr" në kokë ose nga fleta "Krijo llogari që të …"
+// (parametrat: menyra, kthehu, veprimi; src/lib/mysafiri.ts). Pas hyrjes si kërkues, ky ekran e kthen atje nga erdhi.
 export default function Hyrja() {
   const t = useTema();
-  const { sesioni, gabimiIProfilit, rifreskoProfilin } = useSesioni();
+  const router = useRouter();
+  const njofto = useNjoftim();
+  const kufijte = useSafeAreaInsets();
+  const { sesioni, mysafir, profili, profiliPaRol, gabimiIProfilit, rifreskoProfilin } = useSesioni();
+  const params = useLocalSearchParams<{ menyra?: string; kthehu?: string; veprimi?: string }>();
   const { stili: stiliIButonit, dridhu } = useDridhja();
+  const sesioniSkaduar = useSesioniSkaduar();
   const unaza = useSharedValue(0.78);
   const fjalekalimiRef = useRef<TextInputInstance>(null);
   const emailRef = useRef<TextInputInstance>(null);
 
-  const [menyra, setMenyra] = useState<Menyra>("hyr");
+  const [menyra, setMenyra] = useState<Menyra>(params.menyra === "regjistrohu" ? "regjistrohu" : "hyr");
   const [hapi, setHapi] = useState<1 | 2>(1);
   const [lloji, setLloji] = useState<LlojiIZgjedhur>("kerkues");
   const [emri, setEmri] = useState("");
@@ -124,13 +148,53 @@ export default function Hyrja() {
   const [provoi, setProvoi] = useState(false);
   const [duke_punuar, setDukePunuar] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
+  // Cili buton demo po hyn (spinner vetëm te ai). Mbetet null kur hyrja demo është e fikur.
+  const [demoNeHyrje, setDemoNeHyrje] = useState<Lloji | null>(null);
+
+  // Mysafiri që e hapi këtë ekran mbi app (jo hyrja si ekrani i parë): ka ku të kthehet dhe sheh X-in.
+  const [ngaMysafiri] = useState(mysafir);
+  const kthimi = useKthimi();
+  const uKthye = useRef(false);
+
+  // Ku të kthehet pas hyrjes. Mbyllja e ekranit (me ose pa hyrje) e fshin.
+  useEffect(() => {
+    if (!ngaMysafiri) return;
+    filloKthimin({ kthehu: kthehuISigurt(params.kthehu), veprimi: veprimiNgaParametri(params.veprimi) });
+    return () => pastroKthimin();
+  }, [ngaMysafiri, params.kthehu, params.veprimi]);
+
+  // Profili i kërkuesit është gati (pas hyrjes, ose pas zgjedhjes së rolit te regjistrimi): veprimi që mysafiri kishte nisur
+  // (⭐) kryhet, pastaj ky ekran mbyllet dhe hapet `kthehu`. Organizatat s'kalojnë këtu: rojet i çojnë te Punët e mia.
+  useEffect(() => {
+    if (!kthimi || profili?.lloji !== "kerkues" || uKthye.current) return;
+    uKthye.current = true;
+    const { kthehu, veprimi } = kthimi;
+    (async () => {
+      if (veprimi?.lloji === "ruaj") {
+        try {
+          await meKohe(ruajPunen(veprimi.punaId), KOHA_E_LEXIMIT);
+          njofto("Puna u ruajt", "sukses");
+        } catch {
+          njofto("Puna s'u ruajt. Provoje përsëri te puna.", "gabim");
+        }
+      }
+      if (router.canGoBack()) {
+        router.back();
+        if (kthehu) router.push(kthehu as Href);
+      } else {
+        router.replace((kthehu ?? "/") as Href);
+      }
+    })();
+  }, [kthimi, profili, router, njofto]);
 
   const regjistrim = menyra === "regjistrohu";
   const mungon = {
     emri: regjistrim && emri.trim().length < 2,
     organizata: regjistrim && lloji === "punedhenes" && organizata.trim().length < 2,
     email: !EMAIL_I_SAKTE.test(email.trim()),
-    fjalekalimi: fjalekalimi.length < 6,
+    // Rregulli i 6 shkronjave vlen vetëm kur krijohet fjalëkalimi; te hyrja mjafton që të mos jetë bosh
+    // (llogaritë e vjetra mund të kenë fjalëkalim tjetër, dhe serveri e kontrollon vetë).
+    fjalekalimi: regjistrim ? fjalekalimi.length < 6 : fjalekalimi.length === 0,
   };
   const valide = !mungon.emri && !mungon.organizata && !mungon.email && !mungon.fjalekalimi;
 
@@ -169,18 +233,40 @@ export default function Hyrja() {
     }
   }
 
-  // Ke hyrë, por profili s'u lexua (p.sh. pa internet): mos e ngec përdoruesin.
+  // Hyrja demo me një prekje: i njëjti `hyr()` si forma, gabimet në të njëjtin vend.
+  async function hyrSiDemo(l: LlogariaDemo) {
+    if (duke_punuar) return;
+    prekja.zgjedhje();
+    setDukePunuar(true);
+    setDemoNeHyrje(l.lloji);
+    setGabimi(null);
+    try {
+      await hyr(l.email, l.fjalekalimi);
+      prekja.sukses();
+    } catch (e) {
+      prekja.gabim();
+      setGabimi(e instanceof Error ? e.message : "Diçka shkoi keq. Provo përsëri.");
+      setDukePunuar(false);
+      setDemoNeHyrje(null);
+    }
+  }
+
+  // Kërkues i ri (ose i vjetër pa rol): zgjedh rolin dhe gjuhën e intervistës para se të hyjë në app.
+  if (sesioni && profiliPaRol) return <Fillimi profili={profiliPaRol} />;
+
+  // Ke hyrë, por profili s'u lexua (p.sh. pa internet) dhe s'ka asnjë të ruajtur në telefon: mos e ngec përdoruesin.
+  const pamjaProfilit = pamjaEGabimit(gabimiIProfilit ?? "", "S'u lexua profili yt", "s'mund ta hapim profilin tënd tani", true, "ekrani");
   if (sesioni && gabimiIProfilit) {
     return (
       <View style={[styles.flex, styles.qender, { backgroundColor: t.sfondi }]}>
         <Karta style={styles.karta}>
           <T pesha="trashe" madhesia={17}>
-            S&apos;u lexua profili yt
+            {pamjaProfilit.titulli}
           </T>
-          <T zbehur madhesia={14}>
-            {gabimiIProfilit}
+          <T zbehur madhesia={14} accessibilityLiveRegion="polite">
+            {pamjaProfilit.teksti}
           </T>
-          <ButoniKryesor teksti="Provo përsëri" onPress={rifreskoProfilin} />
+          <ButoniKryesor teksti="Provo përsëri" onPress={() => rifreskoProfilin()} />
           <Prekshme onPress={() => dil().catch(() => {})} accessibilityRole="button" style={styles.lidhja}>
             <T pesha="gjysme" madhesia={15} ngjyra={t.keq}>
               Dil nga llogaria
@@ -202,6 +288,26 @@ export default function Hyrja() {
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"
       >
+        {sesioniSkaduar && (
+          <Karta style={styles.karta}>
+            <T pesha="trashe" madhesia={17} accessibilityRole="header">
+              {HYR_PERSERI.titulli}
+            </T>
+            <T zbehur madhesia={14} accessibilityLiveRegion="polite">
+              {HYR_PERSERI.cfare}
+            </T>
+            <T madhesia={14}>{HYR_PERSERI.bere}</T>
+            <ButoniKryesor
+              teksti={HYR_PERSERI.buton}
+              onPress={() => {
+                prekja.zgjedhje();
+                ndryshoMenyren("hyr");
+                emailRef.current?.focus();
+              }}
+            />
+          </Karta>
+        )}
+
         <View style={styles.koka}>
           <View style={[styles.pllaka, { backgroundColor: t.karta, shadowColor: t.hija }]}>
             <Unaza madhesia={56} progresi={unaza} ngjyrat={{ gjurma: t.karta2, harku: t.theksi, shenja: t.teksti }} />
@@ -214,7 +320,7 @@ export default function Hyrja() {
               ? hapi === 1
                 ? "Zgjidh si do ta përdorësh Karrierën."
                 : "Të dhënat e tua i sheh vetëm ti."
-              : "Hyr për të parë punët dhe hapat e tu drejt “gati”."}
+              : "Hyr për të ruajtur punët dhe për të parë sa je gati."}
           </T>
         </View>
 
@@ -225,6 +331,45 @@ export default function Hyrja() {
           enabled={!duke_punuar}
           style={styles.segmenti}
         />
+
+        {!regjistrim && LLOGARITE_DEMO.length > 0 && (
+          <View style={styles.demo}>
+            <Etiketa>Demo · hyr me një prekje</Etiketa>
+            {LLOGARITE_DEMO.map((l) => {
+              const kjo = demoNeHyrje === l.lloji;
+              return (
+                <Prekshme
+                  key={l.lloji}
+                  onPress={() => hyrSiDemo(l)}
+                  disabled={duke_punuar}
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: kjo, disabled: duke_punuar }}
+                  style={[
+                    styles.opsioni,
+                    styles.opsioniDemo,
+                    { backgroundColor: t.karta, shadowColor: t.hija, opacity: duke_punuar && !kjo ? 0.45 : 1 },
+                  ]}
+                >
+                  <View style={[styles.ikonaEOpsionit, { backgroundColor: t.karta2 }]}>
+                    <Ikona
+                      emri={l.lloji === "kerkues" ? IKONAT.personi : l.lloji === "punedhenes" ? IKONAT.canta : IKONAT.shkolla}
+                      madhesia={18}
+                      ngjyra={t.teksti}
+                    />
+                  </View>
+                  <T pesha="trashe" madhesia={15.5} style={styles.flex}>
+                    {l.teksti}
+                  </T>
+                  {kjo ? (
+                    <ActivityIndicator color={t.teksti} />
+                  ) : (
+                    <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
+                  )}
+                </Prekshme>
+              );
+            })}
+          </View>
+        )}
 
         {regjistrim && <HapatERegjistrimit hapi={hapi} />}
 
@@ -379,7 +524,9 @@ export default function Hyrja() {
               returnKeyType="go"
               onSubmitEditing={dergo}
             />
-            <Udhezimi shfaq={provoi && mungon.fjalekalimi}>Fjalëkalimi duhet të ketë të paktën 6 shkronja.</Udhezimi>
+            <Udhezimi shfaq={provoi && mungon.fjalekalimi}>
+              {regjistrim ? "Fjalëkalimi duhet të ketë të paktën 6 shkronja." : "Shkruaj fjalëkalimin."}
+            </Udhezimi>
 
             {gabimi && (
               <View style={[styles.gabimi, { backgroundColor: t.karta }]} accessibilityLiveRegion="polite">
@@ -394,7 +541,7 @@ export default function Hyrja() {
               <ButoniKryesor
                 teksti={regjistrim ? "Krijo llogarinë" : "Hyr"}
                 onPress={dergo}
-                duke_punuar={duke_punuar}
+                duke_punuar={duke_punuar && demoNeHyrje === null}
                 joValid={!valide}
                 accessibilityHint={valide ? undefined : "Plotëso fushat që mungojnë"}
               />
@@ -415,6 +562,19 @@ export default function Hyrja() {
           </T>
         </Prekshme>
       </ScrollView>
+      {/* Mysafiri mund të kthehet te app-i pa hyrë (edhe me gjestin "mbrapa" të sistemit). */}
+      {ngaMysafiri && !sesioni && router.canGoBack() && (
+        <Prekshme
+          accessibilityRole="button"
+          accessibilityLabel="Mbyll dhe vazhdo pa llogari"
+          hitSlop={8}
+          shkalla={0.9}
+          onPress={() => router.back()}
+          style={[styles.mbyll, { top: kufijte.top + 6 }]}
+        >
+          <Ikona emri={IKONAT.mbyll} madhesia={30} ngjyra={t.zbehur} />
+        </Prekshme>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -456,6 +616,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   ikonaEOpsionit: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  demo: { gap: 8, marginTop: 4 },
+  opsioniDemo: { minHeight: 56, borderColor: "transparent" },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   radioPika: { width: 10, height: 10, borderRadius: 5 },
   shenimi: { marginTop: 2 },
@@ -475,4 +637,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   lidhja: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 6 },
+  mbyll: { position: "absolute", left: 14, zIndex: 2, minWidth: 44, minHeight: 44, alignItems: "flex-start", justifyContent: "center" },
 });

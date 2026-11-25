@@ -36,6 +36,33 @@
             "image": "./assets/images/splash-icon-dark.png"
           }
         }
+      ],
+      "expo-sharing",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Karriera e përdor mikrofonin vetëm kur prek butonin për t'iu përgjigjur intervistës me zë. Zëri kthehet në tekst dhe nuk ruhet."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Karriera e përdor kamerën vetëm kur e ndez gjatë intervistës, për të të treguar veten dhe për këshillat mbi kontaktin me sy. Videoja nuk ruhet.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Karriera e përdor vendndodhjen vetëm kur prek \"Afër meje\", një herë, për të gjetur qytetin tënd. Koordinatat nuk ruhen dhe nuk dërgohen."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#F2611D"
+        }
       ]
     ],
     "experiments": {

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karriera · para / pas (dizajni-rishikimi.md)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Tokenat e propozuar (docs/dizajni-rishikimi.md §2). "para" përdor vlerat e sotme të src/lib/tema.ts. */
+:root {
+  --sfondi:#F5F5F4; --karta:#FFFFFF; --karta2:#EEEDEB; --teksti:#141414; --zbehur:#6A6762; --vija:#E4E2DE;
+  --theksi:#F2611D; --theksiTeksti:#B23A0A; --theksiBute:#FDE8DA; --ok:#1E9E5A; --okTeksti:#157A45; --keq:#D93A2B;
+  --blu:#2B50D6; --bluMbi:#FFFFFF; --bluBute:#E8EDFF; --limon:#FFE066; --limonBute:#FFF4C2; --limonTeksti:#7A5900;
+  --zbehurVjeter:#75726D;
+}
+.dark {
+  --sfondi:#0E0E0F; --karta:#1A1A1C; --karta2:#262628; --teksti:#F4F4F5; --zbehur:#9C9CA3; --vija:#2E2E31;
+  --theksi:#FF7A3D; --theksiTeksti:#FF7A3D; --theksiBute:#2B1A10; --ok:#3DD68C; --okTeksti:#3DD68C; --keq:#FF6B6B;
+  --blu:#8AA4FF; --bluMbi:#0B1230; --bluBute:#16203F; --limon:#FFD84D; --limonBute:#2E2608; --limonTeksti:#FFD84D;
+  --zbehurVjeter:#9C9CA3;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:"Plus Jakarta Sans",system-ui,sans-serif; background:#DCDCDF; color:#18181B; padding:32px 24px 64px; }
+body.dark { background:#1B1B1E; color:#E4E4E7; }
+header.faqja { max-width:1240px; margin:0 auto 28px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+header.faqja h1 { font-size:22px; font-weight:700; }
+header.faqja p { font-size:14px; opacity:.7; margin-top:4px; max-width:680px; }
+button.tema { font:inherit; font-size:14px; padding:10px 16px; border-radius:10px; border:1px solid rgba(127,127,127,.4); background:transparent; color:inherit; cursor:pointer; }
+section.cifti { max-width:1240px; margin:0 auto 48px; }
+section.cifti h2 { font-size:17px; font-weight:600; margin-bottom:4px; }
+section.cifti > p { font-size:14px; opacity:.75; margin-bottom:16px; max-width:820px; }
+.rreshti { display:flex; gap:28px; flex-wrap:wrap; }
+.kolona { display:flex; flex-direction:column; gap:10px; }
+.etiketa { font-size:13px; font-weight:600; opacity:.7; }
+.etiketa b { opacity:1; }
+
+/* Telefoni 390 × 760 */
+.tel { width:340px; height:700px; border-radius:40px; background:var(--sfondi); color:var(--teksti); overflow:hidden; position:relative;
+  border:8px solid #111; box-shadow:0 18px 40px rgba(0,0,0,.18); display:flex; flex-direction:column; font-size:15px; }
+.dark .tel { border-color:#000; }
+.statusi { height:40px; flex:none; display:flex; justify-content:space-between; align-items:center; padding:0 24px; font-size:13px; font-weight:600; }
+.permbajtja { flex:1; overflow:hidden; padding:0 16px; display:flex; flex-direction:column; gap:12px; }
+.tabbar { height:64px; flex:none; display:flex; justify-content:space-around; align-items:center; border-top:1px solid var(--vija); background:var(--karta); font-size:11px; color:var(--zbehur); }
+.tabbar span { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.tabbar i { width:20px; height:20px; border-radius:6px; background:currentColor; opacity:.55; display:block; }
+.tabbar .aktiv { color:var(--teksti); font-weight:600; }
+.tabbar .aktiv i { opacity:1; }
+.tabbar.vjeter .aktiv { color:var(--theksi); }
+.gradient { position:absolute; left:0; right:0; top:0; height:260px; background:linear-gradient(var(--theksiBute), var(--sfondi)); pointer-events:none; }
+.tel > * { position:relative; }
+.tel > .gradient { position:absolute; }
+.titulliMadh { font-size:30px; font-weight:700; letter-spacing:-.6px; padding:4px 0 2px; }
+.karta { background:var(--karta); border-radius:16px; padding:14px 16px; }
+.dark .karta { border:1px solid var(--vija); }
+.karta.vjeter { border-radius:22px; box-shadow:0 8px 18px rgba(20,20,20,.08); }
+.z { color:var(--zbehur); }
+.zv { color:var(--zbehurVjeter); }
+.v13 { font-size:13px; } .v12 { font-size:12px; } .v15 { font-size:15px; } .v17 { font-size:17px; }
+.w6 { font-weight:600; } .w7 { font-weight:700; } .w8 { font-weight:800; }
+.chip { display:inline-block; font-size:12px; font-weight:600; padding:3px 8px; border-radius:7px; background:var(--karta2); }
+.rruga { display:flex; align-items:center; gap:0; margin-top:10px; }
+.rruga b { width:12px; height:12px; border-radius:50%; border:2px solid var(--vija); background:var(--karta); flex:none; }
+.rruga b.plot { background:var(--theksi); border-color:var(--theksi); }
+.rruga b.tani { border-color:var(--theksi); }
+.rruga s { flex:1; border-top:2px dotted var(--vija); }
+.rruga s.plot { border-top:2px solid var(--theksi); }
+.butoni { border-radius:999px; padding:14px; text-align:center; font-weight:700; font-size:15px; background:var(--teksti); color:var(--sfondi); }
+.butoni.blu { background:var(--blu); color:var(--bluMbi); }
+.butoni.dyt { background:transparent; color:var(--teksti); border:1px solid var(--vija); }
+.lidhje { text-align:center; font-size:14px; font-weight:600; color:var(--zbehur); }
+
+/* Arta: vendmbajtës i portretit (render nga arta.glb, docs §3) */
+.arta { border-radius:50%; background:var(--bluBute); display:grid; place-items:center; overflow:hidden; flex:none; position:relative; }
+.arta svg { width:100%; height:100%; }
+.shkronja { width:22px; height:22px; border-radius:50%; background:var(--karta2); border:1px solid var(--vija); display:grid; place-items:center; font-size:11px; font-weight:700; flex:none; }
+
+/* Chat */
+.flluska { max-width:84%; padding:12px 14px; border-radius:18px; font-size:14px; line-height:1.45; }
+.flluska.ajo { background:var(--karta); align-self:flex-start; border-top-left-radius:6px; }
+.flluska.ajo.e-re { background:var(--bluBute); }
+.flluska.une { background:var(--teksti); color:var(--sfondi); align-self:flex-end; border-top-right-radius:6px; }
+.koka-int { display:flex; align-items:center; gap:10px; padding:2px 0 6px; }
+.progresi { height:4px; border-radius:2px; background:var(--karta2); overflow:hidden; }
+.progresi i { display:block; height:100%; background:var(--theksi); border-radius:2px; }
+.skena { border-radius:22px; height:300px; position:relative; overflow:hidden;
+  background: radial-gradient(120% 80% at 50% 100%, rgba(0,0,0,.25), transparent 60%), linear-gradient(180deg,#C9CED8,#9AA3B2); }
+.dark .skena { background: radial-gradient(120% 80% at 50% 100%, rgba(0,0,0,.45), transparent 60%), linear-gradient(180deg,#2A3140,#161B24); }
+.skena .dritare { position:absolute; inset:18px 18px auto auto; width:110px; height:130px; border-radius:6px; background:rgba(255,255,255,.18); }
+.skena .figura { position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:210px; height:260px; }
+.skena .pasqyra { position:absolute; right:12px; bottom:12px; width:64px; height:86px; border-radius:12px; background:#3a3f4a; border:2px solid rgba(255,255,255,.6); }
+.gjendja { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--blu); }
+.vale { display:flex; gap:3px; align-items:center; height:16px; }
+.vale i { width:3px; border-radius:2px; background:var(--blu); display:block; }
+.mikrofoni { width:72px; height:72px; border-radius:50%; background:var(--teksti); display:grid; place-items:center; margin:0 auto; }
+.mikrofoni i { width:16px; height:26px; border-radius:8px; border:3px solid var(--sfondi); display:block; }
+.pika-kuqe { width:9px; height:9px; border-radius:50%; background:var(--keq); display:inline-block; }
+
+/* Karta e punës */
+.mono { width:40px; height:40px; border-radius:10px; display:grid; place-items:center; font-weight:700; font-size:14px; flex:none; }
+.mono.a { background:#E3ECFF; color:#1F3FA8; } .mono.b { background:#E2F4EA; color:#155C36; } .mono.c { background:#FCE7F0; color:#9A1D57; } .mono.d { background:#FFF0D6; color:#7A4B00; }
+.dark .mono.a { background:#1B2647; color:#A9BCFF; } .dark .mono.b { background:#12291D; color:#7FD8A5; } .dark .mono.c { background:#2E1522; color:#F3A3C6; } .dark .mono.d { background:#2D2210; color:#F2C46E; }
+.puna { display:flex; gap:12px; align-items:flex-start; }
+.puna .info { flex:1; min-width:0; }
+.yll { width:20px; height:20px; flex:none; color:var(--zbehur); }
+.gati-mini { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; margin-top:8px; }
+.unaza-mini { width:18px; height:18px; border-radius:50%; background:conic-gradient(var(--theksi) calc(var(--p)*1%), var(--karta2) 0); position:relative; }
+.unaza-mini::after { content:""; position:absolute; inset:3px; border-radius:50%; background:var(--karta); }
+.kerko { background:var(--karta); border-radius:12px; padding:11px 14px; font-size:14px; color:var(--zbehur); }
+.segmenti { display:flex; background:var(--karta2); border-radius:9px; padding:2px; font-size:13px; }
+.segmenti span { flex:1; text-align:center; padding:6px 0; border-radius:7px; }
+.segmenti .zgj { background:var(--karta); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+.shiriti-ri { position:absolute; right:-28px; top:12px; transform:rotate(40deg); background:var(--theksi); color:#fff; font-size:9px; font-weight:800; letter-spacing:.8px; padding:3px 30px; }
+
+/* CV */
+.unaza { width:96px; height:96px; border-radius:50%; background:conic-gradient(var(--theksi) calc(var(--p)*1%), var(--karta2) 0); display:grid; place-items:center; position:relative; flex:none; }
+.unaza::after { content:""; position:absolute; inset:9px; border-radius:50%; background:var(--karta); }
+.unaza b { position:relative; z-index:1; font-size:28px; font-weight:800; letter-spacing:-.5px; }
+.unaza b small { font-size:12px; font-weight:600; color:var(--zbehur); }
+.rregullim { display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--vija); font-size:14px; }
+.rregullim:first-of-type { border-top:0; }
+.nr { width:22px; height:22px; border-radius:50%; background:var(--theksiBute); color:var(--theksiTeksti); font-size:12px; font-weight:700; display:grid; place-items:center; flex:none; }
+.roast { background:var(--limonBute); border-radius:16px; padding:14px 16px; }
+.roast .krye { display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:700; color:var(--limonTeksti); }
+.rresht { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--karta); border-radius:14px; font-size:14px; }
+.dark .rresht { border:1px solid var(--vija); }
+.rresht .shig { margin-left:auto; color:var(--zbehur); }
+.ikon-doc { width:18px; height:22px; border-radius:3px; border:2px solid currentColor; flex:none; }
+.koka-faqes { display:flex; align-items:center; gap:10px; height:36px; font-size:17px; font-weight:600; }
+.mbrapa { font-size:22px; }
+.cap { font-size:12px; letter-spacing:.6px; font-weight:600; color:var(--zbehurVjeter); }
+.legjenda { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; margin-top:10px; opacity:.85; }
+.legjenda span { display:flex; gap:6px; align-items:center; }
+.legjenda i { width:14px; height:14px; border-radius:4px; display:block; }
+@media (prefers-reduced-motion: no-preference) {
+  .vale i { animation: vale 0.9s ease-in-out infinite; }
+  .vale i:nth-child(2) { animation-delay:.15s } .vale i:nth-child(3) { animation-delay:.3s } .vale i:nth-child(4) { animation-delay:.45s }
+  @keyframes vale { 0%,100% { transform:scaleY(.4) } 50% { transform:scaleY(1) } }
+}
+</style>
+</head>
+<body>
+<header class="faqja">
+  <div>
+    <h1>Karriera · para / pas</h1>
+    <p>Mockup statik për <code>docs/dizajni-rishikimi.md</code>. "Para" = si është sot (screenshot-et 24.11). "Pas" = tokenat e propozuar: portokallia vetëm për progres, kobalti për Artën, limoni për fitoret. Portreti i Artës këtu është vendmbajtës: i vërteti renderohet nga <code>arta.glb</code>.</p>
+    <div class="legjenda">
+      <span><i style="background:#F2611D"></i>theksi · progres</span>
+      <span><i style="background:#2B50D6"></i>blu · Arta</span>
+      <span><i style="background:#FFE066"></i>limon · fitore</span>
+      <span><i style="background:#6A6762"></i>zbehur (5,16:1)</span>
+    </div>
+  </div>
+  <button class="tema" id="tema" type="button">Kalo në dark</button>
+</header>
+
+<!-- ============ 1. INTERVISTA ============ -->
+<section class="cifti">
+  <h2>1 · Intervista: seanca</h2>
+  <p>Sot: chat me shkrim si parazgjedhje, Arta = shkronja "A", gjendjet vetëm me tekst të vogël. Pas: me zë si parazgjedhje, Arta e madhe në zyrë, gjendja me ngjyrë dhe tekst (bluja = Arta flet), progresi mbetet portokalli.</p>
+  <div class="rreshti">
+    <div class="kolona">
+      <div class="etiketa"><b>Para</b> · screenshot 18–20</div>
+      <div class="tel">
+        <div class="statusi"><span>9:41</span><span>●●●</span></div>
+        <div class="permbajtja">
+          <div class="koka-int"><span class="w6">‹ Dil</span><div style="flex:1;text-align:center"><div class="w7 v15">Full-stack Developer / Soft…</div><div class="z v12">Arta · Pyetja 1 nga 3–4</div></div></div>
+          <div class="progresi"><i style="width:25%"></i></div>
+          <div class="v13 w6" style="display:flex;gap:8px;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--theksi)"></span>Radha jote: shkruaj përgjigjen</div>
+          <div class="flluska ajo"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span class="shkronja">A</span><span class="z v13">Arta</span></div>Mirëdita, unë jam Arta. Sot do të bisedojmë për pozitën Full-stack Developer te Limitless Outsourcing.<br><b>Për të filluar: më tregoni pak për veten dhe pse ju intereson kjo punë?</b></div>
+          <div style="flex:1"></div>
+          <div style="display:flex;gap:10px;padding-bottom:14px"><div class="kerko" style="flex:1">Shkruaj përgjigjen tënde…</div><div style="width:40px;height:40px;border-radius:50%;background:var(--karta2)"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="kolona">
+      <div class="etiketa"><b>Pas</b> · me zë, Arta në qendër</div>
+      <div class="tel">
+        <div class="statusi"><span>9:41</span><span>●●●</span></div>
+        <div class="permbajtja">
+          <div class="koka-int"><span class="w6">Dil</span><div style="flex:1;text-align:center"><div class="w7 v15">Full-stack Developer</div><div class="z v12">Pyetja 1 nga 4</div></div><span class="w6 z">Shkruaj</span></div>
+          <div class="progresi"><i style="width:25%"></i></div>
+          <div class="skena">
+            <div class="dritare"></div>
+            <svg class="figura" viewBox="0 0 210 260" aria-hidden="true">
+              <ellipse cx="105" cy="250" rx="96" ry="60" fill="#2B3A55"/>
+              <rect x="88" y="150" width="34" height="40" rx="12" fill="#D9A98A"/>
+              <ellipse cx="105" cy="105" rx="52" ry="62" fill="#E3B496"/>
+              <path d="M50 108 C48 40 160 30 160 100 C150 70 120 58 96 62 C76 66 58 80 50 108Z" fill="#3B2A22"/>
+              <path d="M50 108 C44 150 56 186 70 196 C62 160 60 130 62 110Z M160 100 C168 150 156 186 142 196 C150 160 152 130 150 108Z" fill="#3B2A22"/>
+              <ellipse cx="86" cy="108" rx="5" ry="6" fill="#2A1E18"/><ellipse cx="124" cy="108" rx="5" ry="6" fill="#2A1E18"/>
+              <path d="M90 138 Q105 148 120 138" stroke="#9C5A4A" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+            <div class="pasqyra" title="kamera jote"></div>
+          </div>
+          <div class="gjendja"><span class="vale"><i style="height:8px"></i><i style="height:14px"></i><i style="height:10px"></i><i style="height:16px"></i></span>Arta po flet</div>
+          <div class="flluska ajo e-re">Për të filluar: më trego pak për veten dhe pse të intereson kjo punë?</div>
+          <div style="flex:1"></div>
+          <div class="mikrofoni" aria-label="Prek për të folur"><i></i></div>
+          <div class="z v13" style="text-align:center;padding-bottom:14px">Prek kur të mbarojë Arta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. PUNËT ============ -->
+<section class="cifti">
+  <h2>2 · Punët: lista</h2>
+  <p>Sot: gradient portokalli lart, tab bar portokalli, çdo kartë me rrugë dhe "Tani: Përputhja · hape për të parë sa je gati". Pas: chrome i qetë, monogram me ngjyrë për çdo kompani (pa logo të huaja), gatishmëria vetëm kur ekziston, "E re" si chip.</p>
+  <div class="rreshti">
+    <div class="kolona">
+      <div class="etiketa"><b>Para</b> · screenshot 04</div>
+      <div class="tel">
+        <div class="gradient"></div>
+        <div class="statusi"><span>9:41</span><span>●●●</span></div>
+        <div class="permbajtja">
+          <div class="titulliMadh">Punët</div>
+          <div class="kerko">Kërko punë, kompani ose qytet</div>
+          <div class="segmenti"><span class="zgj">Të gjitha</span><span>SWE</span><span>Zyrë</span></div>
+          <div class="karta vjeter" style="position:relative;overflow:hidden">
+            <div class="shiriti-ri">E RE</div>
+            <span class="chip">ZYRË</span>
+            <div class="w7 v17" style="margin-top:8px">Recepsioniste</div>
+            <div class="zv v13">Garden Downtown, Prishtinë</div>
+            <div class="zv v12">Karriera</div>
+            <div class="rruga"><b class="plot"></b><s class="plot"></s><b class="tani"></b><s></s><b></b><s></s><b></b><s></s><b></b></div>
+            <div class="zv v12" style="margin-top:8px">Tani: <b style="color:var(--teksti)">Përputhja</b> · hape për të parë sa je gati</div>
+          </div>
+          <div class="karta vjeter">
+            <span class="chip">SWE</span>
+            <div class="w7 v17" style="margin-top:8px">DevOps Engineer</div>
+            <div class="zv v13">Finca Kosovo, Prishtinë</div>
+            <div class="zv v12">Karriera</div>
+            <div class="rruga"><b class="plot"></b><s class="plot"></s><b class="tani"></b><s></s><b></b><s></s><b></b><s></s><b></b></div>
+            <div class="zv v12" style="margin-top:8px">Tani: <b style="color:var(--teksti)">Përputhja</b> · hape për të parë sa je gati</div>
+          </div>
+        </div>
+        <div class="tabbar vjeter"><span><i></i>Sot</span><span class="aktiv"><i></i>Punët</span><span><i></i>Stërvitja</span><span><i></i>Profili</span></div>
+      </div>
+    </div>
+    <div class="kolona">
+      <div class="etiketa"><b>Pas</b> · monogram, progres vetëm kur ka</div>
+      <div class="tel">
+        <div class="statusi"><span>9:41</span><span>●●●</span></div>
+        <div class="permbajtja">
+          <div class="titulliMadh">Punët</div>
+          <div class="kerko">Kërko punë, kompani ose qytet</div>
+          <div class="segmenti"><span class="zgj">Të gjitha</span><span>SWE</span><span>Zyrë</span></div>
+          <div class="karta"><div class="puna">
+            <div class="mono a">LO</div>
+            <div class="info">
+              <div class="w6 v15">Full-stack Developer / Software Engineer</div>
+              <div class="z v13">Limitless Outsourcing · Prishtinë</div>
+              <div class="gati-mini"><span class="unaza-mini" style="--p:50"></span>50% gati</div>
+            </div>
+            <svg class="yll" viewBox="0 0 24 24" style="color:var(--theksi)"><path fill="currentColor" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>
+          </div></div>
+          <div class="karta"><div class="puna">
+            <div class="mono b">GD</div>
+            <div class="info">
+              <div style="display:flex;gap:6px;align-items:center"><span class="w6 v15">Recepsioniste</span><span class="chip" style="font-size:11px">E re</span></div>
+              <div class="z v13">Garden Downtown · Prishtinë</div>
+              <div class="z v13" style="margin-top:6px">Zyrë</div>
+            </div>
+            <svg class="yll" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>
+          </div></div>
+          <div class="karta"><div class="puna">
+            <div class="mono c">FK</div>
+            <div class="info">
+              <div class="w6 v15">DevOps Engineer</div>
+              <div class="z v13">Finca Kosovo · Prishtinë</div>
+              <div class="z v13" style="margin-top:6px">SWE</div>
+            </div>
+            <svg class="yll" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>
+          </div></div>
+          <div class="karta"><div class="puna">
+            <div class="mono d">TB</div>
+            <div class="info">
+              <div class="w6 v15">Praktikant i Kujdesit ndaj Klientit</div>
+              <div class="z v13">TEB Banka · Prishtinë</div>
+            </div>
+          </div></div>
+        </div>
+        <div class="tabbar"><span><i></i>Sot</span><span class="aktiv"><i></i>Punët</span><span><i></i>Stërvitja</span><span><i></i>Profili</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. CV ============ -->
+<section class="cifti">
+  <h2>3 · CV-ja ime</h2>
+  <p>Sot: edhe kur CV-ja është analizuar, ekrani hapet me "Ngarko CV-në (PDF)" të madh; nota është poshtë dhe roast-i është toggle në fund të analizës. Pas: CV-ja jote lart (Unaza = nota), 3 rregullimet kryesore, roast-i si kartë limon që ndahet, ngarkimi dytësor.</p>
+  <div class="rreshti">
+    <div class="kolona">
+      <div class="etiketa"><b>Para</b> · screenshot 24</div>
+      <div class="tel">
+        <div class="gradient"></div>
+        <div class="statusi"><span>9:41</span><span>●●●</span></div>
+        <div class="permbajtja">
+          <div class="koka-faqes"><span class="mbrapa">←</span></div>
+          <div class="titulliMadh">CV-ja ime</div>
+          <div class="zv v15" style="margin-top:-6px">Ngarko CV-në ose ndërtoje me AI. AI-ja të thotë çka është mirë dhe çka duhet përmirësuar.</div>
+          <div class="rresht" style="background:var(--teksti);color:var(--sfondi);padding:18px 16px"><span class="ikon-doc"></span><div><div class="w7">Ngarko CV-në (PDF)</div><div class="v12" style="opacity:.75">Deri në 5 MB</div></div><span class="shig" style="color:inherit">›</span></div>
+          <div class="rresht" style="padding:18px 16px"><span style="font-weight:800">ılı</span><div><div class="w7">Nuk kam CV · Ndërtoje me AI</div><div class="zv v12">Përgjigju në 5 pyetje të shkurtra</div></div><span class="shig">›</span></div>
+          <div class="zv v13" style="text-align:center">🔒 CV-ja jote shihet vetëm nga ti.</div>
+          <div class="w7 v17">Analiza e fundit</div>
+          <div class="karta vjeter">
+            <div style="display:flex;justify-content:space-between"><div><div class="w7">CV_Gentian_Voca.pdf</div><div class="zv v12">Versioni v1</div></div><div><span class="w8" style="font-size:26px;color:var(--theksi)">62</span><span class="zv">/100</span></div></div>
+            <div class="zv v13" style="margin-top:6px">CV-ja është e qartë dhe e lexueshme, me projekte reale dhe përvojë praktike…</div>
+            <div class="v12 w6" style="margin-top:8px">10 sugjerime për CV-në, me një prekje →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="kolona">
+      <div class="etiketa"><b>Pas</b> · CV-ja jote e para, roast-i lart</div>
+      <div class="tel">
+        <div class="statusi"><span>9:41</span><span>●●●</span></div>
+        <div class="permbajtja">
+          <div class="koka-faqes"><span class="mbrapa">‹</span><span style="margin-left:auto;font-size:14px;color:var(--zbehur)">Versionet</span></div>
+          <div class="titulliMadh">CV-ja ime</div>
+          <div class="karta" style="display:flex;gap:16px;align-items:center">
+            <div class="unaza" style="--p:62"><b>62<small>/100</small></b></div>
+            <div><div class="w6 v15">CV_Gentian_Voca.pdf</div><div class="z v13">v1 · 3 rregullime e çojnë mbi 75</div></div>
+          </div>
+          <div class="karta" style="padding-top:6px;padding-bottom:6px">
+            <div class="rregullim"><span class="nr">1</span><div>Shto rezultate me numra te projektet <span class="z">(“Ndërtova 6 ekrane…”)</span></div></div>
+            <div class="rregullim"><span class="nr">2</span><div>Rregullo 3 gabime drejtshkrimore</div></div>
+            <div class="rregullim"><span class="nr">3</span><div>Lidh projektet me GitHub</div></div>
+          </div>
+          <div class="butoni">Rregulloji me një prekje</div>
+          <div class="roast">
+            <div class="krye"><span>Roast-i i CV-së</span><span>Ndaje ›</span></div>
+            <div class="v15" style="margin-top:6px;color:var(--teksti)">“Projektet janë të vërteta. Tani thuaj edhe çka arritën, jo vetëm që ekzistojnë.”</div>
+          </div>
+          <div class="lidhje">Ngarko version të ri (PDF)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+const b = document.getElementById('tema');
+b.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  b.textContent = document.body.classList.contains('dark') ? 'Kalo në light' : 'Kalo në dark';
+});
+</script>
+</body>
+</html>

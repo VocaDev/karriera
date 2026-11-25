@@ -20,8 +20,8 @@ export const VECORITE: Vecoria[] = [
     celesi: "cv",
     titulli: "CV-ja ime",
     pershkrimi: "Ngarko ose ndërto CV-në; AI-ja e analizon",
-    href: null,
-    gjendja: { lloji: "ndertim", kush: "Edoniku" },
+    href: "/cv",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "punet",
@@ -33,25 +33,35 @@ export const VECORITE: Vecoria[] = [
   {
     celesi: "gati",
     titulli: "A jam gati?",
-    pershkrimi: "Sa i përshtatesh një pune dhe çka të mungon",
-    href: null,
-    gjendja: { lloji: "vjen", kur: "02.12" },
+    pershkrimi: "Zgjidh një punë dhe shih sa i përshtatesh",
+    href: "/pune",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "intervista",
     titulli: "Intervista me AI",
-    pershkrimi: "Avatari të pyet me zë për atë punë",
-    href: null,
-    gjendja: { lloji: "ndertim", kush: "Genti" },
+    pershkrimi: "AI-ja të pyet për punën që zgjedh; me tekst tani, me zë së shpejti",
+    href: "/intervista",
+    gjendja: { lloji: "gati" },
   },
   {
     celesi: "rezultatet",
     titulli: "Rezultatet",
-    pershkrimi: "Feedback për çdo përgjigje dhe gatishmëria e re",
-    href: null,
-    gjendja: { lloji: "vjen", kur: "09.12" },
+    pershkrimi: "Shiko notën dhe feedback-un e intervistës së fundit",
+    href: "/intervista/rezultatet",
+    gjendja: { lloji: "gati" },
   },
 ];
+
+// "Ndërto CV-në me AI (pa CV)" del TANI: vendimi i Gentit, 11.11 (HARTA e linte pas Demo Day-t).
+// Pas Demo Day-t mbeten: formatet e tjera (Europass, EU, US, UK, ATS), rishkrimi në anglisht dhe
+// karta "Ndaje" për rrjetet sociale. Kodi i tyre mbetet; ekranet/butonat s'hapen derisa kjo të bëhet true.
+export const CV_PAS_DEMO_DAY_HAPUR = false;
+export const TEKSTI_PAS_DEMO_DAY = "Vjen pas Demo Day-t";
+
+// Push nga serveri (J10): kërkon development build, tabelën push_tokenat dhe një sender (docs/njoftimet.md).
+// Deri atëherë false: njoftimet janë vetëm lokale (src/lib/kujtesat.ts) dhe punojnë edhe në Expo Go.
+export const PUSH_NGA_SERVERI = false;
 
 export function tekstiIGjendjes(g: Gjendja): string {
   if (g.lloji === "gati") return "Gati";
