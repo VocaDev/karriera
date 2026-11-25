@@ -6,6 +6,9 @@ import { assert, assertEquals, assertRejects } from "jsr:@std/assert@1.0.19";
 
 import { GabimIZerit, lexoKufirin } from "../_shared/zeri.ts";
 import { gemini } from "../_shared/zeri-gemini.ts";
+import { emratTekniko, eshteJehonaEPromptit, MAKS_SHENJA_PROMPTI, ndertoPromptinSTT } from "../_shared/zeri-fjalori.ts";
+import { groq } from "../_shared/zeri-groq.ts";
+import type { Konteksti } from "../_shared/intervista-ai.ts";
 
 Deno.env.set("GEMINI_API_KEY", "prove");
 
@@ -75,6 +78,26 @@ Deno.test("429 me vonesë të shkurtër: riprovohet një herë dhe del audio", a
   }
 });
 
+Deno.test("429 i kufirit ditor (si te prodhimi): pa riprovim, shënohet si kufi ditor", async () => {
+  const trupi = JSON.stringify({
+    error: {
+      message: "Rate limit exceeded for model gemini-3.8-flash-tts (limit: 10 requests per day on Free Tier). Please retry in 15h35m38s",
+      code: "too_many_requests",
+    },
+  });
+  const f = meFetch([() => new Response(trupi, { status: 429, headers: { "retry-after": "56138" } })]);
+  try {
+    const e = await assertRejects(mblidh, GabimIZerit);
+    assertEquals([e.kufiriDitor, f.thirrjet.length], [true, 1]);
+    assertEquals(lexoKufirin({ kufijte: { "retry-after": "56138" }, trupi }), {
+      vonesaMs: 56_138_000,
+      kufiri: "10 requests per day on Free Tier",
+    });
+  } finally {
+    f.rikthe();
+  }
+});
+
 Deno.test("429 me vonesë të gjatë: s'pritet, dështon menjëherë", async () => {
   const f = meFetch([() => kufiri429("40s")]);
   try {
@@ -82,5 +105,74 @@ Deno.test("429 me vonesë të gjatë: s'pritet, dështon menjëherë", async () 
     assertEquals(f.thirrjet.length, 1);
   } finally {
     f.rikthe();
+  }
+});
+
+// ---------- Fjalori i Whisper-it ----------
+const KONTEKSTI: Konteksti = {
+  puna: {
+    id: "p1",
+    titulli: "QA Engineer",
+    kompania: "Dardania Soft",
+    qyteti: "Prishtinë",
+    roli: "SWE",
+    pershkrimi: "Teste automatike me Cypress dhe CI/CD në GitLab.",
+    aftesite: ["Playwright", "TypeScript"],
+  },
+  cv: "Titulli: Student\nProjektet:\n- Karriera: app me React Native dhe Supabase, testuar me Vitest\nAftësitë: Claude, Python, punë në ekip",
+  gatishmeria: null,
+};
+
+Deno.test("fjalori: ka aftësitë e punës, kërkesat, CV-në dhe emrat e zakonshëm, pa dyfishime", () => {
+  const p = ndertoPromptinSTT({
+    konteksti: KONTEKSTI,
+    kerkesat: { kerkesat: ["Postman", "Njohuri të mira në testimin e API me k6 dhe JMeter"], perparesi: [], detyrat: [] },
+  });
+  for (const f of ["QA Engineer", "Dardania Soft", "Playwright", "TypeScript", "Claude", "Python", "Postman", "JMeter", "React Native", "Supabase", "Docker"]) {
+    assert(p.includes(f), `mungon ${f}: ${p}`);
+  }
+  // Vetëm listë fjalësh: pa fjali hyrëse dhe pa fraza shqipe (si "punë në ekip" nga CV-ja).
+  assert(!/[ëç]/i.test(p), p);
+  assert(!p.includes("Intervistë"));
+  assertEquals(p.replace(/[.]$/, "").split(", ").filter((x) => x === "Playwright").length, 1);
+  assert(p.length <= MAKS_SHENJA_PROMPTI + 2, `shumë i gjatë: ${p.length}`);
+  // Aftësia e punës (më e rëndësishmja) është në fund të prompt-it, që Whisper-i ta mbajë.
+  assert(p.indexOf("Playwright") > p.indexOf("Docker"));
+});
+
+Deno.test("fjalori: kufizohet edhe me shumë aftësi, dhe punon pa CV e pa kërkesa", () => {
+  const shume = ndertoPromptinSTT({
+    konteksti: { ...KONTEKSTI, cv: null, puna: { ...KONTEKSTI.puna, aftesite: Array.from({ length: 200 }, (_, i) => `Aftesia${i}`) } },
+  });
+  assert(shume.length <= MAKS_SHENJA_PROMPTI + 2);
+  assert(shume.includes("Aftesia0"));
+  assert(ndertoPromptinSTT({ konteksti: { ...KONTEKSTI, cv: null } }).includes("Playwright"));
+});
+
+Deno.test("fjalori: emrat teknikë nga teksti i lirë", () => {
+  assertEquals(emratTekniko("Punova me Node.js, TypeScript, C# dhe SQL në projektin tim."), ["Node.js", "TypeScript", "C#", "SQL"]);
+  assertEquals(emratTekniko("Punova me ekipin tim çdo ditë."), []);
+});
+
+Deno.test("jehona e prompt-it mbi heshtje s'bëhet përgjigje", () => {
+  const p = ndertoPromptinSTT({ konteksti: KONTEKSTI });
+  assert(eshteJehonaEPromptit(p.slice(0, 60), p));
+  assert(!eshteJehonaEPromptit("Kam përdorur Playwright që përdor Claude.", p));
+});
+
+Deno.test("Groq merr language dhe prompt-in te kërkesa", async () => {
+  Deno.env.set("GROQ_API_KEY", "prove");
+  let forma: FormData | null = null;
+  const iVjetri = globalThis.fetch;
+  globalThis.fetch = ((_u: unknown, init: RequestInit) => {
+    forma = init.body as FormData;
+    return Promise.resolve(Response.json({ text: "Mirë" }));
+  }) as typeof fetch;
+  try {
+    assertEquals(await groq().degjo(new Int16Array(1600), "sq", "Fjalori: Claude."), "Mirë");
+    const f = forma as unknown as FormData;
+    assertEquals([f.get("model"), f.get("language"), f.get("prompt")], ["whisper-large-v3", "sq", "Fjalori: Claude."]);
+  } finally {
+    globalThis.fetch = iVjetri;
   }
 });

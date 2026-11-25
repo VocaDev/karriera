@@ -42,6 +42,7 @@ import {
   UUID,
 } from "../_shared/intervista-ai.ts";
 import { perpunoKthesen } from "../_shared/intervista-kthesa.ts";
+import { eshteJehonaEPromptit, ndertoPromptinSTT } from "../_shared/zeri-fjalori.ts";
 import { CORS_HEADERS, json, kontrolloThirresin, type Thirresi } from "../_shared/thirresi.ts";
 import {
   type CopaAudio,
@@ -138,6 +139,13 @@ async function lexoIntervisten(
     konteksti,
     kthesa: eFundit,
   };
+}
+
+/** punet.kerkesat (jsonb) e punës së intervistës, për fjalorin e dëgjimit. null kur s'ka ose leximi dështoi. */
+async function lexoKerkesatEPunes(t: Thirresi, punaId: unknown): Promise<unknown> {
+  if (typeof punaId !== "string") return null;
+  const { data, error } = await t.admin.from("punet").select("kerkesat").eq("id", punaId).maybeSingle();
+  return error ? null : (data?.kerkesat ?? null);
 }
 
 /** Minutat e zërit në 24 orët e fundit; Response 429 nëse kufiri është arritur. */
@@ -364,7 +372,8 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
 
   const iv = await lexoIntervisten(t, intervistaId, nr);
   if (iv instanceof Response) return iv;
-  const kufiri = await kontrolloKufirin(t);
+  // Kërkesat e shpalljes për fjalorin e dëgjimit lexohen njëkohësisht me kufirin; pa to dëgjimi punon me pjesën tjetër.
+  const [kufiri, kerkesat] = await Promise.all([kontrolloKufirin(t), lexoKerkesatEPunes(t, iv.konteksti.puna?.id)]);
   if (kufiri) return kufiri;
 
   // ---------- Audio → PCM 16 kHz mono ----------
@@ -380,7 +389,9 @@ async function pergjigju(t: Thirresi, req: Request): Promise<Response> {
   // ---------- STT ----------
   let transkripti: string;
   try {
-    transkripti = (await degjuesi.degjo(pcm, iv.gjuha)).replace(/\s+/g, " ").trim().slice(0, MAKS_PERGJIGJJA);
+    const fjalori = ndertoPromptinSTT({ konteksti: iv.konteksti, kerkesat });
+    transkripti = (await degjuesi.degjo(pcm, iv.gjuha, fjalori)).replace(/\s+/g, " ").trim().slice(0, MAKS_PERGJIGJJA);
+    if (eshteJehonaEPromptit(transkripti, fjalori)) transkripti = "";
   } catch (e) {
     if (!(e instanceof GabimIZerit && e.konfigurim)) await regjistro(t, intervistaId, "pergjigje", sekonda, 0);
     return gabimIZerit(e);

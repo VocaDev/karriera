@@ -32,8 +32,11 @@ export type CopaAudio = { pcm: Uint8Array; shkalla: number };
 export interface Degjuesi {
   /** Emri për log-et (pa sekrete). */
   readonly emri: string;
-  /** Tekst nga PCM 16 kHz mono int16. "" kur s'u dëgjua asgjë. Hedh GabimIZerit kur ofruesi dështon. */
-  degjo(pcm: Int16Array, gjuha: Gjuha): Promise<string>;
+  /**
+   * Tekst nga PCM 16 kHz mono int16. "" kur s'u dëgjua asgjë. Hedh GabimIZerit kur ofruesi dështon.
+   * `fjalori`: tekst ndihmës me emrat që priten të thuhen (zeri-fjalori.ts).
+   */
+  degjo(pcm: Int16Array, gjuha: Gjuha, fjalori?: string): Promise<string>;
 }
 
 /** TTS: zëri i intervistuesit. */
