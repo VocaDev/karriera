@@ -38,6 +38,15 @@ const eshteObjekt = (v: unknown): v is Objekt => typeof v === "object" && v !== 
 const tekst = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
 const liste = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
+// punet.kerkesat (nxjerrë nga AI-ja nga shpallja): kërkesat, përparësitë dhe detyrat, të shkurtuara. Pyetjet lidhen me to.
+function kerkesatEShpalljes(v: unknown): string[] {
+  if (!eshteObjekt(v)) return [];
+  return [...liste(v.kerkesat), ...liste(v.perparesi), ...liste(v.detyrat)]
+    .map((x) => tekst(x).slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 14);
+}
+
 // CV-ja e krijuar (CvStrukturuar): vetëm faktet profesionale. Emri, email-i, telefoni, qyteti dhe datëlindja s'hyjnë.
 function cvNgaPermbajtja(p: unknown): string | null {
   if (!eshteObjekt(p)) return null;
@@ -113,7 +122,7 @@ Deno.serve(async (req: Request) => {
     // Puna, me JWT-në e përdoruesit (RLS: kërkuesi i lexon shpalljet).
     const { data: puna, error: gabimiPunes } = await t.klienti
       .from("punet")
-      .select("id, titulli, kompania, qyteti, roli, pershkrimi, aftesite")
+      .select("id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, kerkesat")
       .eq("id", punaId)
       .maybeSingle();
     if (gabimiPunes) {
@@ -238,6 +247,7 @@ Deno.serve(async (req: Request) => {
         roli: eshteRol(puna.roli) ? puna.roli : "Tjetër",
         pershkrimi: tekst(puna.pershkrimi),
         aftesite: liste(puna.aftesite).map(tekst).filter(Boolean),
+        kerkesat: kerkesatEShpalljes(puna.kerkesat),
       },
       cv: cvTekst,
       gatishmeria,
