@@ -22,7 +22,7 @@ export async function merrMbushesin(
   intervistuesi: Intervistuesi,
   gjuha: Gjuha,
   kerko: () => Promise<{ fjalite: FjaliaMeZe[]; ofruesi: string | null }>,
-): Promise<FjaliaMeZe[]> {
+): Promise<FjaliaMeZe[] | null> {
   const k = celesi(ofruesi, intervistuesi, gjuha);
   try {
     const v: unknown = JSON.parse((await AsyncStorage.getItem(k)) ?? "null");
@@ -31,8 +31,10 @@ export async function merrMbushesin(
     // cache i dëmtuar: kërkohet sërish
   }
   const e = await kerko();
+  // null = serveri s'e bëri tani (kufiri i kërkesave TTS): vlen të kërkohet sërish te pyetja tjetër.
+  if (e.fjalite.length === 0) return null;
   // Ruhet nën ofruesin që e bëri vërtet; nëse u kthye te një zë tjetër, s'përdoret me zërin e tanishëm.
-  if (e.fjalite.length > 0 && e.ofruesi) {
+  if (e.ofruesi) {
     await AsyncStorage.setItem(celesi(e.ofruesi, intervistuesi, gjuha), JSON.stringify(e.fjalite)).catch(() => {});
   }
   return e.ofruesi === ofruesi || e.ofruesi === null ? e.fjalite : [];

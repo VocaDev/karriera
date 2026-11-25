@@ -15,7 +15,7 @@ type Pergjigja = () => Response;
 
 const pcm = (bajt: number) => new Uint8Array(bajt).fill(1);
 const azureOk: Pergjigja = () => new Response(pcm(9601), { status: 200 }); // numër tek bajtesh me qëllim
-const b64 = btoa(String.fromCharCode(...pcm(4800)));
+const b64 = btoa(String.fromCharCode(...pcm(48_000))); // 1 s
 const geminiOk: Pergjigja = () =>
   new Response(
     `event: step.delta\ndata: {"delta":{"type":"audio","data":"${b64}","sample_rate":24000}}\n\n` +
@@ -222,7 +222,7 @@ Deno.test("kesh: i njëjti tekst herën e dytë s'bën asnjë kërkesë (edhe pa
     const e2 = await mblidh(kesh, "Mirëdita, unë jam Arta.");
     zbrazKujtesen(); // instancë e re: vetëm tabela
     const wav = await meKesh(zinxhiri(), depo, "gemini").fol("Mirëdita, unë jam Arta.", "sq", "arta");
-    assertEquals([e1, e2, f.kerkesat.length, m.size, wav.mime, wav.ofruesi], [4800, 4800, 1, 1, "audio/wav", "gemini"]);
+    assertEquals([e1, e2, f.kerkesat.length, m.size, wav.mime, wav.ofruesi], [48_000, 48_000, 1, 1, "audio/wav", "gemini"]);
     await mblidh(kesh, "Një tekst tjetër.");
     assertEquals(f.kerkesat.length, 2);
   } finally {

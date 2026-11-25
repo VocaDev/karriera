@@ -280,8 +280,9 @@ export async function dergoZerin(intervistaId: string, nr: number, uri: string):
 /** Zëri i pyetjes aktuale (pyetja e parë, ose kur intervista rihapet në Fol). Teksti merret nga serveri. */
 export type PjesaEZerit = "reagimi" | "pyetja" | "mbushesi";
 
-/** Një audio zëri zgjat ~2–6 s te ofruesi; pas kaq pritjeje pyetja mbetet si tekst dhe intervista vazhdon. */
-const KOHA_E_ZERIT = 25_000;
+/** Serveri mund të presë deri në ~15 s për një vend te kufiri i zërit, pastaj audioja zgjat ~2–6 s te ofruesi;
+ * pas kaq pritjeje pyetja mbetet si tekst dhe intervista vazhdon. */
+const KOHA_E_ZERIT = 35_000;
 
 /**
  * Zëri i pyetjes aktuale `nr`. Me `pjesa`, vetëm reagimi ose vetëm pyetja (app-i i kërkon paralelisht, që reagimi

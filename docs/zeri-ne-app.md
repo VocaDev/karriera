@@ -65,20 +65,36 @@ Emrat dhe gjinia u kontrolluan te [lista zyrtare e zërave](https://learn.micros
 
 - **REST, pa SDK** (`_shared/zeri-azure.ts`): `POST https://{AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, SSML, formati `raw-24khz-16bit-mono-pcm` (i njëjti PCM 24 kHz që luan app-i me rrjedhë; për rrugën pa rrjedhë serveri e mbështjell si WAV). **Një kërkesë për kthesë** të intervistuesit.
 - **Lip-sync:** zërat sq-AL s'kanë vizema (docs të Azure). Faqja e lëviz gojën si më parë: nga vala e vërtetë e zërit te rruga me rrjedhë, nga kohët e vlerësuara të fjalëve te rruga pa rrjedhë. Pa ndryshim te faqja.
-- **Rendi:** Azure (vetëm me sekret) → Gemini `3.8-flash-tts` → `3.8-flash-lite-tts` → pyetja me tekst dhe fjalia "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran." (`kodi: "kuota"`). Pa `AZURE_SPEECH_KEY` ose `AZURE_SPEECH_REGION`, Azure kapërcehet pa zë.
-- **429:** Azure dhe Gemini presin sipas `retry-after` dhe riprovojnë një herë kur vonesa është e shkurtër (Azure ≤ 5 s; F0 lejon 20 kërkesa në 60 s); Gemini në kufirin ditor s'riprovohet. "ditor": asnjë ofrues s'ka zë sot, ndaj app-i s'kërkon më dhe kandidati vazhdon me zë me pyetjen në ekran.
+- **Rendi:** Azure (vetëm me sekret) → modelet e Gemini-t me rradhë (§4c) → pyetja me tekst dhe fjalia "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran." (`kodi: "kuota"`). Pa `AZURE_SPEECH_KEY` ose `AZURE_SPEECH_REGION`, Azure kapërcehet pa zë.
+- **429:** Azure pret sipas `retry-after` dhe riprovon një herë kur vonesa është e shkurtër (≤ 5 s; F0 lejon 20 kërkesa në 60 s). Gemini: shih §4c. "ditor": asnjë ofrues s'ka zë sot, ndaj app-i s'kërkon më dhe kandidati vazhdon me zë me pyetjen në ekran.
 - **Kufiri mujor:** `public.zeri_azure_muaji` + `zeri_azure_rezervo()` (migrimi `20261125122000_zeri_azure.sql`) rezervojnë shkronjat para çdo kërkese dhe ndalen në **480 000** në muaj (UTC), nën 0,5 milion të F0 (shifra nga menaxheri; faqja e çmimeve s'u kontrollua). Numërohet teksti i dërguar (pa etiketat `<speak>` / `<voice>`, si e faturon Azure). **Pa migrimin, Azure kapërcehet** (fail-closed) dhe log-u e thotë.
 - **Mostrat për veshin:** `_provat/zeri-azure-mostra.ts` (3 fjali shqip × 2 zëra), vetëm kur sekretet janë në mjedis; ende s'është ekzekutuar.
 
-### 4c. Gemini: si kursehen kërkesat (25.11)
+### 4c. Gemini: kufijtë, rradha e modeleve dhe si kursehen kërkesat (25.11)
 
-Niveli falas i `gemini-3.8-flash-tts` lejon **10 kërkesa në ditë** (nga gabimi 429 i Google-it).
+Niveli falas (faqja e kufijve te AI Studio e Gentit, 25.11): `gemini-3.8-flash-tts` lejon **3 kërkesa në minutë** (kulmi i parë: 5/3) dhe ka edhe kufi ditor; gabimi 429 i Google-it tha **10 në ditë**. Kuotat janë për projekt dhe për model; kufiri ditor rinis në mesnatë sipas orës së Paqësorit ([docs](https://ai.google.dev/gemini-api/docs/rate-limits)). **S'krijohen projekte apo çelësa shtesë** për të shumëfishuar kuotat: është kundër kushteve të Google-it.
 
+- **Kufizues i përbashkët** (`_shared/zeri-kufizuesi.ts`, migrimi `20261125123000_zeri_tts_kufijte.sql`, vetëm `service_role`): dritare rrëshqitëse 60 s për çdo model, kufi ditor dhe bllokim pas një 429. Para çdo kërkese rezervohet një vend. **Pa migrimin**, numërohet vetëm në kujtesën e instancës (dy instanca bashkë mund ta kalojnë kufirin; 429 e Google-it e bllokon modelin dhe kalohet te tjetri).
+- **Rradha** (`_shared/zeri-rrotullimi.ts`): `gemini-3.8-flash-tts` → `gemini-3.1-flash-tts-preview` → `gemini-3.8-flash-lite-tts`; merret i pari me vend të lirë. Kur janë të gjitha plot, **pritet vendi i radhës deri në ~15 s** (app-i tregon "Arta po mendon…"); më shumë se kaq → `kodi: "kuota"`.
+- **429:** modeli bllokohet sa thotë Google-i (pa vonesë të thënë: 60 s, ose deri në mesnatën e Paqësorit për kufirin ditor). Brenda përshtatësit s'ka më riprovim: asnjë kërkesë pa vend të rezervuar. **400 / 404** (model që s'e pranon kërkesën): bllokohet 1 orë.
+- **Kontrolli i audios** (`_shared/zeri-gemini.ts`), para se të luhet ose të ruhet: jo bosh dhe jo vetëm heshtje; base64 që dekodohet; PCM / WAV **24 kHz** (jo format ose shkallë tjetër); gjatësia së paku `shkronjat / 30` sekonda (min. 0,3 s; mostrat e vërteta kanë 12–16 shkronja në sekondë). Dështimi = gabim i modelit: bllokohet 1 orë dhe provohet tjetri. Te rrjedha, copat mbahen derisa të arrihet ky minimum, ndaj zëri i parë mund të vonohet pak (jo i matur); një dëmtim pas kësaj s'e ndërron fjalinë, por e bllokon modelin. S'dallohet: një audio mjaft e gjatë me fjalë të gabuara ose zhurmë në formatin e duhur.
+- **Shqipja** ([docs](https://aistudio.google.com/docs/speech-generation), 25.11): "Tosk Albanian" figuron **vetëm te 3.8 Flash TTS**; te Flash-Lite "—"; për **3.1 preview** tabela e gjuhëve s'ka kolonë, dhe docs s'thonë as nëse punon me Interactions API / streaming, as nëse ka zërat Kore / Charon. **E paprovuar.** Para demos, dëgjoji: `_provat/zeri-lite-mostra.ts <dosja> [modeli]`. `GEMINI_LITE_SQ=0` e heq Lite për shqip; 3.1 fiket me `TTS_RPM_LIMITS` (rpm 0).
+- **Kufijtë ndryshohen pa kod** me sekretin `TTS_RPM_LIMITS`, formati `modeli=rpm[/rpd]` me presje. Hyrja e zëvendëson krejt parazgjedhjen e atij modeli (pa `/rpd` = pa kufi ditor); rpm 0 e fik. Parazgjedhja: `gemini-3.8-flash-tts=3/10,gemini-3.1-flash-tts-preview=3,gemini-3.8-flash-lite-tts=3`. Kufijtë ditorë të dy të fundit s'dihen: **Genti i shikon te AI Studio** dhe i shton. Kur paguhet, p.sh. `gemini-3.8-flash-tts=<rpm i ri>` (pa `/rpd` nëse s'ka kufi ditor).
+- **Parapërgatitja:** pranimi (i vetmi tekst fiks që merret në sfond) kërkohet ndërsa kandidati përgjigjet, me përparësi të ulët: nga kesh-i, ose vetëm kur mbeten të paktën 2 vende të lira (njëri i ruhet pyetjes), pa pritur kurrë. Kur s'bëhet, serveri kthen listë bosh dhe app-i e kërkon sërish te pyetja tjetër. Mbyllja shkon në të njëjtën kërkesë me reagimin e fundit, ndaj s'ka çka të parapërgatitet veç.
 - **Një kërkesë për kthesë** (reagimi + pyetja, ose reagimi + mbyllja, në një audio).
-- **429:** nëse vonesa e Google-it është e shkurtër (≤ 8 s), një riprovim; pastaj `gemini-3.8-flash-lite-tts` (kuotë e veten). **Kujdes për shqipen:** docs e listojnë "Tosk Albanian" vetëm te 3.8 Flash TTS, jo te Lite; zëri shqip i Lite s'është dëgjuar ende (`_provat/zeri-lite-mostra.ts`). Sekreti `GEMINI_LITE_SQ=0` e heq Lite për shqip.
 - **Kur s'ka zë:** `kodi: "kuota"` dhe "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran."
-- **Kesh i teksteve fikse** (`_shared/zeri-keshi.ts`): përshëndetja me pyetjen e parë (e njëjta për të njëjtën punë, intervistues dhe gjuhë) dhe pranimi i shkurtër. Kujtesa e instancës + tabela `zeri_kesh` (migrimi `20261125121000_zeri_kesh.sql`; pa të, vetëm kujtesa). Pyetjet e AI-së s'ruhen: mund të kenë hollësi nga përgjigjet.
+- **Kesh i teksteve fikse** (`_shared/zeri-keshi.ts`): përshëndetja me pyetjen e parë (e njëjta për të njëjtën punë, intervistues dhe gjuhë) dhe pranimi i shkurtër. Kujtesa e instancës + tabela `zeri_kesh` (migrimi `20261125121000_zeri_kesh.sql`, i aplikuar). Për shqip ruhet vetëm audio e 3.8 Flash TTS. Pyetjet e AI-së s'ruhen: mund të kenë hollësi nga përgjigjet.
 - **"Përsërit pyetjen"** luan audion që u tha, nga telefoni: 0 kërkesa. Pranimi ruhet edhe në telefon.
+
+**Sa intervista përballon niveli falas** (llogari nga kodi, jo matje; 6 përgjigje, hera e parë për punën = 8 kërkesa):
+
+| Modele në punë | Kërkesa / min | Intervista / orë, sa lejon RPM |
+|---|---|---|
+| Vetëm 3.8 Flash TTS | 3 | ~22 |
+| 3.8 + 3.1 (ose + Lite) | 6 | ~45 |
+| Të tre | 9 | ~67 |
+
+**Tavani i vërtetë është kufiri ditor.** Me 10 në ditë, 3.8 Flash TTS mjafton për **1 intervistë me 6 përgjigje në ditë**. Nëse edhe dy të tjerët kanë rreth 10 (e panjohur), dalin gjithsej ~3 në ditë; pasi harxhohen, pyetjet dalin vetëm me tekst. Për një kandidat të vetëm, me tre modele s'pritet nëse kthesat janë ≥ ~7 s larg njëra-tjetrës. Skriptet te `_provat/` e përdorin të njëjtën kuotë pa u numëruar (i mbron bllokimi pas 429).
 
 **Kërkesat TTS për një intervistë të plotë** (N = numri i përgjigjeve; nga kodi, jo i matur në prodhim):
 
@@ -88,7 +104,7 @@ Niveli falas i `gemini-3.8-flash-tts` lejon **10 kërkesa në ditë** (nga gabim
 | N = 6 (4 pyetje + 2 vazhduese) | 14 | 8 | 6 |
 | N = 9 (e plotë) | 20 | 11 | 9 |
 
-Para: 1 (pyetja e parë) + 1 (pranimi) + 2 × N, +1 për çdo "Përsërit". Tani: 1 + 1 + N; herën tjetër N (përshëndetja dhe pranimi nga kesh-i; pa migrimin, përshëndetja mund të kushtojë sërish 1 nëse instanca është e re). Shtesë vetëm kur diçka dështon (riprovimi, Lite, zëri rezervë) ose kur pyetja thuhet sërish pas rihapjes / Shkruaj → Fol (+1).
+Para: 1 (pyetja e parë) + 1 (pranimi) + 2 × N, +1 për çdo "Përsërit". Tani: 1 + 1 + N; herën tjetër N (përshëndetja dhe pranimi nga kesh-i; pa migrimin, përshëndetja mund të kushtojë sërish 1 nëse instanca është e re). Shtesë vetëm kur diçka dështon (një model tjetër pas gabimit, zëri rezervë) ose kur pyetja thuhet sërish pas rihapjes / Shkruaj → Fol (+1).
 
 ### 4b. Gemini: zërat
 
@@ -165,7 +181,12 @@ Claude mbetet sa te intervista me tekst; zëri s'shton thirrje AI. Kufijtë e fr
 
 ### 10b. Go-live për zërin (25.11, vetëm me OK-në e Gentit)
 
-**Pa Azure (rruga e sotme):** (1) opsionale: SQL `20261125121000_zeri_kesh.sql`; (2) deploy `intervista-zeri` (komanda te hapi 3 më poshtë).
+**Pa Azure (rruga e sotme):** `zeri_kesh` është aplikuar dhe funksionet e raundit të kaluar janë bërë deploy. Për kufizuesin dhe rradhën e modeleve:
+
+1. **SQL:** `supabase/migrations/20261125123000_zeri_tts_kufijte.sql` (**i paaplikuar dhe i paprovuar në një Postgres**; pa të, numërohet vetëm brenda një instance).
+2. **Sekreti** `TTS_RPM_LIMITS`: vetëm nëse kufijtë te AI Studio ndryshojnë nga parazgjedhja (§4c).
+3. **Deploy:** vetëm `intervista-zeri` (komanda te hapi 3 më poshtë). Funksionet e tjera s'preken.
+4. Prova: një intervistë me Fol; te log-et s'duhet të ketë "Numëruesi te DB s'u përdor". Rreshtat `[zeri-rrotullimi]` tregojnë cili model s'dha zë.
 
 **Me Azure, nëse një ditë hapet llogaria:**
 
