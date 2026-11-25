@@ -8,6 +8,7 @@ import { GabimIZerit, MESAZHI_I_KUOTES, pamjaEGabimitTeZerit } from "../_shared/
 import { azure, FORMATI_AZURE, KUFIRI_MUJOR_SHKRONJA, ssmlPer } from "../_shared/zeri-azure.ts";
 import { gemini, MODELI_TTS, MODELI_TTS_LITE } from "../_shared/zeri-gemini.ts";
 import { zinxhiriIZerit } from "../_shared/zeri-zinxhiri.ts";
+import { type DepoEZerit, meKesh, zbrazKujtesen, type ZeriIRuajtur } from "../_shared/zeri-keshi.ts";
 
 type Kerkesa = { ofruesi: string; url: string; init: RequestInit };
 type Pergjigja = () => Response;
@@ -127,20 +128,36 @@ Deno.test("Azure 429: një riprovim sipas retry-after, pastaj Gemini; çdo kërk
   }
 });
 
-Deno.test("Gemini në kufirin ditor: Flash-Lite për anglisht, JO për shqip (docs: shqipja s'është te Lite)", async () => {
+Deno.test("Gemini në kufirin ditor: bie te Flash-Lite (edhe shqip); GEMINI_LITE_SQ=0 e heq për shqip", async () => {
   mjedisi(false);
-  let f = meOfruesit({ azure: [], gemini: [e429(DITOR)], "gemini-lite": [geminiOk] });
-  try {
-    assertEquals((await fol(zinxhiri(), "en"))[0].ofruesi, "gemini-lite");
-    assertEquals(f.kush(), ["gemini", "gemini-lite"]);
-    assert(String(f.kerkesat[0].init.body).includes(`"model":"${MODELI_TTS}"`));
-  } finally {
-    f.rikthe();
+  for (const gjuha of ["en", "sq"] as const) {
+    const f = meOfruesit({ azure: [], gemini: [e429(DITOR)], "gemini-lite": [geminiOk] });
+    try {
+      assertEquals((await fol(zinxhiri(), gjuha))[0].ofruesi, "gemini-lite");
+      assertEquals(f.kush(), ["gemini", "gemini-lite"]);
+      assert(String(f.kerkesat[0].init.body).includes(`"model":"${MODELI_TTS}"`));
+    } finally {
+      f.rikthe();
+    }
   }
-  f = meOfruesit({ azure: [], gemini: [e429(DITOR)], "gemini-lite": [] });
+  Deno.env.set("GEMINI_LITE_SQ", "0");
+  const f = meOfruesit({ azure: [], gemini: [e429(DITOR)], "gemini-lite": [] });
   try {
     const e = await assertRejects(() => fol(zinxhiri(), "sq"), GabimIZerit);
     assertEquals(f.kush(), ["gemini"]);
+    assertEquals(pamjaEGabimitTeZerit(e), { status: 429, kodi: "kuota", mesazhi: MESAZHI_I_KUOTES, ditor: true });
+  } finally {
+    f.rikthe();
+    Deno.env.delete("GEMINI_LITE_SQ");
+  }
+});
+
+Deno.test("të dy modelet e Gemini-t me 429: kodi kuota me fjalinë e sinqertë", async () => {
+  mjedisi(false);
+  const f = meOfruesit({ azure: [], gemini: [e429(DITOR)], "gemini-lite": [e429(DITOR)] });
+  try {
+    const e = await assertRejects(() => fol(), GabimIZerit);
+    assertEquals(f.kush(), ["gemini", "gemini-lite"]);
     assertEquals(pamjaEGabimitTeZerit(e), { status: 429, kodi: "kuota", mesazhi: MESAZHI_I_KUOTES, ditor: true });
   } finally {
     f.rikthe();
@@ -149,10 +166,10 @@ Deno.test("Gemini në kufirin ditor: Flash-Lite për anglisht, JO për shqip (do
 
 Deno.test("429 i përkohshëm te Azure + kufiri ditor i Gemini-t: kodi kuota, por JO ditor (Azure kthehet pas pak)", async () => {
   mjedisi(true);
-  const f = meOfruesit({ azure: [e429("60")], gemini: [e429(DITOR)], "gemini-lite": [] });
+  const f = meOfruesit({ azure: [e429("60")], gemini: [e429(DITOR)], "gemini-lite": [e429(DITOR)] });
   try {
     const e = await assertRejects(() => fol(), GabimIZerit);
-    assertEquals(f.kush(), ["azure", "gemini"]); // retry-after 60 s > 5 s: s'pritet brenda kërkesës
+    assertEquals(f.kush(), ["azure", "gemini", "gemini-lite"]); // retry-after 60 s > 5 s: s'pritet brenda kërkesës
     const p = pamjaEGabimitTeZerit(e);
     assertEquals([p.kodi, p.ditor, p.mesazhi], ["kuota", false, "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran."]);
   } finally {
@@ -170,11 +187,66 @@ Deno.test("edhe rruga pa rrjedhë kalon nga zinxhiri dhe e thotë ofruesin; gabi
     f.rikthe();
   }
   mjedisi(false);
-  const g = meOfruesit({ azure: [], gemini: [() => new Response("x", { status: 500 })], "gemini-lite": [] });
+  const g = meOfruesit({ azure: [], gemini: [() => new Response("x", { status: 500 })], "gemini-lite": [() => new Response("x", { status: 500 })] });
   try {
     const e = await assertRejects(() => fol(), GabimIZerit);
     assertEquals(pamjaEGabimitTeZerit(e).kodi, "zeri");
   } finally {
     g.rikthe();
+  }
+});
+
+// ---------- Kesh-i i teksteve fikse ----------
+function depoERreme() {
+  const m = new Map<string, ZeriIRuajtur>();
+  const depo: DepoEZerit = {
+    lexo: (k) => Promise.resolve(m.get(k) ?? null),
+    shkruaj: (k, z) => (m.set(k, z), Promise.resolve()),
+  };
+  return { m, depo };
+}
+const mblidh = async (z: ReturnType<typeof meKesh>, teksti: string) => {
+  let bajt = 0;
+  for await (const c of z.rrjedhe!(teksti, "sq", "arta")) bajt += c.pcm.length;
+  return bajt;
+};
+
+Deno.test("kesh: i njëjti tekst herën e dytë s'bën asnjë kërkesë (edhe pas rinisjes së instancës, nga tabela)", async () => {
+  mjedisi(false);
+  zbrazKujtesen();
+  const { m, depo } = depoERreme();
+  const f = meOfruesit({ azure: [], gemini: [geminiOk], "gemini-lite": [] });
+  try {
+    const kesh = meKesh(zinxhiri(), depo, "gemini");
+    const e1 = await mblidh(kesh, "Mirëdita, unë jam Arta.");
+    const e2 = await mblidh(kesh, "Mirëdita, unë jam Arta.");
+    zbrazKujtesen(); // instancë e re: vetëm tabela
+    const wav = await meKesh(zinxhiri(), depo, "gemini").fol("Mirëdita, unë jam Arta.", "sq", "arta");
+    assertEquals([e1, e2, f.kerkesat.length, m.size, wav.mime, wav.ofruesi], [4800, 4800, 1, 1, "audio/wav", "gemini"]);
+    await mblidh(kesh, "Një tekst tjetër.");
+    assertEquals(f.kerkesat.length, 2);
+  } finally {
+    f.rikthe();
+  }
+});
+
+Deno.test("kesh: audio e prerë dhe audio e rezervës s'ruhen", async () => {
+  mjedisi(false);
+  zbrazKujtesen();
+  const { m, depo } = depoERreme();
+  const ePrere: Pergjigja = () =>
+    new Response(`event: step.delta\ndata: {"delta":{"type":"audio","data":"${b64}","sample_rate":24000}}\n\n`, { status: 200 });
+  let f = meOfruesit({ azure: [], gemini: [ePrere], "gemini-lite": [] });
+  try {
+    await assertRejects(() => mblidh(meKesh(zinxhiri(), depo, "gemini"), "A"), GabimIZerit);
+  } finally {
+    f.rikthe();
+  }
+  f = meOfruesit({ azure: [], gemini: [e429(DITOR)], "gemini-lite": [geminiOk] });
+  try {
+    await mblidh(meKesh(zinxhiri(), depo, "gemini"), "B"); // e bëri rezerva (Lite)
+    assertEquals(m.size, 0);
+  } finally {
+    f.rikthe();
   }
 });

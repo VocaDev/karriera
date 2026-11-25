@@ -68,7 +68,8 @@ import {
 import { azure, KUFIRI_MUJOR_SHKRONJA } from "../_shared/zeri-azure.ts";
 import { gemini, MODELI_TTS_LITE } from "../_shared/zeri-gemini.ts";
 import { groq } from "../_shared/zeri-groq.ts";
-import { zinxhiriIZerit } from "../_shared/zeri-zinxhiri.ts";
+import { depoNeDB, meKesh } from "../_shared/zeri-keshi.ts";
+import { type ZinxhiriIZerit, zinxhiriIZerit } from "../_shared/zeri-zinxhiri.ts";
 
 /**
  * Zëri i reagimit para se kthesa të mbarojë (Claude me rrjedhë) e sjell zërin ~1,3 s më shpejt, por bën DY kërkesa TTS për
@@ -83,7 +84,7 @@ const degjuesi: Degjuesi = groq();
  * Zëri i intervistuesit: Azure → Gemini 3.8 Flash TTS → Gemini Flash-Lite (vetëm en / de) → teksti me fjalinë e kufirit.
  * Pa sekretet e Azure-s, zinxhiri fillon te Gemini. Numëruesi mujor i Azure-s rezervon shkronjat para çdo kërkese.
  */
-function folesiPer(t: Thirresi): Folesi {
+function folesiPer(t: Thirresi): ZinxhiriIZerit {
   const rezervo = async (shkronja: number) => {
     const { data, error } = await t.admin.rpc("zeri_azure_rezervo", { p_shkronja: shkronja, p_kufiri: KUFIRI_MUJOR_SHKRONJA });
     if (error) {
@@ -99,7 +100,13 @@ type Objekt = Record<string, unknown>;
 const eshteObjekt = (v: unknown): v is Objekt => typeof v === "object" && v !== null && !Array.isArray(v);
 
 type FjaliaMeZe = { teksti: string; audio_base64: string; mime: string };
-type IntervistaEZerit = { gjuha: Gjuha; intervistuesi: Intervistuesi; konteksti: Konteksti; folesi: Folesi };
+type IntervistaEZerit = {
+  gjuha: Gjuha;
+  intervistuesi: Intervistuesi;
+  konteksti: Konteksti;
+  folesi: Folesi;
+  zinxhiri: ZinxhiriIZerit;
+};
 
 /** Ngjarja "gabim_zerit" e rrjedhës; "kodi" ("kuota" te kufiri i shërbimit) dhe "ditor" i tregojnë app-it çka të thotë. */
 function ngjarjaEGabimitTeZerit(e: unknown): Objekt {
@@ -113,6 +120,8 @@ function gabimIZerit(e: unknown): Response {
   if (p.kodi === "kuota") console.error(`[intervista-zeri] kuota: asnjë ofrues zëri i lirë (ditor: ${p.ditor}).`);
   return json({ error: p.mesazhi, kodi: p.kodi, ditor: p.ditor }, p.status);
 }
+
+const meZinxhir = (zinxhiri: ZinxhiriIZerit) => ({ folesi: zinxhiri as Folesi, zinxhiri });
 
 /** Intervista aktive e këtij përdoruesi dhe pyetja aktuale (e fundit, pa përgjigje). Response = gabim për app-in. */
 async function lexoIntervisten(
@@ -156,7 +165,7 @@ async function lexoIntervisten(
     gjuha: intervista.gjuha as Gjuha,
     intervistuesi: intervistuesiNga(konteksti),
     konteksti,
-    folesi: folesiPer(t),
+    ...meZinxhir(folesiPer(t)),
     kthesa: eFundit,
   };
 }
@@ -334,6 +343,11 @@ async function fol(t: Thirresi, b: Objekt): Promise<Response> {
   const pjesa = b.pjesa;
   if (pjesa !== undefined && pjesa !== "reagimi" && pjesa !== "pyetja" && pjesa !== "mbushesi") {
     return gabim("Kërkesa nuk është e vlefshme.", 400);
+  }
+  // Tekstet fikse të kodit (pyetja e parë me përshëndetjen, pranimi) ruhen: herën tjetër s'kushtojnë kërkesë TTS.
+  const ofruesiIPare = iv.zinxhiri.ofruesiIPare(iv.gjuha);
+  if (ofruesiIPare && (pjesa === "mbushesi" || (b.nr === 1 && pjesa === undefined))) {
+    iv.folesi = meKesh(iv.zinxhiri, depoNeDB(t.admin), ofruesiIPare);
   }
   const tekstet =
     pjesa === "reagimi"

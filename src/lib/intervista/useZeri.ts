@@ -93,6 +93,19 @@ export function useZeri(opts: {
     shprehja: Shprehja;
     pershendetje: boolean;
   } | null>(null);
+  /** Audio e plotë e thënies së fundit me rrjedhë: "Përsërit pyetjen" e luan pa asnjë kërkesë të re TTS. */
+  const eThena = useRef<{ celesi: CelesiIZerit; copat: [string, number][]; prishur: boolean; plote: boolean } | null>(null);
+  // Kopja mbahet pavarësisht nga luajtja: edhe pas "Ndalo", copat që vazhdojnë të vijnë hyjnë te kopja.
+  const mbajCopen = useCallback((celesi: CelesiIZerit, b: string, shkalla: number) => {
+    const e = eThena.current;
+    if (e?.celesi === celesi && !e.plote) e.copat.push([b, shkalla]);
+  }, []);
+  const mbyllKopjen = useCallback((celesi: CelesiIZerit, plote: boolean) => {
+    const e = eThena.current;
+    if (e?.celesi !== celesi) return;
+    if (!plote) e.prishur = true;
+    else if (!e.prishur && e.copat.length > 0) e.plote = true;
+  }, []);
   /** Rrjedha u ndërpre: kur faqja e mbaron pjesën që erdhi, luhet zëri rezervë i pyetjes. */
   const rezerva = useRef<CelesiIZerit | null>(null);
   /**
@@ -186,6 +199,7 @@ export function useZeri(opts: {
       thenePer.current = celesi;
       thenia.current = { celesi, pjeset: 1, mbaruan: 0, ndalur: false };
       rrjedha.current = { celesi, id: `${celesi}:0`, filloi: false, deshtoi: false, kuota: false, shprehja, pershendetje };
+      eThena.current = { celesi, copat: [], prishur: false, plote: false };
       vendosSigurine(celesi, 40);
     },
     [vendosSigurine],
@@ -254,11 +268,13 @@ export function useZeri(opts: {
     () => ({
       fillon: (celesi, shprehja) => nisRrjedhen(celesi, shprehja, false),
       pcm: (b, shkalla) => {
+        if (eThena.current) mbajCopen(eThena.current.celesi, b, shkalla);
         const th = thenia.current;
         if (th) rrjedhaPcm(th.celesi, b, shkalla);
       },
       ofruesi: setOfruesi,
       deshtoi: (kuota) => {
+        if (eThena.current) mbyllKopjen(eThena.current.celesi, false);
         if (kuota) shenoKuoten(kuota.ditor);
         if (rrjedha.current) {
           rrjedha.current.deshtoi = true;
@@ -266,11 +282,12 @@ export function useZeri(opts: {
         }
       },
       mbaroi: () => {
+        if (eThena.current) mbyllKopjen(eThena.current.celesi, true);
         const th = thenia.current;
         if (th) rrjedhaMbaroi(th.celesi);
       },
     }),
-    [nisRrjedhen, rrjedhaMbaroi, rrjedhaPcm, shenoKuoten],
+    [mbajCopen, mbyllKopjen, nisRrjedhen, rrjedhaMbaroi, rrjedhaPcm, shenoKuoten],
   );
 
   // Pyetja thuhet sapo faqja është gati. Pas një përgjigjeje me zë, rrjedha e saj është nisur tashmë (thenePer e di): s'kërkohet dy herë.
@@ -291,7 +308,9 @@ export function useZeri(opts: {
     let deshtoi = false;
     zeriIPyetjesMeRrjedhe(intervistaId, k.nr, {
       onPcm: (b, shkalla) => {
-        if (mounted.current) rrjedhaPcm(celesi, b, shkalla);
+        if (!mounted.current) return;
+        mbajCopen(celesi, b, shkalla);
+        rrjedhaPcm(celesi, b, shkalla);
       },
       onOfruesi: (emri) => {
         if (mounted.current) setOfruesi(emri);
@@ -305,6 +324,7 @@ export function useZeri(opts: {
     }).then(
       () => {
         if (!mounted.current) return;
+        mbyllKopjen(celesi, !deshtoi);
         if (deshtoi && rrjedha.current?.celesi === celesi) rrjedha.current.deshtoi = true;
         rrjedhaMbaroi(celesi);
       },
@@ -337,6 +357,8 @@ export function useZeri(opts: {
     intervistaId,
     kaloTeShkruaj,
     luajRezerven,
+    mbajCopen,
+    mbyllKopjen,
     njofto,
     nisRrjedhen,
     pamja.gjenitivi,
@@ -530,6 +552,17 @@ export function useZeri(opts: {
       thenia.current = { celesi, pjeset: 1, mbaruan: 0, ndalur: false };
       dergoPjesen(celesi, 0, f, "neutrale", false, false);
     };
+    const ruajtur = eThena.current;
+    if (ruajtur?.celesi === celesi && ruajtur.plote) {
+      // E njëjta audio që u tha (reagimi + pyetja), nga telefoni.
+      const id = `${celesi}:r`;
+      thenia.current = { celesi, pjeset: 1, mbaruan: 0, ndalur: false };
+      avatari.current?.rrjedheFillo(id, "neutrale", false);
+      for (const [b, shkalla] of ruajtur.copat) avatari.current?.rrjedhePcm(id, b, shkalla);
+      avatari.current?.rrjedheMbaroi(id);
+      vendosSigurine(celesi, 40);
+      return;
+    }
     if (pyetjaMeZe.current?.nr === nr && pyetjaMeZe.current.fjalite.length) {
       luaj(pyetjaMeZe.current.fjalite);
       return;

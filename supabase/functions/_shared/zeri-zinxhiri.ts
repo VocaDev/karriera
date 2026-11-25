@@ -19,7 +19,12 @@ export function gabimiPerfundimtar(deshtimet: GabimIZerit[]): GabimIZerit {
 
 const siGabimZeri = (e: unknown) => (e instanceof GabimIZerit ? e : new GabimIZerit("Zëri dështoi. Provo përsëri."));
 
-export function zinxhiriIZerit(ofruesit: Folesi[]): Folesi {
+export type ZinxhiriIZerit = Folesi & {
+  /** Ofruesi i parë i gatshëm për këtë gjuhë: kesh-i i teksteve fikse ruan vetëm audion e tij. */
+  ofruesiIPare(gjuha: Gjuha): string | null;
+};
+
+export function zinxhiriIZerit(ofruesit: Folesi[]): ZinxhiriIZerit {
   const perGjuhen = (gjuha: Gjuha) =>
     ofruesit.filter((o) => o.iGatshem?.() !== false && (!o.gjuhet || o.gjuhet.includes(gjuha)));
 
@@ -45,6 +50,7 @@ export function zinxhiriIZerit(ofruesit: Folesi[]): Folesi {
 
   return {
     emri: "zinxhiri",
+    ofruesiIPare: (gjuha) => perGjuhen(gjuha)[0]?.emri ?? null,
     rrjedhe,
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
       const deshtimet: GabimIZerit[] = [];

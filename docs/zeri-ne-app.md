@@ -52,9 +52,9 @@ Gemini TTS kthen vetëm audio: pa vizema, pa kohë fjalësh.
 
 ## 4. Zërat
 
-### 4a. Azure AI Speech, ofruesi kryesor (25.11, vendimi i Gentit)
+### 4a. Azure AI Speech, opsional (25.11)
 
-**Pse:** Gemini TTS falas lejon vetëm **10 kërkesa në ditë** për `gemini-3.8-flash-tts` (gabimi 429 i Google-it, 25.11), ndaj "Zëri i Artës s'erdhi" ndodhte shumicën e kohës.
+**Gjendja:** regjistrimi falas i Azure-s s'ofrohet nga Kosova (s'është te lista e vendeve; Genti s'përdor adresë të rreme). Kodi mbetet i vogël dhe opsional: **pa `AZURE_SPEECH_KEY` kapërcehet pa zë** dhe zinxhiri fillon te Gemini. Rruga kryesore sot është Gemini (§4c).
 
 | Intervistuesi | sq | en | de |
 |---|---|---|---|
@@ -65,12 +65,32 @@ Emrat dhe gjinia u kontrolluan te [lista zyrtare e zërave](https://learn.micros
 
 - **REST, pa SDK** (`_shared/zeri-azure.ts`): `POST https://{AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, SSML, formati `raw-24khz-16bit-mono-pcm` (i njëjti PCM 24 kHz që luan app-i me rrjedhë; për rrugën pa rrjedhë serveri e mbështjell si WAV). **Një kërkesë për kthesë** të intervistuesit.
 - **Lip-sync:** zërat sq-AL s'kanë vizema (docs të Azure). Faqja e lëviz gojën si më parë: nga vala e vërtetë e zërit te rruga me rrjedhë, nga kohët e vlerësuara të fjalëve te rruga pa rrjedhë. Pa ndryshim te faqja.
-- **Rendi:** Azure → Gemini `3.8-flash-tts` → `3.8-flash-lite-tts` (vetëm en / de: docs e Gemini-t e listojnë shqipen "Tosk Albanian" vetëm te 3.8 Flash TTS) → pyetja me tekst dhe fjalia "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran." (`kodi: "kuota"`). Pa `AZURE_SPEECH_KEY` ose `AZURE_SPEECH_REGION`, Azure kapërcehet pa zë.
+- **Rendi:** Azure (vetëm me sekret) → Gemini `3.8-flash-tts` → `3.8-flash-lite-tts` → pyetja me tekst dhe fjalia "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran." (`kodi: "kuota"`). Pa `AZURE_SPEECH_KEY` ose `AZURE_SPEECH_REGION`, Azure kapërcehet pa zë.
 - **429:** Azure dhe Gemini presin sipas `retry-after` dhe riprovojnë një herë kur vonesa është e shkurtër (Azure ≤ 5 s; F0 lejon 20 kërkesa në 60 s); Gemini në kufirin ditor s'riprovohet. "ditor": asnjë ofrues s'ka zë sot, ndaj app-i s'kërkon më dhe kandidati vazhdon me zë me pyetjen në ekran.
 - **Kufiri mujor:** `public.zeri_azure_muaji` + `zeri_azure_rezervo()` (migrimi `20261125120000_zeri_azure.sql`) rezervojnë shkronjat para çdo kërkese dhe ndalen në **480 000** në muaj (UTC), nën 0,5 milion të F0 (shifra nga menaxheri; faqja e çmimeve s'u kontrollua). Numërohet teksti i dërguar (pa etiketat `<speak>` / `<voice>`, si e faturon Azure). **Pa migrimin, Azure kapërcehet** (fail-closed) dhe log-u e thotë.
 - **Mostrat për veshin:** `_provat/zeri-azure-mostra.ts` (3 fjali shqip × 2 zëra), vetëm kur sekretet janë në mjedis; ende s'është ekzekutuar.
 
-### 4b. Gemini (rezerva)
+### 4c. Gemini: si kursehen kërkesat (25.11)
+
+Niveli falas i `gemini-3.8-flash-tts` lejon **10 kërkesa në ditë** (nga gabimi 429 i Google-it).
+
+- **Një kërkesë për kthesë** (reagimi + pyetja, ose reagimi + mbyllja, në një audio).
+- **429:** nëse vonesa e Google-it është e shkurtër (≤ 8 s), një riprovim; pastaj `gemini-3.8-flash-lite-tts` (kuotë e veten). **Kujdes për shqipen:** docs e listojnë "Tosk Albanian" vetëm te 3.8 Flash TTS, jo te Lite; zëri shqip i Lite s'është dëgjuar ende (`_provat/zeri-lite-mostra.ts`). Sekreti `GEMINI_LITE_SQ=0` e heq Lite për shqip.
+- **Kur s'ka zë:** `kodi: "kuota"` dhe "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran."
+- **Kesh i teksteve fikse** (`_shared/zeri-keshi.ts`): përshëndetja me pyetjen e parë (e njëjta për të njëjtën punë, intervistues dhe gjuhë) dhe pranimi i shkurtër. Kujtesa e instancës + tabela `zeri_kesh` (migrimi `20261125121000_zeri_kesh.sql`; pa të, vetëm kujtesa). Pyetjet e AI-së s'ruhen: mund të kenë hollësi nga përgjigjet.
+- **"Përsërit pyetjen"** luan audion që u tha, nga telefoni: 0 kërkesa. Pranimi ruhet edhe në telefon.
+
+**Kërkesat TTS për një intervistë të plotë** (N = numri i përgjigjeve; nga kodi, jo i matur në prodhim):
+
+| Intervista | Para (versioni i testuar nga Genti) | Tani, hera e parë për punën | Tani, e njëjta punë sërish |
+|---|---|---|---|
+| N = 3 (e shkurtër, minimumi) | 8 | 5 | 3 |
+| N = 6 (4 pyetje + 2 vazhduese) | 14 | 8 | 6 |
+| N = 9 (e plotë) | 20 | 11 | 9 |
+
+Para: 1 (pyetja e parë) + 1 (pranimi) + 2 × N, +1 për çdo "Përsërit". Tani: 1 + 1 + N; herën tjetër N (përshëndetja dhe pranimi nga kesh-i; pa migrimin, përshëndetja mund të kushtojë sërish 1 nëse instanca është e re). Shtesë vetëm kur diçka dështon (riprovimi, Lite, zëri rezervë) ose kur pyetja thuhet sërish pas rihapjes / Shkruaj → Fol (+1).
+
+### 4b. Gemini: zërat
 
 Gemini ka 30 zëra të gatshëm me përshkrim, jo me gjuhë; gjuha zbulohet nga teksti. Shqipja figuron si "Tosk Albanian" (vetëm te 3.8 Flash TTS, jo te Flash-Lite).
 
@@ -143,10 +163,14 @@ Claude mbetet sa te intervista me tekst; zëri s'shton thirrje AI. Kufijtë e fr
    - `supabase functions deploy intervista-nis` dhe `supabase functions deploy intervista-raporti` (ndajnë `_shared/intervista-ai.ts`, ku janë 4 hook-et e zërit; prompt-et e tekstit s'ndryshojnë)
 4. **App:** varësitë e reja (`expo-audio`, `expo-file-system`, `react-native-webview`) janë në Expo Go; s'duhet build. `app.json` ka plugin-in e `expo-audio` me arsyen shqip të mikrofonit (vlen në build).
 
-### 10b. Go-live për zërin me Azure (25.11, vetëm me OK-në e Gentit)
+### 10b. Go-live për zërin (25.11, vetëm me OK-në e Gentit)
+
+**Pa Azure (rruga e sotme):** (1) opsionale: SQL `20261125121000_zeri_kesh.sql`; (2) deploy `intervista-zeri` (komanda te hapi 3 më poshtë).
+
+**Me Azure, nëse një ditë hapet llogaria:**
 
 1. **Genti** krijon resursin "Speech" në Azure (niveli falas **F0**) dhe vendos te Supabase → Edge Functions → Secrets: `AZURE_SPEECH_KEY` dhe `AZURE_SPEECH_REGION` (p.sh. `westeurope`). Çelësi s'shkruhet askund tjetër.
-2. **SQL:** `supabase/migrations/20261125120000_zeri_azure.sql` (numëruesi mujor; pa të Azure kapërcehet).
+2. **SQL:** `supabase/migrations/20261125120000_zeri_azure.sql` (numëruesi mujor; pa të Azure kapërcehet). Pa Azure, mjafton `20261125121000_zeri_kesh.sql` (kesh-i; opsional).
 3. **Deploy:** `supabase functions deploy intervista-zeri --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`.
 4. Prova: një intervistë me Fol; te log-et s'duhet të ketë `[zeri-azure] HTTP` ose "Numëruesi i Azure-s s'u lexua".
 

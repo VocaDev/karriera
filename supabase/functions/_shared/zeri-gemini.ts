@@ -23,10 +23,14 @@ import {
 } from "./zeri.ts";
 
 export const MODELI_TTS = "gemini-3.8-flash-tts";
-/** Rezerva me kuotë të veten. Docs (aistudio.google.com/docs/speech-generation, 25.11): shqipja ("Tosk Albanian") është
- * VETËM te 3.8 Flash TTS, jo te Flash-Lite, ndaj Lite përdoret vetëm për anglisht dhe gjermanisht. */
+/**
+ * Rezerva me kuotë të veten (id i kontrolluar te lista e modeleve dhe te docs, 25.11). Përdoret kur 3.8 Flash TTS e ka
+ * mbaruar kufirin, edhe për shqip (kërkesa e menaxherit). KUJDES: docs (aistudio.google.com/docs/speech-generation) e
+ * listojnë "Tosk Albanian" vetëm te 3.8 Flash TTS, jo te Lite, dhe zëri shqip i Lite s'është dëgjuar ende
+ * (_provat/zeri-lite-mostra.ts). Nëse tingëllon keq: sekreti GEMINI_LITE_SQ=0 e heq për shqip, pa ndryshim kodi.
+ */
 export const MODELI_TTS_LITE = "gemini-3.8-flash-lite-tts";
-const GJUHET_E_LITE: readonly Gjuha[] = ["en", "de"];
+const gjuhetELite = (): readonly Gjuha[] => (Deno.env.get("GEMINI_LITE_SQ") === "0" ? ["en", "de"] : ["sq", "en", "de"]);
 const URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 const SHKALLA_TTS = 24_000; // kur vjen PCM pa header (audio/l16)
 
@@ -194,7 +198,7 @@ export function gemini(modeli: string = MODELI_TTS): Folesi {
   const lite = modeli === MODELI_TTS_LITE;
   return {
     emri: lite ? "gemini-lite" : "gemini",
-    ...(lite ? { gjuhet: GJUHET_E_LITE } : {}),
+    ...(lite ? { gjuhet: gjuhetELite() } : {}),
     iGatshem: () => !!Deno.env.get("GEMINI_API_KEY"),
     rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, teksti, gjuha, intervistuesi),
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
