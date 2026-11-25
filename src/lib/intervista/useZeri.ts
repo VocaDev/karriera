@@ -23,7 +23,7 @@ import type { AvatariRef } from "./Avatari";
 import type { Gjendja } from "./gjendja";
 import type { FazaELejes } from "./LejaModal";
 import { merrMbushesin } from "./mbushesi";
-import { GabimIIntervistes, zeriIPyetjes, zeriIPyetjesMeRrjedhe } from "./klienti";
+import { GabimIIntervistes, zeriIPyetjes, zeriIPyetjesMeRrjedhe, zeriMeOfruesin, ZERI_NGA_KUFIRI } from "./klienti";
 import type { FjaliaMeZe } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tipet";
 import type { CelesiIZerit, RezultatiIZerit, ZeriRrjedhe } from "./useIntervista";
@@ -89,20 +89,29 @@ export function useZeri(opts: {
     id: string;
     filloi: boolean;
     deshtoi: boolean;
+    kuota: boolean;
     shprehja: Shprehja;
     pershendetje: boolean;
   } | null>(null);
   /** Rrjedha u ndërpre: kur faqja e mbaron pjesën që erdhi, luhet zëri rezervë i pyetjes. */
   const rezerva = useRef<CelesiIZerit | null>(null);
-  /** Ofruesi i zërit e arriti kufirin ditor: s'kërkohet më zë; pyetjet dalin në ekran, përgjigjet vazhdojnë me zë. */
+  /**
+   * Kufiri i shërbimit të zërit (kodi "kuota"): fjalia e sinqertë, pa zë rezervë (do të godiste të njëjtin kufi). Te kufiri
+   * ditor s'kërkohet më zë: pyetjet dalin në ekran dhe përgjigjet vazhdojnë me zë.
+   */
   const paZeSot = useRef(false);
-  const shenoPaZeSot = useCallback(() => {
-    if (paZeSot.current) return;
-    paZeSot.current = true;
-    njofto(`Zëri i ${pamja.gjenitivi} e arriti kufirin e sotëm. Lexoje pyetjen në ekran dhe përgjigju me zë.`, "info");
-  }, [njofto, pamja.gjenitivi]);
+  const shenoKuoten = useCallback(
+    (ditor: boolean) => {
+      if (paZeSot.current) return;
+      if (ditor) paZeSot.current = true;
+      njofto(ZERI_NGA_KUFIRI, "info");
+    },
+    [njofto],
+  );
+  /** Cili ofrues po flet (Azure, Gemini): pranimi i shkurtër merret me të njëjtin zë. */
+  const [ofruesi, setOfruesi] = useState<string | null>(null);
   const mbushesi = useRef<FjaliaMeZe[] | null>(null);
-  const mbushesiUKerkua = useRef(false);
+  const mbushesiPer = useRef<string | null>(null); // ofruesi për të cilin u kërkua pranimi
   const sigurimi = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
@@ -176,7 +185,7 @@ export function useZeri(opts: {
     (celesi: CelesiIZerit, shprehja: Shprehja, pershendetje: boolean) => {
       thenePer.current = celesi;
       thenia.current = { celesi, pjeset: 1, mbaruan: 0, ndalur: false };
-      rrjedha.current = { celesi, id: `${celesi}:0`, filloi: false, deshtoi: false, shprehja, pershendetje };
+      rrjedha.current = { celesi, id: `${celesi}:0`, filloi: false, deshtoi: false, kuota: false, shprehja, pershendetje };
       vendosSigurine(celesi, 40);
     },
     [vendosSigurine],
@@ -211,24 +220,25 @@ export function useZeri(opts: {
             pyetjaMeZe.current = { nr, fjalite: f };
             dergoPjesen(celesi, 1, f, "neutrale", false, true);
           },
-          () => {
+          (e: unknown) => {
             if (!mounted.current) return;
             pjesaMbaroi(celesi);
-            njofto(`Zëri i ${pamja.gjenitivi} u ndërpre. Lexoje pyetjen në ekran.`, "info");
+            if (e instanceof GabimIIntervistes && e.kodi === "kuota") shenoKuoten(e.kufiriDitor);
+            else njofto(`Zëri i ${pamja.gjenitivi} u ndërpre. Lexoje pyetjen në ekran.`, "info");
           },
         );
       }, PRITJA_E_REZERVES_MS);
     },
-    [dergoPjesen, intervistaId, njofto, pamja.gjenitivi, pjesaMbaroi, vendosSigurine],
+    [dergoPjesen, intervistaId, njofto, pamja.gjenitivi, pjesaMbaroi, shenoKuoten, vendosSigurine],
   );
   const rrjedhaMbaroi = useCallback(
     (celesi: CelesiIZerit) => {
       const r = rrjedha.current;
       if (!r || r.celesi !== celesi) return;
       const duhetRezerva =
-        r.deshtoi && !paZeSot.current && celesi !== "mbyllja" && !!thenia.current && !thenia.current.ndalur;
+        r.deshtoi && !r.kuota && !paZeSot.current && celesi !== "mbyllja" && !!thenia.current && !thenia.current.ndalur;
       if (duhetRezerva && thenia.current) thenia.current.pjeset = 2;
-      else if (r.deshtoi && !paZeSot.current) njofto("Zëri u ndërpre. Teksti është në ekran.", "info");
+      else if (r.deshtoi && !r.kuota && !paZeSot.current) njofto("Zëri u ndërpre. Teksti është në ekran.", "info");
       if (!r.filloi) {
         // Pa asnjë copë zëri: pjesa e rrjedhës numërohet menjëherë.
         pjesaMbaroi(celesi);
@@ -247,16 +257,20 @@ export function useZeri(opts: {
         const th = thenia.current;
         if (th) rrjedhaPcm(th.celesi, b, shkalla);
       },
-      deshtoi: (kufiriDitor) => {
-        if (kufiriDitor) shenoPaZeSot();
-        if (rrjedha.current) rrjedha.current.deshtoi = true;
+      ofruesi: setOfruesi,
+      deshtoi: (kuota) => {
+        if (kuota) shenoKuoten(kuota.ditor);
+        if (rrjedha.current) {
+          rrjedha.current.deshtoi = true;
+          rrjedha.current.kuota = !!kuota;
+        }
       },
       mbaroi: () => {
         const th = thenia.current;
         if (th) rrjedhaMbaroi(th.celesi);
       },
     }),
-    [nisRrjedhen, rrjedhaMbaroi, rrjedhaPcm, shenoPaZeSot],
+    [nisRrjedhen, rrjedhaMbaroi, rrjedhaPcm, shenoKuoten],
   );
 
   // Pyetja thuhet sapo faqja është gati. Pas një përgjigjeje me zë, rrjedha e saj është nisur tashmë (thenePer e di): s'kërkohet dy herë.
@@ -279,9 +293,14 @@ export function useZeri(opts: {
       onPcm: (b, shkalla) => {
         if (mounted.current) rrjedhaPcm(celesi, b, shkalla);
       },
-      onGabimZerit: (_mesazhi, kufiriDitor) => {
+      onOfruesi: (emri) => {
+        if (mounted.current) setOfruesi(emri);
+      },
+      onGabimZerit: (_mesazhi, kuota) => {
         deshtoi = true;
-        if (kufiriDitor) shenoPaZeSot();
+        if (!kuota) return;
+        shenoKuoten(kuota.ditor);
+        if (rrjedha.current?.celesi === celesi) rrjedha.current.kuota = true;
       },
     }).then(
       () => {
@@ -292,8 +311,8 @@ export function useZeri(opts: {
       (e: unknown) => {
         if (!mounted.current) return;
         const g = e instanceof GabimIIntervistes ? e : null;
-        if (g?.kodi === "zeri_ditor") {
-          shenoPaZeSot();
+        if (g?.kodi === "kuota") {
+          shenoKuoten(g.kufiriDitor);
           pjesaMbaroi(celesi);
           return;
         }
@@ -324,7 +343,7 @@ export function useZeri(opts: {
     pjesaMbaroi,
     rrjedhaMbaroi,
     rrjedhaPcm,
-    shenoPaZeSot,
+    shenoKuoten,
   ]);
 
   // Pranimi i shkurtër: nga cache-i i telefonit; përndryshe kërkohet vetëm pasi pyetja e parë u tha (jo njëkohësisht me
@@ -332,16 +351,18 @@ export function useZeri(opts: {
   const nrAktual = gjendja.faza === "pret_pergjigjen" ? (gjendja.seanca.kthesa?.nr ?? null) : null;
   const gjuha = gjendja.faza === "pret_pergjigjen" ? gjendja.seanca.info.gjuha : null;
   useEffect(() => {
-    if (!faqjaGati || nrAktual === null || !gjuha || mbushesiUKerkua.current || paZeSot.current) return;
-    mbushesiUKerkua.current = true;
-    merrMbushesin(intervistuesi, gjuha, () => zeriIPyetjes(intervistaId, nrAktual, "mbushesi"))
+    // Pranimi merret me zërin që po flet tani; nëse ofruesi ndryshon (p.sh. Azure → Gemini), merret sërish.
+    if (!faqjaGati || nrAktual === null || !gjuha || !ofruesi || mbushesiPer.current === ofruesi || paZeSot.current) return;
+    mbushesiPer.current = ofruesi;
+    mbushesi.current = null;
+    merrMbushesin(ofruesi, intervistuesi, gjuha, () => zeriMeOfruesin(intervistaId, nrAktual, "mbushesi"))
       .then((f) => {
-        if (f.length) mbushesi.current = f;
+        if (f.length && mbushesiPer.current === ofruesi) mbushesi.current = f;
       })
       .catch(() => {
         // Pa pranim: kandidati sheh vetëm "po mendon"; asgjë s'prishet.
       });
-  }, [faqjaGati, gjuha, intervistaId, intervistuesi, nrAktual]);
+  }, [faqjaGati, gjuha, intervistaId, intervistuesi, nrAktual, ofruesi]);
 
   // Rezultatet hapen kur raporti erdhi dhe intervistuesi s'po flet më (mbyllja dëgjohet deri në fund).
   useEffect(() => {
@@ -518,7 +539,10 @@ export function useZeri(opts: {
         pyetjaMeZe.current = { nr, fjalite: f };
         luaj(f);
       })
-      .catch(() => njofto(`Zëri i ${pamja.gjenitivi} s'erdhi. Pyetja është në ekran.`, "info"));
+      .catch((e: unknown) => {
+        if (e instanceof GabimIIntervistes && e.kodi === "kuota") shenoKuoten(e.kufiriDitor);
+        else njofto(`Zëri i ${pamja.gjenitivi} s'erdhi. Pyetja është në ekran.`, "info");
+      });
   }
 
   // ---------- Statusi: kush e ka radhën, me fjalë ----------

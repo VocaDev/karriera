@@ -52,6 +52,26 @@ Gemini TTS kthen vetëm audio: pa vizema, pa kohë fjalësh.
 
 ## 4. Zërat
 
+### 4a. Azure AI Speech, ofruesi kryesor (25.11, vendimi i Gentit)
+
+**Pse:** Gemini TTS falas lejon vetëm **10 kërkesa në ditë** për `gemini-3.8-flash-tts` (gabimi 429 i Google-it, 25.11), ndaj "Zëri i Artës s'erdhi" ndodhte shumicën e kohës.
+
+| Intervistuesi | sq | en | de |
+|---|---|---|---|
+| Arta (femër) | `sq-AL-AnilaNeural` | `en-US-JennyNeural` | `de-DE-KatjaNeural` |
+| Arbër (mashkull) | `sq-AL-IlirNeural` | `en-US-AndrewNeural` | `de-DE-ConradNeural` |
+
+Emrat dhe gjinia u kontrolluan te [lista zyrtare e zërave](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts). Për herë të parë Arbër ka zë mashkullor shqip.
+
+- **REST, pa SDK** (`_shared/zeri-azure.ts`): `POST https://{AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, SSML, formati `raw-24khz-16bit-mono-pcm` (i njëjti PCM 24 kHz që luan app-i me rrjedhë; për rrugën pa rrjedhë serveri e mbështjell si WAV). **Një kërkesë për kthesë** të intervistuesit.
+- **Lip-sync:** zërat sq-AL s'kanë vizema (docs të Azure). Faqja e lëviz gojën si më parë: nga vala e vërtetë e zërit te rruga me rrjedhë, nga kohët e vlerësuara të fjalëve te rruga pa rrjedhë. Pa ndryshim te faqja.
+- **Rendi:** Azure → Gemini `3.8-flash-tts` → `3.8-flash-lite-tts` (vetëm en / de: docs e Gemini-t e listojnë shqipen "Tosk Albanian" vetëm te 3.8 Flash TTS) → pyetja me tekst dhe fjalia "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran." (`kodi: "kuota"`). Pa `AZURE_SPEECH_KEY` ose `AZURE_SPEECH_REGION`, Azure kapërcehet pa zë.
+- **429:** Azure dhe Gemini presin sipas `retry-after` dhe riprovojnë një herë kur vonesa është e shkurtër (Azure ≤ 5 s; F0 lejon 20 kërkesa në 60 s); Gemini në kufirin ditor s'riprovohet. "ditor": asnjë ofrues s'ka zë sot, ndaj app-i s'kërkon më dhe kandidati vazhdon me zë me pyetjen në ekran.
+- **Kufiri mujor:** `public.zeri_azure_muaji` + `zeri_azure_rezervo()` (migrimi `20261125120000_zeri_azure.sql`) rezervojnë shkronjat para çdo kërkese dhe ndalen në **480 000** në muaj (UTC), nën 0,5 milion të F0 (shifra nga menaxheri; faqja e çmimeve s'u kontrollua). Numërohet teksti i dërguar (pa etiketat `<speak>` / `<voice>`, si e faturon Azure). **Pa migrimin, Azure kapërcehet** (fail-closed) dhe log-u e thotë.
+- **Mostrat për veshin:** `_provat/zeri-azure-mostra.ts` (3 fjali shqip × 2 zëra), vetëm kur sekretet janë në mjedis; ende s'është ekzekutuar.
+
+### 4b. Gemini (rezerva)
+
 Gemini ka 30 zëra të gatshëm me përshkrim, jo me gjuhë; gjuha zbulohet nga teksti. Shqipja figuron si "Tosk Albanian" (vetëm te 3.8 Flash TTS, jo te Flash-Lite).
 
 | Intervistuesi | Zëri | Përshkrimi (docs) |
@@ -122,6 +142,13 @@ Claude mbetet sa te intervista me tekst; zëri s'shton thirrje AI. Kufijtë e fr
    - `supabase functions deploy intervista-kthesa` (logjika e kthesës u zhvendos te `_shared/intervista-kthesa.ts`, pa ndryshim sjelljeje)
    - `supabase functions deploy intervista-nis` dhe `supabase functions deploy intervista-raporti` (ndajnë `_shared/intervista-ai.ts`, ku janë 4 hook-et e zërit; prompt-et e tekstit s'ndryshojnë)
 4. **App:** varësitë e reja (`expo-audio`, `expo-file-system`, `react-native-webview`) janë në Expo Go; s'duhet build. `app.json` ka plugin-in e `expo-audio` me arsyen shqip të mikrofonit (vlen në build).
+
+### 10b. Go-live për zërin me Azure (25.11, vetëm me OK-në e Gentit)
+
+1. **Genti** krijon resursin "Speech" në Azure (niveli falas **F0**) dhe vendos te Supabase → Edge Functions → Secrets: `AZURE_SPEECH_KEY` dhe `AZURE_SPEECH_REGION` (p.sh. `westeurope`). Çelësi s'shkruhet askund tjetër.
+2. **SQL:** `supabase/migrations/20261125120000_zeri_azure.sql` (numëruesi mujor; pa të Azure kapërcehet).
+3. **Deploy:** `supabase functions deploy intervista-zeri --no-verify-jwt --project-ref mlnfamjdkmyszvxxhddr`.
+4. Prova: një intervistë me Fol; te log-et s'duhet të ketë `[zeri-azure] HTTP` ose "Numëruesi i Azure-s s'u lexua".
 
 ## 11. Prova në telefon (6 hapa, Expo Go)
 

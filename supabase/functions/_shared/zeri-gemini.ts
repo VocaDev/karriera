@@ -14,6 +14,7 @@ import {
   type CopaAudio,
   type Folesi,
   GabimIZerit,
+  gabimIKuotes,
   headerAtEKufijve,
   lexoKufirin,
   lexoWav,
@@ -22,6 +23,10 @@ import {
 } from "./zeri.ts";
 
 export const MODELI_TTS = "gemini-3.8-flash-tts";
+/** Rezerva me kuotë të veten. Docs (aistudio.google.com/docs/speech-generation, 25.11): shqipja ("Tosk Albanian") është
+ * VETËM te 3.8 Flash TTS, jo te Flash-Lite, ndaj Lite përdoret vetëm për anglisht dhe gjermanisht. */
+export const MODELI_TTS_LITE = "gemini-3.8-flash-lite-tts";
+const GJUHET_E_LITE: readonly Gjuha[] = ["en", "de"];
 const URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 const SHKALLA_TTS = 24_000; // kur vjen PCM pa header (audio/l16)
 
@@ -61,9 +66,9 @@ function ngaBase64(b64: string): Uint8Array {
   return a;
 }
 
-function trupiIKerkeses(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi, rrjedhe: boolean) {
+function trupiIKerkeses(modeli: string, teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi, rrjedhe: boolean) {
   return {
-    model: MODELI_TTS,
+    model: modeli,
     ...(rrjedhe ? { stream: true } : {}),
     input: [
       {
@@ -84,7 +89,6 @@ function celesiIGemini(): string {
 
 /** Vonesë më e gjatë se kaq ose "per day" te kufiri = kufiri ditor i ofruesit. */
 const VONESA_E_KUFIRIT_DITOR_MS = 60 * 60 * 1000;
-export const MESAZHI_I_KUFIRIT_DITOR = "Zëri i intervistuesit e arriti kufirin e sotëm. Pyetjet dalin në ekran.";
 
 /** Më shumë se kaq s'presim brenda një kërkese: kandidati sheh tekstin dhe app-i ka rrugën e vet rezervë. */
 const MAKS_PRITJA_429_MS = 8_000;
@@ -101,9 +105,7 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
     const { vonesaMs, kufiri } = lexoKufirin(e.detaje);
     console.error(`[zeri-gemini] 429: kufiri ${kufiri ?? "i pathënë"} · vonesa ${vonesaMs ?? "?"} ms`);
     if ((vonesaMs !== null && vonesaMs >= VONESA_E_KUFIRIT_DITOR_MS) || /per day/i.test(kufiri ?? "")) {
-      const d = new GabimIZerit(MESAZHI_I_KUFIRIT_DITOR, false, e.detaje);
-      d.kufiriDitor = true;
-      throw d;
+      throw gabimIKuotes(e.detaje, true);
     }
     const pritja = vonesaMs ?? 3_000;
     if (pritja > MAKS_PRITJA_429_MS) throw e;
@@ -117,13 +119,18 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
  * `mime_type: "audio/l16"` (PCM 16 bit mono, `sample_rate` 24000), copa 40–80 ms; byte-i i parë vjen pas ~2 s dhe
  * pjesa tjetër brenda <1 s (shumë më shpejt se koha reale). Përfundon me `interaction.completed` dhe `[DONE]`.
  */
-async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): AsyncGenerator<CopaAudio> {
+async function* rrjedhaGemini(
+  modeli: string,
+  teksti: string,
+  gjuha: Gjuha,
+  intervistuesi: Intervistuesi,
+): AsyncGenerator<CopaAudio> {
   const celesi = celesiIGemini();
   const r = await thirrGemini(
     {
       method: "POST",
       headers: { "x-goog-api-key": celesi, "Content-Type": "application/json" },
-      body: JSON.stringify(trupiIKerkeses(teksti, gjuha, intervistuesi, true)),
+      body: JSON.stringify(trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, true)),
     },
     60_000,
   );
@@ -183,13 +190,16 @@ async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Inter
   if (!perfundoi) throw new GabimIZerit("Zëri u ndërpre para fundit. Provo përsëri.");
 }
 
-export function gemini(): Folesi {
+export function gemini(modeli: string = MODELI_TTS): Folesi {
+  const lite = modeli === MODELI_TTS_LITE;
   return {
-    emri: "gemini",
-    rrjedhe: rrjedhaGemini,
+    emri: lite ? "gemini-lite" : "gemini",
+    ...(lite ? { gjuhet: GJUHET_E_LITE } : {}),
+    iGatshem: () => !!Deno.env.get("GEMINI_API_KEY"),
+    rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, teksti, gjuha, intervistuesi),
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
       const celesi = celesiIGemini();
-      const trupi = trupiIKerkeses(teksti, gjuha, intervistuesi, false);
+      const trupi = trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, false);
       const r = await thirrGemini(
         {
           method: "POST",

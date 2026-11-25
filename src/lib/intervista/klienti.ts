@@ -45,7 +45,7 @@ export type KodiIGabimit =
   | "zeri" // dëgjimi ose zëri dështoi: riprovo ose shkruaj
   | "zeri_pa_konfigurim" // zëri s'është gati në server: vetëm me shkrim
   | "kufiri_zerit" // minutat e zërit për sot mbaruan
-  | "zeri_ditor" // ofruesi i zërit e arriti kufirin ditor: pyetjet dalin me tekst, përgjigjet vazhdojnë me zë
+  | "kuota" // kufiri i shërbimit të zërit (429 ose numëruesi mujor): pyetja del me tekst, përgjigjet vazhdojnë me zë
   | "rrjeti"
   | "vonese" // s'u përgjigj në kohë (VONON)
   | "sesioni"
@@ -54,6 +54,8 @@ export type KodiIGabimit =
 /** Gabim me mesazh në shqip (nga serveri ose nga ky fajll) dhe një kod që ekrani e përdor për të vendosur çka bën. */
 export class GabimIIntervistes extends Error {
   readonly kodi: KodiIGabimit;
+  /** Vetëm te "kuota": asnjë ofrues s'do të ketë zë sot (s'ka kuptim të kërkohet sërish). */
+  kufiriDitor = false;
   readonly status: number | null;
   /** Kur serveri thotë "jashte_radhe", kthen edhe pyetjen aktuale. */
   readonly kthesa: Kthesa | null;
@@ -98,7 +100,7 @@ const KODET: readonly string[] = [
   "zeri",
   "zeri_pa_konfigurim",
   "kufiri_zerit",
-  "zeri_ditor",
+  "kuota",
 ];
 
 async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimIIntervistes> {
@@ -115,7 +117,9 @@ async function perktheGabimin(gabimi: unknown, rezerva: string): Promise<GabimII
               ? "sesioni"
               : "tjeter";
         const transkripti = typeof trupi.transkripti === "string" && trupi.transkripti.trim() ? trupi.transkripti : null;
-        return new GabimIIntervistes(trupi.error, kodi, status, lexoKthesen(trupi.kthesa), transkripti);
+        const g = new GabimIIntervistes(trupi.error, kodi, status, lexoKthesen(trupi.kthesa), transkripti);
+        g.kufiriDitor = trupi.ditor === true;
+        return g;
       }
     } catch {
       // përgjigje pa JSON
@@ -285,6 +289,15 @@ const KOHA_E_ZERIT = 25_000;
  * Lista bosh = s'ka çka të thuhet (p.sh. pyetja e parë pa reagim).
  */
 export async function zeriIPyetjes(intervistaId: string, nr: number, pjesa?: PjesaEZerit): Promise<FjaliaMeZe[]> {
+  return (await zeriMeOfruesin(intervistaId, nr, pjesa)).fjalite;
+}
+
+/** Si zeriIPyetjes, plus ofruesin që e bëri (për ta ruajtur pranimin e shkurtër veç për çdo zë). */
+export async function zeriMeOfruesin(
+  intervistaId: string,
+  nr: number,
+  pjesa?: PjesaEZerit,
+): Promise<{ fjalite: FjaliaMeZe[]; ofruesi: string | null }> {
   const data = await thirr(
     "intervista-zeri",
     { veprimi: "fol", intervista_id: intervistaId, nr, ...(pjesa ? { pjesa } : {}) },
@@ -293,13 +306,23 @@ export async function zeriIPyetjes(intervistaId: string, nr: number, pjesa?: Pje
   );
   const fjalite = eshteObjekt(data) ? lexoFjalite(data.zeri) : null;
   if (!fjalite) throw new GabimIIntervistes(PERGJIGJE_E_PAPLOTE, "zeri");
-  return fjalite;
+  const zeri = eshteObjekt(data) && eshteObjekt(data.zeri) ? data.zeri : null;
+  return { fjalite, ofruesi: zeri && typeof zeri.ofruesi === "string" ? zeri.ofruesi : null };
 }
 
 // ---------- Zëri me rrjedhë (24.11) ----------
 // Të njëjtat dy veprime të intervista-zeri, por përgjigjja është NDJSON: transkripti, teksti i pyetjes dhe zëri (PCM) vijnë
 // sapo janë gati. `supabase.functions.invoke` nuk e lexon trupin pjesë-pjesë, ndaj këtu përdoret `expo/fetch` (streaming,
 // SDK 58). Kontrata e ngjarjeve është te koka e supabase/functions/intervista-zeri/index.ts.
+
+/** Kufiri i shërbimit të zërit; `ditor` = asnjë ofrues s'ka zë më sot. */
+export type KuotaEZerit = { ditor: boolean };
+
+/** Fjalia e sinqertë kur zëri s'ka nga kufiri i shërbimit (e njëjta si te serveri). */
+export const ZERI_NGA_KUFIRI = "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran.";
+
+const kuotaNga = (n: Record<string, unknown>): KuotaEZerit | undefined =>
+  n.kodi === "kuota" ? { ditor: n.ditor === true } : undefined;
 
 export type PerRrjedhen = {
   /** Transkripti i përgjigjes (para se të vijë pyetja e re). */
@@ -308,8 +331,10 @@ export type PerRrjedhen = {
   onKthesa?: (pas: PasPergjigjes) => void;
   /** Një copë zëri: PCM 16 bit mono, base64, me shkallën e mostrimit. */
   onPcm: (b: string, shkalla: number) => void;
-  /** Zëri dështoi ose u ndërpre pasi teksti erdhi: pyetja është në ekran, intervista vazhdon. `kufiriDitor`: s'ka zë sot. */
-  onGabimZerit: (mesazhi: string, kufiriDitor?: boolean) => void;
+  /** Cili ofrues po e flet këtë pjesë (para copës së parë). */
+  onOfruesi?: (emri: string) => void;
+  /** Zëri dështoi ose u ndërpre pasi teksti erdhi: pyetja është në ekran, intervista vazhdon. `kuota`: kufiri i shërbimit. */
+  onGabimZerit: (mesazhi: string, kuota?: KuotaEZerit) => void;
 };
 
 const kodiIGabimit = (v: unknown): KodiIGabimit =>
@@ -356,13 +381,15 @@ async function hapRrjedhen(trupi: string | Uint8Array<ArrayBuffer>, tipi: string
   if (eshteObjekt(trupiIGabimit) && typeof trupiIGabimit.error === "string") {
     const transkripti =
       typeof trupiIGabimit.transkripti === "string" && trupiIGabimit.transkripti.trim() ? trupiIGabimit.transkripti : null;
-    throw new GabimIIntervistes(
+    const g = new GabimIIntervistes(
       trupiIGabimit.error,
       r.status === 401 ? "sesioni" : kodiIGabimit(trupiIGabimit.kodi),
       r.status,
       lexoKthesen(trupiIGabimit.kthesa),
       transkripti,
     );
+    g.kufiriDitor = trupiIGabimit.ditor === true;
+    throw g;
   }
   throw new GabimIIntervistes(rezerva, r.status === 401 ? "sesioni" : "tjeter", r.status);
 }
@@ -455,11 +482,14 @@ export async function dergoZerinMeRrjedhe(
           kthesaErdhi = true;
           ng.onKthesa?.(lexoPasPergjigjes(n));
           break;
+        case "zeri_nga":
+          if (typeof n.ofruesi === "string") ng.onOfruesi?.(n.ofruesi);
+          break;
         case "pcm":
           if (typeof n.b === "string" && typeof n.s === "number") ng.onPcm(n.b, n.s);
           break;
         case "gabim_zerit":
-          ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.", n.kodi === "zeri_ditor");
+          ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.", kuotaNga(n));
           break;
         case "gabim":
           throw new GabimIIntervistes(
@@ -490,7 +520,7 @@ export async function dergoZerinMeRrjedhe(
 export async function zeriIPyetjesMeRrjedhe(
   intervistaId: string,
   nr: number,
-  ng: Pick<PerRrjedhen, "onPcm" | "onGabimZerit">,
+  ng: Pick<PerRrjedhen, "onOfruesi" | "onPcm" | "onGabimZerit">,
 ): Promise<void> {
   const r = await hapRrjedhen(
     JSON.stringify({ veprimi: "fol", intervista_id: intervistaId, nr, rrjedhe: true }),
@@ -501,8 +531,9 @@ export async function zeriIPyetjesMeRrjedhe(
   try {
     await lexoNdjson(r, (n) => {
       if (n.e === "pcm" && typeof n.b === "string" && typeof n.s === "number") ng.onPcm(n.b, n.s);
+      else if (n.e === "zeri_nga" && typeof n.ofruesi === "string") ng.onOfruesi?.(n.ofruesi);
       else if (n.e === "gabim_zerit")
-        ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.", n.kodi === "zeri_ditor");
+        ng.onGabimZerit(typeof n.mesazhi === "string" ? n.mesazhi : "Zëri s'u krijua.", kuotaNga(n));
       else if (n.e === "mbaroi") mbaroi = true;
     });
   } catch {

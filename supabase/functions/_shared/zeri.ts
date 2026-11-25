@@ -23,10 +23,12 @@ export type AudioIFolur = {
   sekonda: number;
   /** Header-at e kufijve që kthen ofruesi (p.sh. "x-ratelimit-*"), për prova; kurrë sekrete. */
   kufijte?: Record<string, string>;
+  /** Cili ofrues e bëri (zinxhiri e vendos): app-i e ruan pranimin e shkurtër veç për çdo zë. */
+  ofruesi?: string;
 };
 
 /** Një copë e rrjedhës së TTS: PCM 16 bit mono little-endian (numër çift bajtesh) me shkallën e mostrimit. */
-export type CopaAudio = { pcm: Uint8Array; shkalla: number };
+export type CopaAudio = { pcm: Uint8Array; shkalla: number; ofruesi?: string };
 
 /** STT: tekst nga audio. */
 export interface Degjuesi {
@@ -42,6 +44,10 @@ export interface Degjuesi {
 /** TTS: zëri i intervistuesit. */
 export interface Folesi {
   readonly emri: string;
+  /** Gjuhët që ofruesi i mbulon; pa këtë = të gjitha. Zinxhiri e kapërcen ofruesin për gjuhët e tjera. */
+  readonly gjuhet?: readonly Gjuha[];
+  /** false kur ofruesi s'është konfiguruar (mungon sekreti): zinxhiri e kapërcen pa zë. */
+  iGatshem?(): boolean;
   /** Audio nga teksti i një kthese (një ose disa fjali). Hedh GabimIZerit kur ofruesi dështon. */
   fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur>;
   /**
@@ -54,8 +60,10 @@ export interface Folesi {
 /** Gabim i ofruesit të zërit: mesazhi është për app-in (shqip), pa detaje teknike. */
 export class GabimIZerit extends Error {
   readonly konfigurim: boolean;
-  /** Kufiri ditor i ofruesit të zërit mbaroi: s'ka kuptim të provohet sërish sot. */
+  /** Kufiri ditor ose mujor i ofruesit mbaroi: s'ka kuptim të provohet sërish sot. */
   kufiriDitor = false;
+  /** Dështim nga kufiri i shërbimit (429 ose numëruesi mujor): app-i e thotë sinqerisht (kodi "kuota"). */
+  kuota = false;
   /** Vetëm për skriptet e provës: statusi, header-at e kufijve dhe fillimi i trupit të gabimit. Funksionet s'e shkruajnë në log. */
   readonly detaje: { status: number; kufijte: Record<string, string>; trupi: string } | null;
   constructor(
@@ -68,6 +76,31 @@ export class GabimIZerit extends Error {
     this.konfigurim = konfigurim;
     this.detaje = detaje;
   }
+}
+
+/** E njëjta fjali që tregon app-i kur zëri s'është i disponueshëm nga kufiri i shërbimit. */
+export const MESAZHI_I_KUOTES = "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran.";
+
+export function gabimIKuotes(detaje: GabimIZerit["detaje"] = null, kufiriDitor = false): GabimIZerit {
+  const e = new GabimIZerit(MESAZHI_I_KUOTES, false, detaje);
+  e.kuota = true;
+  e.kufiriDitor = kufiriDitor;
+  return e;
+}
+
+/** Si i shkon një gabim zëri app-it: statusi HTTP, kodi dhe fjalia. "kuota" ndahet nga dështimet e zakonshme. */
+export function pamjaEGabimitTeZerit(e: unknown): {
+  status: number;
+  kodi: "kuota" | "zeri" | "zeri_pa_konfigurim";
+  mesazhi: string;
+  ditor: boolean;
+} {
+  if (!(e instanceof GabimIZerit)) {
+    return { status: 502, kodi: "zeri", mesazhi: "Zëri dështoi. Provo përsëri ose vazhdo me shkrim.", ditor: false };
+  }
+  if (e.kuota) return { status: 429, kodi: "kuota", mesazhi: e.message, ditor: e.kufiriDitor };
+  if (e.konfigurim) return { status: 503, kodi: "zeri_pa_konfigurim", mesazhi: e.message, ditor: false };
+  return { status: 502, kodi: "zeri", mesazhi: e.message, ditor: false };
 }
 
 /** Header-at e kufijve (vetëm emrat që flasin për kufij; asnjëherë autorizim). */
@@ -93,9 +126,7 @@ export async function thirrOfruesin(url: string, init: RequestInit, cka: string,
   if (r.status === 401 || r.status === 403) {
     throw new GabimIZerit("Zëri s'është konfiguruar mirë. Vazhdo me shkrim.", true, detaje);
   }
-  if (r.status === 429) {
-    throw new GabimIZerit("Shërbimi i zërit është i zënë tani. Provo pas pak ose vazhdo me shkrim.", false, detaje);
-  }
+  if (r.status === 429) throw gabimIKuotes(detaje);
   throw new GabimIZerit(`${cka} dështoi. Provo përsëri.`, false, detaje);
 }
 

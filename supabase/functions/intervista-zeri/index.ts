@@ -26,6 +26,10 @@
 //      {"e":"mbaroi"}                                 gjithçka u dërgua
 //    Vlerësimi i përgjigjes (që s'e përdor askush gjatë intervistës) vazhdon në sfond, para "mbaroi".
 //
+// Ofruesit e zërit (25.11): Azure → Gemini 3.8 Flash TTS → Flash-Lite (en/de) → teksti. Te rrjedha, para copës së parë
+// vjen {"e":"zeri_nga","ofruesi"}. Kufiri i shërbimit (429 ose numëruesi mujor): HTTP 429 / "gabim_zerit" me
+// {"kodi":"kuota","ditor"} dhe fjalinë "Zëri s'është i disponueshëm tani (kufiri i shërbimit). Pyetja është në ekran."
+//
 // Gabimet e zërit: 502 "zeri" (riprovo ose shkruaj), 503 "zeri_pa_konfigurim" (vazhdo me shkrim),
 // 429 "kufiri_zerit" (minutat e zërit për sot mbaruan). Të tjerat si te intervista-kthesa.
 //
@@ -50,6 +54,7 @@ import {
   MBUSHESIT,
   type Folesi,
   GabimIZerit,
+  pamjaEGabimitTeZerit,
   KUFIRI_DITOR_MINUTA_ZERI,
   lexoWav,
   MAKS_BAJT_AUDIO,
@@ -60,8 +65,10 @@ import {
   rimostro,
   SHKALLA_STT,
 } from "../_shared/zeri.ts";
-import { gemini } from "../_shared/zeri-gemini.ts";
+import { azure, KUFIRI_MUJOR_SHKRONJA } from "../_shared/zeri-azure.ts";
+import { gemini, MODELI_TTS_LITE } from "../_shared/zeri-gemini.ts";
 import { groq } from "../_shared/zeri-groq.ts";
+import { zinxhiriIZerit } from "../_shared/zeri-zinxhiri.ts";
 
 /**
  * Zëri i reagimit para se kthesa të mbarojë (Claude me rrjedhë) e sjell zërin ~1,3 s më shpejt, por bën DY kërkesa TTS për
@@ -72,27 +79,39 @@ const REAGIMI_I_HERSHEM = false;
 
 // Ofruesit, secili pas përshtatësit të vet (zeri.ts): ndërrohen këtu.
 const degjuesi: Degjuesi = groq();
-const folesi: Folesi = gemini();
+/**
+ * Zëri i intervistuesit: Azure → Gemini 3.8 Flash TTS → Gemini Flash-Lite (vetëm en / de) → teksti me fjalinë e kufirit.
+ * Pa sekretet e Azure-s, zinxhiri fillon te Gemini. Numëruesi mujor i Azure-s rezervon shkronjat para çdo kërkese.
+ */
+function folesiPer(t: Thirresi): Folesi {
+  const rezervo = async (shkronja: number) => {
+    const { data, error } = await t.admin.rpc("zeri_azure_rezervo", { p_shkronja: shkronja, p_kufiri: KUFIRI_MUJOR_SHKRONJA });
+    if (error) {
+      console.error("[intervista-zeri] Numëruesi i Azure-s s'u lexua (a është aplikuar migrimi zeri_azure?). Po përdoret Gemini.");
+      return false;
+    }
+    return data === true;
+  };
+  return zinxhiriIZerit([azure(rezervo), gemini(), gemini(MODELI_TTS_LITE)]);
+}
 
 type Objekt = Record<string, unknown>;
 const eshteObjekt = (v: unknown): v is Objekt => typeof v === "object" && v !== null && !Array.isArray(v);
 
 type FjaliaMeZe = { teksti: string; audio_base64: string; mime: string };
-type IntervistaEZerit = { gjuha: Gjuha; intervistuesi: Intervistuesi; konteksti: Konteksti };
+type IntervistaEZerit = { gjuha: Gjuha; intervistuesi: Intervistuesi; konteksti: Konteksti; folesi: Folesi };
 
-/** Ngjarja "gabim_zerit" e rrjedhës; "kodi" i thotë app-it të mos kërkojë më zë sot. */
+/** Ngjarja "gabim_zerit" e rrjedhës; "kodi" ("kuota" te kufiri i shërbimit) dhe "ditor" i tregojnë app-it çka të thotë. */
 function ngjarjaEGabimitTeZerit(e: unknown): Objekt {
-  const mesazhi = e instanceof GabimIZerit ? e.message : "Zëri s'u krijua.";
-  return { e: "gabim_zerit", mesazhi, ...(e instanceof GabimIZerit && e.kufiriDitor ? { kodi: "zeri_ditor" } : {}) };
+  const p = pamjaEGabimitTeZerit(e);
+  return { e: "gabim_zerit", mesazhi: p.mesazhi, kodi: p.kodi, ditor: p.ditor };
 }
 
 function gabimIZerit(e: unknown): Response {
-  if (e instanceof GabimIZerit) {
-    if (e.kufiriDitor) return gabim(e.message, 429, "zeri_ditor");
-    return e.konfigurim ? gabim(e.message, 503, "zeri_pa_konfigurim") : gabim(e.message, 502, "zeri");
-  }
-  console.error("[intervista-zeri] Gabim i papritur te zëri.");
-  return gabim("Zëri dështoi. Provo përsëri ose vazhdo me shkrim.", 502, "zeri");
+  if (!(e instanceof GabimIZerit)) console.error("[intervista-zeri] Gabim i papritur te zëri.");
+  const p = pamjaEGabimitTeZerit(e);
+  if (p.kodi === "kuota") console.error(`[intervista-zeri] kuota: asnjë ofrues zëri i lirë (ditor: ${p.ditor}).`);
+  return json({ error: p.mesazhi, kodi: p.kodi, ditor: p.ditor }, p.status);
 }
 
 /** Intervista aktive e këtij përdoruesi dhe pyetja aktuale (e fundit, pa përgjigje). Response = gabim për app-in. */
@@ -137,6 +156,7 @@ async function lexoIntervisten(
     gjuha: intervista.gjuha as Gjuha,
     intervistuesi: intervistuesiNga(konteksti),
     konteksti,
+    folesi: folesiPer(t),
     kthesa: eFundit,
   };
 }
@@ -196,11 +216,14 @@ async function regjistro(
  * Teksti i një kthese (reagimi + pyetja, ose reagimi + mbyllja) → NJË audio. Një thirrje për kthesë (jo për fjali):
  * kufijtë e Gemini TTS numërojnë kërkesat, dhe intonacioni mes fjalive del më i natyrshëm. Hedh GabimIZerit.
  */
-async function thuaj(tekstet: (string | null)[], iv: IntervistaEZerit): Promise<{ fjalite: FjaliaMeZe[]; sekonda: number }> {
+async function thuaj(
+  tekstet: (string | null)[],
+  iv: IntervistaEZerit,
+): Promise<{ fjalite: FjaliaMeZe[]; sekonda: number; ofruesi?: string }> {
   const teksti = tekstet.filter((t): t is string => !!t && !!t.trim()).map((t) => t.trim()).join(" ");
   if (!teksti) return { fjalite: [], sekonda: 0 };
-  const a = await folesi.fol(teksti, iv.gjuha, iv.intervistuesi);
-  return { fjalite: [{ teksti, audio_base64: neBase64(a.audio), mime: a.mime }], sekonda: a.sekonda };
+  const a = await iv.folesi.fol(teksti, iv.gjuha, iv.intervistuesi);
+  return { fjalite: [{ teksti, audio_base64: neBase64(a.audio), mime: a.mime }], sekonda: a.sekonda, ofruesi: a.ofruesi };
 }
 
 // ---------- Rrjedha NDJSON ----------
@@ -259,7 +282,13 @@ async function transmetoZerin(d: Dergo, copat: AsyncGenerator<CopaAudio>): Promi
     bajtNeTampon = 0;
     d({ e: "pcm", b: neBase64(bashku), s: shkalla });
   };
+  let ofruesiIThene = false;
   for await (const c of copat) {
+    if (!ofruesiIThene && c.ofruesi) {
+      // App-i e ruan pranimin e shkurtër veç për çdo ofrues, që zëri të mos ndryshojë mes pranimit dhe pyetjes.
+      d({ e: "zeri_nga", ofruesi: c.ofruesi });
+      ofruesiIThene = true;
+    }
     shkalla = c.shkalla;
     tampon.push(c.pcm);
     bajtNeTampon += c.pcm.length;
@@ -275,11 +304,11 @@ async function transmetoZerin(d: Dergo, copat: AsyncGenerator<CopaAudio>): Promi
 
 /** Zëri i një teksti si rrjedhë copash (ofruesit pa rrjedhë japin një copë të vetme). */
 async function* copatE(teksti: string, iv: IntervistaEZerit): AsyncGenerator<CopaAudio> {
-  if (folesi.rrjedhe) {
-    yield* folesi.rrjedhe(teksti, iv.gjuha, iv.intervistuesi);
+  if (iv.folesi.rrjedhe) {
+    yield* iv.folesi.rrjedhe(teksti, iv.gjuha, iv.intervistuesi);
     return;
   }
-  const a = await folesi.fol(teksti, iv.gjuha, iv.intervistuesi);
+  const a = await iv.folesi.fol(teksti, iv.gjuha, iv.intervistuesi);
   const wav = lexoWav(a.audio);
   if (!wav) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
   yield { pcm: new Uint8Array(wav.mostrat.buffer, wav.mostrat.byteOffset, wav.mostrat.byteLength), shkalla: wav.shkalla };
@@ -343,9 +372,9 @@ async function fol(t: Thirresi, b: Objekt): Promise<Response> {
     });
   }
   try {
-    const { fjalite, sekonda } = await thuaj(tekstet, iv);
+    const { fjalite, sekonda, ofruesi } = await thuaj(tekstet, iv);
     await regjistro(t, intervistaId, "fol", 0, sekonda);
-    return json({ zeri: { fjalite } });
+    return json({ zeri: { fjalite, ofruesi } });
   } catch (e) {
     return gabimIZerit(e);
   }
