@@ -1,5 +1,5 @@
 // Sesioni dhe profili për gjithë app-in. _layout.tsx i përdor për rojet (Stack.Protected):
-// kush s'ka hyrë sheh vetëm hyrjen, secili lloj llogarie sheh vetëm ekranet e veta.
+// kush s'ka hyrë është mysafir (sheh punët dhe praktikën, src/lib/mysafiri.ts), secili lloj llogarie sheh vetëm ekranet e veta.
 // Roja vetëm fsheh ekranet; të dhënat i mbron RLS-i në server.
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
@@ -13,6 +13,8 @@ import { supabase } from "@/lib/supabase";
 
 type GjendjaESesionit = {
   sesioni: Session | null;
+  /** S'ka sesion (dhe kjo dihet, jo "po lexohet"): app-i hapet si mysafir. */
+  mysafir: boolean;
   /**
    * Profili që app-i mund ta përdorë. Një kërkues që s'e ka zgjedhur ende rolin (roli_synuar = null) NUK është këtu:
    * për rojet te _layout.tsx ai është "pa profil të gatshëm" dhe mbetet te ekrani i hyrjes, që i shfaq onboarding-un
@@ -130,6 +132,7 @@ export function SesioniProvider({ children }: { children: ReactNode }) {
   const paRol = iLexuari?.lloji === "kerkues" && iLexuari.roli_synuar === null;
   const vlera: GjendjaESesionit = {
     sesioni,
+    mysafir: sesioniULexua && !sesioni,
     profili: paRol ? null : iLexuari,
     profiliPaRol: paRol ? iLexuari : null,
     roli_synuar: iLexuari?.roli_synuar ?? null,

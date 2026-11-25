@@ -2,6 +2,7 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-rou
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Share, StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import KerkesatEPunes from "@/components/KerkesatEPunes";
 import { useNjoftim } from "@/components/Njoftimet";
@@ -10,6 +11,7 @@ import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { Chip, Faqja, IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
 import { cvEFundit, gatishmeriaEFundit } from "@/lib/gati";
+import { useKycja } from "@/lib/mysafiri";
 import { prekja } from "@/lib/prekja";
 import { paInternet, VONON } from "@/lib/mesazhet";
 import { hiqePunenNgaKeshi, lexoListenEPunes } from "@/lib/punet-kesh";
@@ -52,9 +54,12 @@ function etiketaEAfatit(puna: Puna): { teksti: string; kaloi: boolean; pershkrim
 export default function DetajetEPunes() {
   const t = useTema();
   const njofto = useNjoftim();
-  const { profili } = useSesioni();
+  const { profili, mysafir } = useSesioni();
   // RLS-i (ruajtura_shto) lejon ⭐ vetëm për kërkuesin; punëdhënësi s'e sheh butonin.
   const mundRuan = profili?.lloji === "kerkues";
+  // Mysafiri i sheh "A jam gati?" dhe ⭐, por të kyçur: prekja hap fletën "Krijo llogari që të …".
+  const gati = useKycja();
+  const ylli = useKycja();
   const router = useRouter();
   // Lista dërgon vetëm id-në në adresë (/pune/p3); këtu e lexojmë dhe e kërkojmë në Supabase.
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -71,7 +76,7 @@ export default function DetajetEPunes() {
 
   const lexo = useCallback(() => {
     Promise.all([
-      meKohe(gjePunen(id), KOHA_E_LEXIMIT),
+      meKohe(gjePunen(id, mysafir), KOHA_E_LEXIMIT),
       // ⭐ është shtesë: pa internet mbetet siç ishte (e panjohur), puna shfaqet gjithsesi
       mundRuan ? meKohe(listoTeRuajturat(), KOHA_E_LEXIMIT).catch(() => null) : Promise.resolve(new Set<string>()),
     ])
@@ -94,7 +99,7 @@ export default function DetajetEPunes() {
         }
         setGabimi(e instanceof Error ? e.message : "Gabim i panjohur");
       });
-  }, [id, mundRuan]);
+  }, [id, mundRuan, mysafir]);
 
   useEffect(() => {
     lexo();
@@ -334,6 +339,23 @@ export default function DetajetEPunes() {
         )}
 
         {/* "A jam gati?" (WP3): AI-ja e krahason CV-në e fundit me këtë shpallje. Rruga është vetëm për kërkuesin. */}
+        {mysafir && (
+          <Animated.View style={gati.stili}>
+            <Prekshme
+              accessibilityRole="button"
+              accessibilityLabel="A jam gati për këtë?"
+              accessibilityHint="Kërkon llogari: AI-ja e krahason CV-në tënde me këtë shpallje"
+              // Pas hyrjes hapet vetë "A jam gati?" për këtë punë.
+              onPress={() => gati.kyc("gati", `/gati/${puna.id}`)}
+              style={[styles.butoni, { backgroundColor: t.teksti }]}
+            >
+              <Ikona emri={IKONAT.kycja} madhesia={15} ngjyra={t.sfondi} />
+              <T pesha="trashe" madhesia={16} ngjyra={t.sfondi}>
+                A jam gati për këtë?
+              </T>
+            </Prekshme>
+          </Animated.View>
+        )}
         {mundRuan && (
           <Prekshme
             accessibilityRole="button"
@@ -355,6 +377,24 @@ export default function DetajetEPunes() {
         )}
 
         <View style={styles.dyshja}>
+          {/* Mysafiri: pas hyrjes puna ruhet vetë dhe ai kthehet këtu. */}
+          {mysafir && (
+            <Animated.View style={[styles.flex, ylli.stili]}>
+              <Prekshme
+                accessibilityRole="button"
+                accessibilityLabel="Ruaje punën"
+                accessibilityHint="Kërkon llogari"
+                onPress={() => ylli.kyc("ruaj", null, { lloji: "ruaj", punaId: puna.id })}
+                // Brenda Animated.View-së (që merr gjerësinë në rresht) butoni s'rritet më vetë: flex 0.
+                style={[styles.veprimi, styles.paRritje, { backgroundColor: t.karta, shadowColor: t.hija }]}
+              >
+                <Ikona emri={IKONA_YLLI_BOSH} madhesia={16} ngjyra={t.teksti} />
+                <T pesha="trashe" madhesia={14.5}>
+                  Ruaje
+                </T>
+              </Prekshme>
+            </Animated.View>
+          )}
           {/* Nga kopja e ruajtur s'dihet a e ke ruajtur me ⭐: butoni fshihet derisa puna të lexohet nga burimi. */}
           {mundRuan && !ngaKesh && (
             <Prekshme
@@ -444,6 +484,8 @@ export default function DetajetEPunes() {
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  paRritje: { flex: 0 },
   kopja: {
     flexDirection: "row",
     alignItems: "center",

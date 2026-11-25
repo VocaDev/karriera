@@ -6,6 +6,7 @@ import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import ShiritiPaInternet from "@/components/ShiritiPaInternet";
 import RreshtiVecorise, { hapetVecoria } from "@/components/RreshtiVecorise";
+import SotMysafir from "@/components/SotMysafir";
 import { Pulsi, Vije } from "@/components/Skeleti";
 import { TabScroll } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, Rruga, T } from "@/components/ui";
@@ -49,10 +50,16 @@ function hapiIVecorise(v: Vecoria): HapiTjeter {
     : { titulli, pershkrimi, href: null, butoni: "", shenim: tekstiIGjendjes(v.gjendja) };
 }
 
+// Mysafiri sheh Sot-in e vet (çka bën Karriera, "Krijo llogari", punët); kërkuesi gjendjen e tij.
+export default function Sot() {
+  const { mysafir } = useSesioni();
+  return mysafir ? <SotMysafir /> : <SotIKerkuesit />;
+}
+
 // Kreu (bordi, ekrani 41): gjendja e vërtetë e përdoruesit te rruga CV → Përputhja → Intervista → Mëso → Gati,
 // hapi tjetër, dhe punët e fundit.
 // Pa streak dhe pa numra të shpikur: kur ka streak të vërtetë (Demo Day), vjen këtu.
-export default function Sot() {
+function SotIKerkuesit() {
   const { profili } = useSesioni();
   const t = useTema();
   const njofto = useNjoftim();

@@ -10,6 +10,7 @@ import { TabScroll } from "@/components/TabEkrani";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { lexoHistorikun } from "@/lib/intervista/klienti";
 import { useDridhja } from "@/lib/levizja";
+import { useKycja } from "@/lib/mysafiri";
 import { rrugaPraktikes } from "@/lib/praktika";
 import { prekja } from "@/lib/prekja";
 import { KOHA_E_LEXIMIT, meKohe } from "@/lib/rrjeti";
@@ -25,15 +26,20 @@ const GJUHET = [
 ] as const;
 
 // Stërvitja (bordi, ekrani 44): hyrja te intervista. Zgjedh gjuhën dhe nis.
+// Mysafiri: intervista me AI kërkon llogari (kufi ditor për llogari); praktika pa internet është e hapur.
 export default function Stervitja() {
   const t = useTema();
   const router = useRouter();
-  const { profili } = useSesioni();
-  const { stili, dridhu } = useDridhja();
+  const { profili, mysafir } = useSesioni();
+  const dridhja = useDridhja();
+  const kycja = useKycja();
+  const stili = mysafir ? kycja.stili : dridhja.stili;
   // true vetëm kur leximi (i njëjti si te "Intervistat e tua") thotë se s'ka asnjë intervistë të mbaruar.
   const [paIntervista, setPaIntervista] = useState(false);
   useFocusEffect(
     useCallback(() => {
+      // Mysafiri s'ka intervista: as lexim, as karta "Kompetencat e tua".
+      if (mysafir) return;
       let aktiv = true;
       meKohe(lexoHistorikun(1), KOHA_E_LEXIMIT)
         .then((rreshtat) => {
@@ -44,7 +50,7 @@ export default function Stervitja() {
       return () => {
         aktiv = false;
       };
-    }, []),
+    }, [mysafir]),
   );
   // Fillon me gjuhën e profilit; përdoruesi mund ta ndryshojë për këtë intervistë.
   const [iGjuhes, setIGjuhes] = useState(() => Math.max(0, GJUHET.findIndex((g) => g.kodi === profili?.gjuha)));
@@ -56,9 +62,14 @@ export default function Stervitja() {
   const hapet = intervista !== undefined && hapetVecoria(intervista);
 
   function nis() {
+    if (mysafir) {
+      // Pas hyrjes hapet vetë intervista, në gjuhën që zgjodhi.
+      kycja.kyc("intervista", `/intervista?gjuha=${gjuha.kodi}`);
+      return;
+    }
     if (!hapet) {
       prekja.lehte();
-      dridhu();
+      dridhja.dridhu();
       return;
     }
     prekja.zgjedhje();
@@ -107,19 +118,27 @@ export default function Stervitja() {
             onPress={nis}
             accessibilityRole="button"
             accessibilityLabel={hapet ? `Fillo intervistën në ${gjuha.emri}` : `Fillo intervistën, ${tekstiIGjendjes(intervista?.gjendja ?? { lloji: "vjen", kur: "së shpejti" })}`}
+            accessibilityHint={mysafir ? "Kërkon llogari" : undefined}
             accessibilityState={{ disabled: !hapet }}
             style={StyleSheet.flatten([styles.butoni, { backgroundColor: t.teksti }, !hapet && styles.iKycur])}
           >
-            {!hapet && <Ikona emri={IKONAT.kycja} madhesia={14} ngjyra={t.sfondi} />}
+            {(!hapet || mysafir) && <Ikona emri={IKONAT.kycja} madhesia={14} ngjyra={t.sfondi} />}
             <T pesha="trashe" madhesia={15} ngjyra={t.sfondi}>
               Fillo intervistën
             </T>
           </Prekshme>
         </Animated.View>
-        {!hapet && intervista && (
+        {mysafir ? (
           <T zbehur madhesia={13} style={styles.shenimi}>
-            {tekstiIGjendjes(intervista.gjendja)}
+            Me llogari · praktika pa internet më poshtë është e hapur
           </T>
+        ) : (
+          !hapet &&
+          intervista && (
+            <T zbehur madhesia={13} style={styles.shenimi}>
+              {tekstiIGjendjes(intervista.gjendja)}
+            </T>
+          )
         )}
       </Karta>
 
@@ -149,7 +168,7 @@ export default function Stervitja() {
       </Prekshme>
 
       {/* Vetëm kur dihet se s'ka asnjë intervistë të mbaruar. Kompetencat veç e veç s'maten ende, prandaj pas të parës s'ka çka të tregohet. */}
-      {paIntervista && (
+      {paIntervista && !mysafir && (
         <Karta style={styles.kompetencat}>
           <View style={styles.rresht}>
             <Ikona emri={IKONAT.grafiku} madhesia={18} ngjyra={t.theksi} />
