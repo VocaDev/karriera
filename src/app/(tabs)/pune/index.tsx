@@ -13,12 +13,14 @@ import { GradientiSiper } from "@/components/TabEkrani";
 import { IKONAT, Ikona, T } from "@/components/ui";
 import { cvEFundit, gatishmeriaPerPune } from "@/lib/gati";
 import { KOHA, LEHTESIMI } from "@/lib/levizja";
+import { useKycja } from "@/lib/mysafiri";
 import { prekja } from "@/lib/prekja";
 import { degjoPunetERe, listoPunet, merrPunenERe, type Puna } from "@/lib/punet";
 import { lexoListenEPunes, ruajListenEPunes } from "@/lib/punet-kesh";
 import { hiqeNgaTeRuajturat, listoTeRuajturat, ruajPunen } from "@/lib/ruajtura";
 import { paInternet, tekstiIPlote, VONON } from "@/lib/mesazhet";
 import { eshteGabimKohe, eshteGabimRrjeti, KOHA_E_LEXIMIT, meKohe, useRrjeti } from "@/lib/rrjeti";
+import { useSesioni } from "@/lib/sesioni";
 import { SHKRONJAT, useTema } from "@/lib/tema";
 
 // Kur lista ndryshon (p.sh. erdhi një punë e re lart), kartat e tjera rrëshqasin poshtë në vend që të kërcejnë.
@@ -46,12 +48,15 @@ function normalizo(teksti: string): string {
 const PA_INTERNET_ME_LISTE = paInternet("po t'i shfaqim punët që i pe herën e fundit");
 const PA_INTERNET_PA_LISTE = paInternet("s'kemi ende punë të ruajtura për t'i shfaqur");
 
-// Punët (bordi, ekrani 09), vetëm për kërkuesin: lexon, ruan me ⭐, s'poston (këtë e bën punëdhënësi).
+// Punët (bordi, ekrani 09), për kërkuesin dhe mysafirin: lexon, ruan me ⭐, s'poston (këtë e bën punëdhënësi).
+// Mysafiri lexon punët publike aktive (RLS anon); ⭐ i tij hap fletën "Krijo llogari që të ruash punët".
 // Kërkimi dhe filtri i rolit: Edoniku.
 export default function Punet() {
   const t = useTema();
   const qetesi = useReducedMotion();
   const njofto = useNjoftim();
+  const { mysafir } = useSesioni();
+  const { kyc } = useKycja();
   const [punet, setPunet] = useState<Puna[] | null>(null); // null = ende pa ardhur
   const [gabimi, setGabimi] = useState<string | null>(null);
   const [rifreskim, setRifreskim] = useState(false);
@@ -84,13 +89,22 @@ export default function Punet() {
   // Kthen "ok", "rrjeti" (pa internet), "vonese" (s'u përgjigj në kohë; të dyja: lista e fundit mbetet në ekran) ose "gabim".
   const ngarko = useCallback(async (ngaPerdoruesi: boolean): Promise<"ok" | "rrjeti" | "vonese" | "gabim"> => {
     try {
-      const [teReja, yjet] = await meKohe(Promise.all([listoPunet(), listoTeRuajturat()]), KOHA_E_LEXIMIT);
+      // Mysafiri s'ka ⭐ (tabela e të ruajturave s'lejon anon): bashkësi bosh, pa thirrje.
+      const [teReja, yjet] = await meKohe(
+        Promise.all([listoPunet(mysafir), mysafir ? Promise.resolve(new Set<string>()) : listoTeRuajturat()]),
+        KOHA_E_LEXIMIT,
+      );
       const iRi = merrPunenERe();
       setPunet(teReja);
       setTeRuajturat(yjet);
       setGabimi(null);
       if (iRi) setEPunesSeRe(iRi);
-      ruajListenEPunes(teReja);
+      ruajListenEPunes(teReja); // pa sesion s'ruan asgjë: lista e mysafirit s'përzihet me atë të një llogarie
+      if (mysafir) {
+        setGatiPerPune(new Map());
+        setKaCv(false);
+        return "ok";
+      }
       Promise.all([gatishmeriaPerPune(), cvEFundit()])
         .then(([gati, cv]) => {
           setGatiPerPune(gati);
@@ -112,7 +126,7 @@ export default function Punet() {
       }
       return rrjeti ? "rrjeti" : vonese ? "vonese" : "gabim";
     }
-  }, []);
+  }, [mysafir]);
 
   // Rilexon sa herë që ekrani shfaqet (p.sh. pasi kthehesh nga "Shto punë").
   useFocusEffect(
@@ -126,15 +140,14 @@ export default function Punet() {
     ngarko(false);
   });
 
-  // Një punëdhënës sapo postoi: puna hyn lart në listë, pa rifreskim (Supabase Realtime).
-  useEffect(
-    () =>
-      degjoPunetERe("lista-e-puneve", (puna) => {
-        setPunet((lista) => (lista === null || lista.some((p) => p.id === puna.id) ? lista : [puna, ...lista]));
-        setEPunesSeRe(puna.id);
-      }),
-    [],
-  );
+  // Një punëdhënës sapo postoi: puna hyn lart në listë, pa rifreskim (Supabase Realtime). Vetëm me llogari.
+  useEffect(() => {
+    if (mysafir) return;
+    return degjoPunetERe("lista-e-puneve", (puna) => {
+      setPunet((lista) => (lista === null || lista.some((p) => p.id === puna.id) ? lista : [puna, ...lista]));
+      setEPunesSeRe(puna.id);
+    });
+  }, [mysafir]);
 
   // ⭐ ndryshon menjëherë në ekran; nëse serveri refuzon, kthehet si ishte dhe del njoftimi.
   async function ndryshoRuajtjen(id: string, ruaje: boolean) {
@@ -298,7 +311,11 @@ export default function Punet() {
               ruajtur={teRuajturat.has(item.id)}
               gatishmeria={gatiPerPune.get(item.id) ?? null}
               kaCv={kaCv}
-              kurNdryshonRuajtja={(ruaje) => ndryshoRuajtjen(item.id, ruaje)}
+              ylliIKycur={mysafir}
+              kurNdryshonRuajtja={(ruaje) =>
+                // Mysafiri: pas hyrjes puna ruhet vetë dhe ai kthehet te lista.
+                mysafir ? kyc("ruaj", null, { lloji: "ruaj", punaId: item.id }) : ndryshoRuajtjen(item.id, ruaje)
+              }
             />
           </Link>
         </Animated.View>

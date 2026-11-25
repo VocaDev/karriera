@@ -96,14 +96,15 @@ export function ruajKohen(uid: string, koha: KohaPraktikes): Promise<void> {
 
 /**
  * Progresi i një roli, i ngarkuar nga telefoni. `shenjo` e ndryshon menjëherë në ekran dhe e ruan;
- * `null` e heq shenjën. Pa `uid` (pa sesion) s'ruhet asgjë.
+ * `null` e heq shenjën. Pa `uid` (mysafiri) progresi mbahet vetëm në memorie dhe s'shkruhet kurrë në telefon:
+ * kështu s'përzihet me progresin e një llogarie, dhe humbet kur mbyllet app-i.
  */
 export function useProgresin(uid: string | null, roli: RoliPraktikes) {
   const [gjendja, setGjendja] = useState<{ celesi: string; progresi: Progresi } | null>(null);
-  const celesi = uid ? `${uid}:${roli}` : null;
+  const celesi = uid ? `${uid}:${roli}` : `mysafir:${roli}`;
 
   useEffect(() => {
-    if (!uid || !celesi) return;
+    if (!uid) return;
     let aktiv = true;
     lexoProgresin(uid, roli).then((p) => {
       if (aktiv) setGjendja({ celesi, progresi: p });
@@ -116,25 +117,23 @@ export function useProgresin(uid: string | null, roli: RoliPraktikes) {
   // Kur ndërrohet roli, deri sa të vijë leximi i ri nuk tregojmë progresin e rolit tjetër.
   const lexuar = gjendja !== null && gjendja.celesi === celesi;
   const progresi: Progresi = lexuar && gjendja ? gjendja.progresi : BOSH;
-  // Pa sesion s'ka çfarë të lexohet: gati menjëherë (me progres bosh).
+  // Pa sesion s'ka çfarë të lexohet: gati menjëherë (me progres bosh, ose atë të kësaj seance në memorie).
   const gati = uid === null || lexuar;
 
   const shenjo = useCallback(
     (id: string, kuta: Kuta | null) => {
-      if (!uid || !celesi) return;
       const i_ri: Progresi = { ...progresi };
       if (kuta === null) delete i_ri[id];
       else i_ri[id] = kuta;
       setGjendja({ celesi, progresi: i_ri });
-      shkruajJson(celesiProgresit(uid, roli), i_ri);
+      if (uid) shkruajJson(celesiProgresit(uid, roli), i_ri);
     },
     [uid, roli, celesi, progresi],
   );
 
   const fshij = useCallback(() => {
-    if (!uid || !celesi) return;
     setGjendja({ celesi, progresi: {} });
-    AsyncStorage.removeItem(celesiProgresit(uid, roli)).catch(() => {});
+    if (uid) AsyncStorage.removeItem(celesiProgresit(uid, roli)).catch(() => {});
   }, [uid, roli, celesi]);
 
   return { progresi, gati, shenjo, fshij };

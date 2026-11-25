@@ -25,6 +25,8 @@ type Props = {
   gatishmeria?: number | null;
   kaCv?: boolean;
   kurNdryshonRuajtja?: (ruaje: boolean) => void; // pa këtë, ylli s'shfaqet (p.sh. te punëdhënësi)
+  /** Mysafiri: ⭐ kërkon llogari. Pa "kërcim" dhe pa dridhjen e zgjedhjes: thirrësi jep prekjen e kyçjes dhe fletën. */
+  ylliIKycur?: boolean;
 } & Omit<PressableProps, "style">;
 
 const TRE_DITE_MS = 3 * 24 * 60 * 60 * 1000;
@@ -35,6 +37,7 @@ export default function KartaPunes({
   gatishmeria = null,
   kaCv = false,
   kurNdryshonRuajtja,
+  ylliIKycur = false,
   ...pressableProps
 }: Props) {
   const t = useTema();
@@ -46,6 +49,10 @@ export default function KartaPunes({
   const roli = puna.roli === "Asistent/PR" ? "ZYRË" : puna.roli === "Tjetër" ? "TJETËR" : "SWE";
 
   function ndryshoRuajtjen() {
+    if (ylliIKycur) {
+      kurNdryshonRuajtja?.(true);
+      return;
+    }
     prekja.zgjedhje();
     kurNdryshonRuajtja?.(!ruajtur);
     // ylli "kërcen" një herë: momenti i vogël i kënaqësisë, i vetmi vend ku lejohet pak tepri
@@ -78,6 +85,7 @@ export default function KartaPunes({
             accessibilityRole="button"
             accessibilityState={{ selected: ruajtur }}
             accessibilityLabel={ruajtur ? "Hiqe nga të ruajturat" : "Ruaje punën"}
+            accessibilityHint={ylliIKycur ? "Kërkon llogari" : undefined}
             onPress={(event) => {
               event.stopPropagation();
               ndryshoRuajtjen();

@@ -1,6 +1,7 @@
 import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRef, useState } from "react";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,18 +12,22 @@ import {
   type TextInputInstance,
 } from "react-native";
 import Animated, { useSharedValue } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ButoniKryesor, Etiketa, Fusha, Udhezimi } from "@/components/Forma";
 import Fillimi from "@/components/Fillimi";
+import { useNjoftim } from "@/components/Njoftimet";
 import Prekshme from "@/components/Prekshme";
 import Unaza from "@/components/Unaza";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
 import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type Lloji, type TeDhenatERegjistrimit } from "@/lib/hyrja";
 import { LLOGARITE_DEMO, type LlogariaDemo } from "@/lib/hyrja-demo";
 import { useDridhja } from "@/lib/levizja";
+import { filloKthimin, kthehuISigurt, pastroKthimin, useKthimi, veprimiNgaParametri } from "@/lib/mysafiri";
 import { prekja } from "@/lib/prekja";
 import { HYR_PERSERI } from "@/lib/mesazhet";
-import { pamjaEGabimit } from "@/lib/rrjeti";
+import { ruajPunen } from "@/lib/ruajtura";
+import { KOHA_E_LEXIMIT, meKohe, pamjaEGabimit } from "@/lib/rrjeti";
 import { useSesioni } from "@/lib/sesioni";
 import { useSesioniSkaduar } from "@/lib/sesioni-skaduar";
 import { useTema } from "@/lib/tema";
@@ -118,17 +123,22 @@ function HapatERegjistrimit({ hapi }: { hapi: 1 | 2 }) {
   );
 }
 
-// Hyrja dhe regjistrimi (bordi: ekranet 01 dhe 57). Ky është i vetmi ekran që sheh kush s'ka hyrë.
+// Hyrja dhe regjistrimi (bordi: ekranet 01 dhe 57). Mysafiri e hap nga "Hyr" në kokë ose nga fleta "Krijo llogari që të …"
+// (parametrat: menyra, kthehu, veprimi; src/lib/mysafiri.ts). Pas hyrjes si kërkues, ky ekran e kthen atje nga erdhi.
 export default function Hyrja() {
   const t = useTema();
-  const { sesioni, profiliPaRol, gabimiIProfilit, rifreskoProfilin } = useSesioni();
+  const router = useRouter();
+  const njofto = useNjoftim();
+  const kufijte = useSafeAreaInsets();
+  const { sesioni, mysafir, profili, profiliPaRol, gabimiIProfilit, rifreskoProfilin } = useSesioni();
+  const params = useLocalSearchParams<{ menyra?: string; kthehu?: string; veprimi?: string }>();
   const { stili: stiliIButonit, dridhu } = useDridhja();
   const sesioniSkaduar = useSesioniSkaduar();
   const unaza = useSharedValue(0.78);
   const fjalekalimiRef = useRef<TextInputInstance>(null);
   const emailRef = useRef<TextInputInstance>(null);
 
-  const [menyra, setMenyra] = useState<Menyra>("hyr");
+  const [menyra, setMenyra] = useState<Menyra>(params.menyra === "regjistrohu" ? "regjistrohu" : "hyr");
   const [hapi, setHapi] = useState<1 | 2>(1);
   const [lloji, setLloji] = useState<LlojiIZgjedhur>("kerkues");
   const [emri, setEmri] = useState("");
@@ -140,6 +150,42 @@ export default function Hyrja() {
   const [gabimi, setGabimi] = useState<string | null>(null);
   // Cili buton demo po hyn (spinner vetëm te ai). Mbetet null kur hyrja demo është e fikur.
   const [demoNeHyrje, setDemoNeHyrje] = useState<Lloji | null>(null);
+
+  // Mysafiri që e hapi këtë ekran mbi app (jo hyrja si ekrani i parë): ka ku të kthehet dhe sheh X-in.
+  const [ngaMysafiri] = useState(mysafir);
+  const kthimi = useKthimi();
+  const uKthye = useRef(false);
+
+  // Ku të kthehet pas hyrjes. Mbyllja e ekranit (me ose pa hyrje) e fshin.
+  useEffect(() => {
+    if (!ngaMysafiri) return;
+    filloKthimin({ kthehu: kthehuISigurt(params.kthehu), veprimi: veprimiNgaParametri(params.veprimi) });
+    return () => pastroKthimin();
+  }, [ngaMysafiri, params.kthehu, params.veprimi]);
+
+  // Profili i kërkuesit është gati (pas hyrjes, ose pas zgjedhjes së rolit te regjistrimi): veprimi që mysafiri kishte nisur
+  // (⭐) kryhet, pastaj ky ekran mbyllet dhe hapet `kthehu`. Organizatat s'kalojnë këtu: rojet i çojnë te Punët e mia.
+  useEffect(() => {
+    if (!kthimi || profili?.lloji !== "kerkues" || uKthye.current) return;
+    uKthye.current = true;
+    const { kthehu, veprimi } = kthimi;
+    (async () => {
+      if (veprimi?.lloji === "ruaj") {
+        try {
+          await meKohe(ruajPunen(veprimi.punaId), KOHA_E_LEXIMIT);
+          njofto("Puna u ruajt", "sukses");
+        } catch {
+          njofto("Puna s'u ruajt. Provoje përsëri te puna.", "gabim");
+        }
+      }
+      if (router.canGoBack()) {
+        router.back();
+        if (kthehu) router.push(kthehu as Href);
+      } else {
+        router.replace((kthehu ?? "/") as Href);
+      }
+    })();
+  }, [kthimi, profili, router, njofto]);
 
   const regjistrim = menyra === "regjistrohu";
   const mungon = {
@@ -274,7 +320,7 @@ export default function Hyrja() {
               ? hapi === 1
                 ? "Zgjidh si do ta përdorësh Karrierën."
                 : "Të dhënat e tua i sheh vetëm ti."
-              : "Hyr për të parë punët dhe hapat e tu drejt “gati”."}
+              : "Hyr për të ruajtur punët dhe për të parë sa je gati."}
           </T>
         </View>
 
@@ -516,6 +562,19 @@ export default function Hyrja() {
           </T>
         </Prekshme>
       </ScrollView>
+      {/* Mysafiri mund të kthehet te app-i pa hyrë (edhe me gjestin "mbrapa" të sistemit). */}
+      {ngaMysafiri && !sesioni && router.canGoBack() && (
+        <Prekshme
+          accessibilityRole="button"
+          accessibilityLabel="Mbyll dhe vazhdo pa llogari"
+          hitSlop={8}
+          shkalla={0.9}
+          onPress={() => router.back()}
+          style={[styles.mbyll, { top: kufijte.top + 6 }]}
+        >
+          <Ikona emri={IKONAT.mbyll} madhesia={30} ngjyra={t.zbehur} />
+        </Prekshme>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -578,4 +637,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   lidhja: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 6 },
+  mbyll: { position: "absolute", left: 14, zIndex: 2, minWidth: 44, minHeight: 44, alignItems: "flex-start", justifyContent: "center" },
 });

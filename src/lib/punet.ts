@@ -69,10 +69,10 @@ export function lexoKerkesat(raw: unknown): Kerkesat | null {
   };
 }
 
-/** Rreshti nga Supabase → Puna (kerkesat kalon nga lexoKerkesat). */
+/** Rreshti nga Supabase → Puna (kerkesat kalon nga lexoKerkesat). Mysafiri s'e lexon pronari_id: null. */
 function nePune(rreshti: unknown): Puna {
   const r = rreshti as Puna;
-  return { ...r, kerkesat: lexoKerkesat(r.kerkesat), private: r.private === true };
+  return { ...r, pronari_id: r.pronari_id ?? null, kerkesat: lexoKerkesat(r.kerkesat), private: r.private === true };
 }
 
 export type Portali = "kosovajob" | "portalpune" | "ofertapune";
@@ -86,21 +86,28 @@ export const EMRI_I_PORTALIT: Record<Portali, string> = {
 const FUSHAT =
   "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me, pronari_id, linku, portali, afati, aktive, kerkesat, private";
 
+// Mysafiri (anon) lexon vetëm këto kolona: pa pronari_id (kush e postoi). Njëlloj si grant-i i kolonave për anon te
+// migrimi 20261125120000_punet_mysafiri.sql; RLS-i i jep vetëm punët publike aktive.
+const FUSHAT_PUBLIKE =
+  "id, titulli, kompania, qyteti, roli, pershkrimi, aftesite, burimi, krijuar_me, linku, portali, afati, aktive, kerkesat, private";
+
+const fushat = (mysafir: boolean) => (mysafir ? FUSHAT_PUBLIKE : FUSHAT);
+
 // M1: lexon listën nga tabela "punet" (më të rejat lart). Vetëm punët aktive: shpalljet e skaduara
 // të portaleve mbeten në tabelë (që ⭐ të mos humbasin), por s'dalin më në listë.
-export async function listoPunet(): Promise<Puna[]> {
+export async function listoPunet(mysafir = false): Promise<Puna[]> {
   const { data, error } = await supabase
     .from("punet")
-    .select(FUSHAT)
+    .select(fushat(mysafir))
     .eq("aktive", true)
     .order("krijuar_me", { ascending: false });
   if (error) throw new Error(mesazhiIGabimit(error));
   return data.map(nePune);
 }
 
-// Ekrani i detajeve: null nëse id-ja s'ekziston (roja e /pune/x99).
-export async function gjePunen(id: string): Promise<Puna | null> {
-  const { data, error } = await supabase.from("punet").select(FUSHAT).eq("id", id).maybeSingle();
+// Ekrani i detajeve: null nëse id-ja s'ekziston (roja e /pune/x99), ose (për mysafirin) s'është publike dhe aktive.
+export async function gjePunen(id: string, mysafir = false): Promise<Puna | null> {
+  const { data, error } = await supabase.from("punet").select(fushat(mysafir)).eq("id", id).maybeSingle();
   if (error) throw new Error(mesazhiIGabimit(error));
   return data ? nePune(data) : null;
 }

@@ -12,6 +12,7 @@ import { useState } from "react";
 
 import Ngarkimi from "@/components/Ngarkimi";
 import { NjoftimetProvider } from "@/components/Njoftimet";
+import { useKthimi } from "@/lib/mysafiri";
 import { SesioniProvider, useSesioni } from "@/lib/sesioni";
 import { SHKRONJAT, useTema, type Tema } from "@/lib/tema";
 import { CV_PAS_DEMO_DAY_HAPUR } from "@/lib/vecorite";
@@ -59,15 +60,24 @@ export default function RootLayout() {
   );
 }
 
-// Rojet (J6): dera mbyllet para hyrjes. Kush s'ka hyrë sheh vetëm "hyrja"; pastaj secili lloj llogarie
-// sheh vetëm grupin e vet të ekraneve. Roja fsheh ekranet; të dhënat i mbron RLS-i në server.
+// Rojet (J6 + mysafiri): kush s'ka hyrë është mysafir dhe sheh tab-at e kërkuesit me Punët, detajet e punës dhe praktikën
+// pa internet; çdo gjë personale ose me AI kërkon llogari (src/lib/mysafiri.ts). Pas hyrjes secili lloj llogarie sheh
+// vetëm grupin e vet të ekraneve. Roja fsheh ekranet; të dhënat i mbron RLS-i në server.
 function Navigimi({ t }: { t: Tema }) {
-  const { sesioni, profili, duke_ngarkuar } = useSesioni();
+  const { sesioni, mysafir, profili, profiliPaRol, duke_ngarkuar } = useSesioni();
+  const kthimi = useKthimi();
   const [hapja_mbaroi, setHapjaMbaroi] = useState(false);
   const lloji = profili?.lloji;
   const organizate = lloji === "punedhenes" || lloji === "qender";
-  // Ku shkon secili kur një ekran i mbyllet: kush s'ka hyrë → hyrja; kërkuesi → tab-at; organizata → Punët e mia.
-  const kreu = !sesioni || !profili ? "/hyrja" : organizate ? "/organizata" : "/";
+  const kerkues = lloji === "kerkues";
+  // Mysafiri sapo hyri (ose po regjistrohet) nga hyrja që e hapi vetë: ekranet nga erdhi mbeten në stack derisa
+  // hyrja ta kthejë atje (hyrja.tsx). Kur del se është organizatë, ato hiqen dhe hyrja e çon te Punët e mia.
+  const nePritjeTeKthimit = !!sesioni && kthimi !== null && !organizate && (profiliPaRol?.lloji ?? lloji ?? "kerkues") === "kerkues";
+  // Kërkuesi dhe mysafiri: tab-at, praktika pa internet.
+  const tabat = mysafir || kerkues || nePritjeTeKthimit;
+  // Ku shkon secili kur një ekran i mbyllet: mysafiri → Punët; kush ka sesion pa profil → hyrja;
+  // kërkuesi → tab-at; organizata → Punët e mia.
+  const kreu = mysafir ? "/pune" : !profili ? "/hyrja" : organizate ? "/organizata" : "/";
 
   return (
     <>
@@ -82,12 +92,32 @@ function Navigimi({ t }: { t: Tema }) {
             contentStyle: { backgroundColor: t.sfondi },
           }}
         >
-          {/* Hyrja mbetet e hapur edhe derisa të lexohet profili pas hyrjes. */}
-          <Stack.Protected guard={!sesioni || !profili} redirectTo={kreu}>
+          {/* Hyrja mbetet e hapur edhe derisa të lexohet profili pas hyrjes, dhe për mysafirin derisa ta kthejë atje nga erdhi. */}
+          <Stack.Protected guard={!sesioni || !profili || (kerkues && kthimi !== null)} redirectTo={kreu}>
             <Stack.Screen name="hyrja" options={{ headerShown: false }} />
           </Stack.Protected>
-          <Stack.Protected guard={lloji === "kerkues"} redirectTo={kreu}>
+          {/* E hapur edhe për mysafirin: tab-at (Punët, Sot e mysafirit) dhe praktika pa internet me të dhëna në telefon. */}
+          <Stack.Protected guard={tabat} redirectTo={kreu}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="praktika/index" options={{ title: "" }} />
+            <Stack.Screen name="praktika/kartat" options={{ title: "" }} />
+            <Stack.Screen name="praktika/keshillat/index" options={{ title: "" }} />
+            <Stack.Screen name="praktika/keshillat/[id]" options={{ title: "" }} />
+          </Stack.Protected>
+          {/* Vetëm mysafiri: "Krijo llogari që të …", kur prek një veçori që kërkon llogari. */}
+          <Stack.Protected guard={mysafir} redirectTo={kreu}>
+            <Stack.Screen
+              name="kycja"
+              options={{
+                presentation: "formSheet",
+                headerShown: false,
+                sheetGrabberVisible: true,
+                sheetAllowedDetents: "fitToContents",
+                sheetCornerRadius: 24,
+              }}
+            />
+          </Stack.Protected>
+          <Stack.Protected guard={kerkues} redirectTo={kreu}>
             {/* CV-ja: vetëm kërkuesi. Titulli i madh është në ekran, prandaj koka mbetet pa tekst. */}
             <Stack.Screen name="cv/index" options={{ title: "" }} />
             <Stack.Screen name="cv/analiza" options={{ title: "" }} />
@@ -101,12 +131,8 @@ function Navigimi({ t }: { t: Tema }) {
             <Stack.Screen name="intervista/rezultatet" options={{ title: "Rezultatet" }} />
             <Stack.Screen name="intervista/historiku" options={{ title: "" }} />
             <Stack.Screen name="cilesimet" options={{ title: "Cilësimet" }} />
-            {/* Pa internet (J7): rezultatet e fundit të ruajtura, dhe praktika me pyetje e këshilla në telefon. */}
+            {/* Pa internet (J7): rezultatet e fundit të ruajtura. Praktika është më lart (e hapur edhe për mysafirin). */}
             <Stack.Screen name="permbledhja" options={{ title: "" }} />
-            <Stack.Screen name="praktika/index" options={{ title: "" }} />
-            <Stack.Screen name="praktika/kartat" options={{ title: "" }} />
-            <Stack.Screen name="praktika/keshillat/index" options={{ title: "" }} />
-            <Stack.Screen name="praktika/keshillat/[id]" options={{ title: "" }} />
             {/* Rindërto CV-në: sugjerimet e pranuara të analizës, të zbatuara pa AI (14.11). */}
             <Stack.Screen name="cv/rindertoje" options={{ title: "" }} />
             {/* "Sill linkun tënd" (J7): fletë me dorezë; X-i i rrumbullakët është brenda ekranit. */}
@@ -133,7 +159,7 @@ function Navigimi({ t }: { t: Tema }) {
             />
           </Stack.Protected>
           {/* Pas Demo Day-t: karta "Ndaje" për rrjetet sociale. Kodi mbetet, ekrani s'hapet. */}
-          <Stack.Protected guard={lloji === "kerkues" && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
+          <Stack.Protected guard={kerkues && CV_PAS_DEMO_DAY_HAPUR} redirectTo={kreu}>
             <Stack.Screen name="cv/ndaje" options={{ title: "" }} />
           </Stack.Protected>
           <Stack.Protected guard={organizate} redirectTo={kreu}>
@@ -147,7 +173,8 @@ function Navigimi({ t }: { t: Tema }) {
           <Stack.Protected guard={lloji === "punedhenes"} redirectTo={kreu}>
             <Stack.Screen name="kandidati/[kodi]" options={{ title: "" }} />
           </Stack.Protected>
-          <Stack.Protected guard={!!profili} redirectTo={kreu}>
+          {/* Detajet e punës: çdo llogari dhe mysafiri (RLS-i i jep anon vetëm punët publike aktive). */}
+          <Stack.Protected guard={!!profili || mysafir || nePritjeTeKthimit} redirectTo={kreu}>
             <Stack.Screen name="pune/[id]" options={{ title: "" }} />
           </Stack.Protected>
         </Stack>
