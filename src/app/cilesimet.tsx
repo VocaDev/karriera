@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
 import ButoniDil from "@/components/ButoniDil";
+import DukshmeriaRreshti from "@/components/DukshmeriaRreshti";
 import { useNjoftim } from "@/components/Njoftimet";
 import { Faqja, IKONAT, Ikona, T } from "@/components/ui";
 import {
@@ -18,6 +19,7 @@ import {
   type RoliSynuar,
 } from "@/lib/hyrja";
 import { useIntervistuesiIZgjedhur } from "@/lib/intervista/intervistuesi";
+import { PRAGU_GATI } from "@/lib/kandidatet";
 import { PAMJA_E_INTERVISTUESIT } from "@/lib/intervista/tipet";
 import { ZgjidhIntervistuesin } from "@/lib/intervista/ui";
 import { prekja } from "@/lib/prekja";
@@ -177,11 +179,18 @@ export default function CilesimetEkrani() {
         </View>
       </Grupi>
 
+      <Grupi
+        titulli="Dukshmëria te punëdhënësit"
+        shenimi={`E fikur si parazgjedhje. Kur e ndez, një punëdhënës të sheh vetëm për punët e veta dhe vetëm kur je të paktën ${PRAGU_GATI}% gati: një etiketë si "Kandidati #K27", përqindjen, aftësitë që ke dhe që të mungojnë, dhe notën e intervistës praktike për atë punë. Kurrë emrin, email-in apo CV-në. E fik kur të duash.`}
+      >
+        <DukshmeriaRreshti />
+      </Grupi>
+
       <Grupi titulli="Privatësia: çka ruajmë">
         <Rreshti
           ikona={IKONAT.kycja}
           titulli="Vetëm ti i sheh të dhënat e tua"
-          teksti="Emri, email-i, CV-ja dhe punët me ⭐ janë private: çdo llogari sheh vetëm të dhënat e veta."
+          teksti="Emri, email-i, CV-ja dhe punët me ⭐ janë private: çdo llogari sheh vetëm të dhënat e veta. I vetmi përjashtim është dukshmëria anonime më lart, nëse e ndez vetë."
         />
         <Rreshti
           kufi

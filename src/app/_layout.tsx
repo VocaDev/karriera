@@ -143,6 +143,10 @@ function Navigimi({ t }: { t: Tema }) {
               options={{ presentation: "modal", title: "Shto një punë", headerStyle: { backgroundColor: t.karta } }}
             />
           </Stack.Protected>
+          {/* Raporti anonim i kandidatit: vetëm punëdhënësi (serveri, kandidatet_anonim, e refuzon çdo lloj tjetër llogarie). */}
+          <Stack.Protected guard={lloji === "punedhenes"} redirectTo={kreu}>
+            <Stack.Screen name="kandidati/[kodi]" options={{ title: "" }} />
+          </Stack.Protected>
           <Stack.Protected guard={!!profili} redirectTo={kreu}>
             <Stack.Screen name="pune/[id]" options={{ title: "" }} />
           </Stack.Protected>

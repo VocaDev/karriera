@@ -173,7 +173,7 @@ export default function ProfiliIm() {
               nentitulli="Rezultatet e fundit, edhe pa internet"
               onPress={() => router.push("/permbledhja")}
             />
-            <RreshtiLista kufi ikona={IKONAT.personi} titulli="Cilësimet" nentitulli="Roli, gjuha e intervistës, privatësia" onPress={() => router.push("/cilesimet")} />
+            <RreshtiLista kufi ikona={IKONAT.personi} titulli="Cilësimet" nentitulli="Roli, gjuha, dukshmëria te punëdhënësit" onPress={() => router.push("/cilesimet")} />
           </View>
         </Karta>
       )}
