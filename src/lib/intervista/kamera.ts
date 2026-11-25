@@ -42,6 +42,20 @@ const celesi = (intervistaId: string) => `karriera.kamera.${intervistaId}`;
 // Shkrimet radhiten një nga një: dy raporte në të njëjtën kohë s'duhet të lexojnë të njëjtin total të vjetër.
 let radhaEShkrimeve: Promise<void> = Promise.resolve();
 
+export function bashkoStatistikat(a: StatistikaKameres, b: StatistikaKameres | null): StatistikaKameres {
+  return { kornizat: a.kornizat + (b?.kornizat ?? 0), fytyra: a.fytyra + (b?.fytyra ?? 0), sy: a.sy + (b?.sy ?? 0) };
+}
+
+/** Totalet e ruajtura në këtë çast të radhës: pas çdo shkrimi të nisur më parë, para çdo shkrimi që niset më pas. */
+export function lexoStatistikenNeRadhe(intervistaId: string): Promise<StatistikaKameres | null> {
+  const leximi = radhaEShkrimeve.then(() => lexoStatistiken(intervistaId));
+  radhaEShkrimeve = leximi.then(
+    () => {},
+    () => {},
+  );
+  return leximi;
+}
+
 /**
  * SHTON një delta (kornizat e reja nga faqja) te totalet e ruajtura të kësaj interviste. Faqja raporton vetëm shtesat, ndaj
  * një rinisje e WebView-it (rihapje e intervistës, ringarkim) s'i fshin matjet e mëparshme.
@@ -75,6 +89,13 @@ export async function lexoStatistiken(intervistaId: string): Promise<StatistikaK
     return null;
   }
 }
+
+/** Vëmendja te kamera (vlerësim i përafërt) për shiritin gjatë intervistës: % e kornizave me fytyrë ku shikimi ishte te
+ * kamera. null derisa të ketë matje të mjaftueshme (disa sekonda përgjigje). */
+export function perqindjaEVemendjes(s: StatistikaKameres | null, minimumi = MIN_KORNIZA_PER_SHIRITIN): number | null {
+  return s && s.fytyra >= minimumi ? Math.round((s.sy / s.fytyra) * 100) : null;
+}
+export const MIN_KORNIZA_PER_SHIRITIN = 12;
 
 export type VleresimiIKameres = {
   /** Sa e kohës fytyra ishte e dukshme gjatë përgjigjeve (0–100). */

@@ -1,6 +1,6 @@
 // Avatari i intervistës me zë: WebView me faqen e TalkingHead (AGENTS.md: qëllimisht në WebView, mos e bëj native).
 // Faqja vetëm flet; ky komponent i bart mesazhet (mesazhet.ts) dhe i kontrollon para se t'i përdorë.
-import { useImperativeHandle, useRef, type Ref } from "react";
+import { useImperativeHandle, useRef, useState, type Ref } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
@@ -9,6 +9,11 @@ import { useTema } from "@/lib/tema";
 import { FAQJA_E_AVATARIT } from "./avatari-faqja";
 import { koduoPerFaqen, lexoMesazhinNgaFaqja, type FjaliaMeZe, type MesazhNgaFaqja, type MesazhPerFaqen } from "./mesazhet";
 import { PAMJA_E_INTERVISTUESIT, type Intervistuesi, type Shprehja } from "./tipet";
+
+export type MesazhiIKameres = Extract<
+  MesazhNgaFaqja,
+  { lloji: "kamera_gati" | "kamera_gabim" | "kamera_statistika" | "kamera_gjendje" | "kamera_vemendja" }
+>;
 
 export type AvatariRef = {
   fol: (id: string, fjalite: FjaliaMeZe[], shprehja: Shprehja, pershendetje: boolean, shto?: boolean) => void;
@@ -32,6 +37,7 @@ export function Avatari({
   onPrek,
   onGabim,
   onKamera,
+  onRinisje,
   style,
 }: {
   ref: Ref<AvatariRef>;
@@ -42,11 +48,18 @@ export function Avatari({
   onPrek: () => void;
   /** Faqja s'u hap fare (pa internet, WebView dështoi): ekrani kalon te Shkruaj. */
   onGabim: () => void;
-  /** Mesazhet e kamerës nga faqja: kamera_gati · kamera_gabim · kamera_statistika. */
-  onKamera?: (m: Extract<MesazhNgaFaqja, { lloji: "kamera_gati" | "kamera_gabim" | "kamera_statistika" }>) => void;
+  /** Mesazhet e kamerës nga faqja: kamera_gati · kamera_gabim · kamera_statistika · kamera_gjendje. */
+  onKamera?: (m: MesazhiIKameres) => void;
+  /** Procesi i faqes u mbyll nga sistemi (kujtesë): WebView-i rihapet nga e para dhe app-i e pret sërish "gati". */
+  onRinisje?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const t = useTema();
+  const [versioni, setVersioni] = useState(0);
+  const rinis = () => {
+    onRinisje?.();
+    setVersioni((v) => v + 1);
+  };
   const webview = useRef<WebView<object>>(null);
   const dergo = (m: MesazhPerFaqen) => webview.current?.postMessage(koduoPerFaqen(m));
 
@@ -71,6 +84,7 @@ export function Avatari({
           intervistuesi,
           emri: PAMJA_E_INTERVISTUESIT[intervistuesi].emri,
           ngjyrat: { sfondi: t.karta, teksti: t.teksti, unaza: t.zbehur },
+          erret: t.errët,
         });
         break;
       case "gati":
@@ -88,6 +102,8 @@ export function Avatari({
       case "kamera_gati":
       case "kamera_gabim":
       case "kamera_statistika":
+      case "kamera_gjendje":
+      case "kamera_vemendja":
         onKamera?.(m);
         break;
       case "gabim":
@@ -104,7 +120,10 @@ export function Avatari({
       importantForAccessibility="no-hide-descendants"
     >
       <WebView<object>
+        key={versioni}
         ref={webview}
+        onContentProcessDidTerminate={rinis}
+        onRenderProcessGone={rinis}
         source={{ html: FAQJA_E_AVATARIT, baseUrl: "https://karriera.local/" }}
         originWhitelist={["*"]}
         onMessage={merr}

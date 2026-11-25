@@ -210,6 +210,7 @@ export async function perpunoKthesen(t: Thirresi, hyrja: HyrjaEKthesës): Promis
       roli,
       nrPyetjeve,
       nrAktual: aktuale.nr,
+      pyetjetEMeparshme: kthesat.map((k) => k.pyetja),
     });
 
     let kthesaERe: Pick<KthesaDB, "nr" | "lloji" | "reagimi" | "pyetja"> | null = null;

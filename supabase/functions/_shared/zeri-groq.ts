@@ -14,7 +14,7 @@ const URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 export function groq(): Degjuesi {
   return {
     emri: "groq",
-    async degjo(pcm: Int16Array, gjuha: Gjuha): Promise<string> {
+    async degjo(pcm: Int16Array, gjuha: Gjuha, fjalori?: string): Promise<string> {
       const celesi = Deno.env.get("GROQ_API_KEY") ?? "";
       if (!celesi) throw new GabimIZerit("Zëri s'është konfiguruar ende. Vazhdo me shkrim.", true);
       const forma = new FormData();
@@ -23,6 +23,8 @@ export function groq(): Degjuesi {
       forma.append("language", gjuha);
       forma.append("response_format", "json");
       forma.append("temperature", "0");
+      // Emrat teknikë të punës dhe të CV-së (docs: "prompt" deri në 224 tokena, i përdorur si kontekst drejtshkrimi).
+      if (fjalori) forma.append("prompt", fjalori);
       const r = await thirrOfruesin(
         URL,
         { method: "POST", headers: { Authorization: `Bearer ${celesi}` }, body: forma },

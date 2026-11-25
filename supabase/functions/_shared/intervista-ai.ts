@@ -110,6 +110,8 @@ export type Konteksti = {
     roli: Roli;
     pershkrimi: string;
     aftesite: string[];
+    /** Kërkesat, përparësitë dhe detyrat e shpalljes (punet.kerkesat); mungojnë te intervistat e vjetra. */
+    kerkesat?: string[];
   };
   /** Përmbledhje e CV-së pa emër, email, telefon apo datëlindje; null nëse s'ka CV. */
   cv: string | null;
@@ -402,6 +404,7 @@ function tekstiIKontekstit(k: Konteksti): string {
     `Pozita: ${p.titulli}`,
     `Kompania: ${p.kompania} (${p.qyteti})`,
     p.aftesite.length ? `Aftësitë që kërkohen: ${p.aftesite.join(", ")}` : "",
+    p.kerkesat?.length ? `Kërkesat dhe detyrat e shpalljes:\n${p.kerkesat.map((k) => `- ${k}`).join("\n")}` : "",
     p.pershkrimi ? `Përshkrimi: ${p.pershkrimi}` : "",
   ]
     .filter(Boolean)
@@ -483,6 +486,106 @@ Gjatësia e dy përgjigjeve të fundit: ${gjatesite || "—"}.
 Qasjet që lejojnë rregullat për kthesën e ardhshme: si pyetje kryesore e re (nr ${nrPyetjeve + 1}): ${pyetje}; si pyetje vazhduese: ${vazhdim}. Zgjidh vetëm nga këto.`;
 }
 
+// ---------- Çka vëren kodi te përgjigjja e fundit ----------
+// Vetëm fryrje të qarta. "Kurrë / asnjëherë" s'përfshihen: shpesh janë pranime të sinqerta ("s'e kam përdorur kurrë").
+const PRETENDIME =
+  /(?<![\p{L}])(ekspert\p{L}*|gjith[cç]ka|gjithmon[eë]|perfekt\p{L}*|m[eë] i miri|m[eë] e mira|expert(?!ise)\p{L}*|everything|always|perfect\p{L}*|Experte\p{L}*|alles|immer|100 ?%)(?![\p{L}])/iu;
+const E_PAQARTE =
+  /(shum[eë] gj[eë]ra|gj[eë]ra t[eë] ndryshme|di[cç]ka|e k[eë]shtu|etj\b|shum[eë] projekte|disa projekte|shkoi mir[eë]|ka shkuar mir[eë]|many (things|projects)|various|stuff|a lot of things|verschiedene|viele Projekte|Sachen)/i;
+// Hollësi: një numër, ose një emër i përveçëm / teknik brenda fjalisë (jo vetëm shkronja e madhe në fillim të saj).
+const KA_HOLLESI = /\d|(?<!^|[.!?]\s)(?<![\p{L}])\p{Lu}[\p{L}\p{N}.#+-]+/u;
+
+export type ShenjatEPergjigjes = { pretendim: string | null; paqarte: boolean };
+
+/** Shenja të thjeshta që ia tregojmë modelit: një pretendim absolut, ose një përgjigje e përgjithshme pa asnjë hollësi. */
+export function shenjatEPergjigjes(pergjigja: string): ShenjatEPergjigjes {
+  const pretendim = PRETENDIME.exec(pergjigja)?.[0] ?? null;
+  const fjale = pergjigja.trim().split(/\s+/).filter(Boolean).length;
+  const paqarte = !KA_HOLLESI.test(pergjigja) && (E_PAQARTE.test(pergjigja) || (fjale >= FJALE_PAK && fjale < 20));
+  return { pretendim, paqarte };
+}
+
+function tekstiIShenjave(s: ShenjatEPergjigjes): string {
+  const r: string[] = [];
+  if (s.pretendim) {
+    r.push(`përmban një pretendim absolut ("${s.pretendim}"): mos e prano pa provë, përmende dhe kërko një detaj ose shembull konkret që e vërteton`);
+  }
+  if (s.paqarte) {
+    r.push("është e përgjithshme (pa emra, numra a shembull të qartë): kërko një rast konkret, çfarë bëri vetë dhe cili ishte rezultati");
+  }
+  return r.length ? `\n\nShënim nga kodi (jo nga kandidati): përgjigjja e fundit ${r.join("; dhe ")}. Nëse qasja e lejuar është "ngrohje", bëje me ton të ngrohtë.` : "";
+}
+
+/** Prompt-i i përdoruesit për një kthesë: konteksti, biseda, pyetjet e bëra, detyra, qasjet dhe shenjat e kodit. */
+export function ndertoPromptinEKthesës(opts: {
+  konteksti: Konteksti;
+  kthesat: KthesaDB[];
+  detyra: string;
+  qasjet: string;
+}): string {
+  const teBera = opts.kthesat.map((k) => `- ${k.pyetja}`).join("\n");
+  const eFundit = opts.kthesat[opts.kthesat.length - 1]?.pergjigja ?? "";
+  return `${tekstiIKontekstit(opts.konteksti)}\n\nBiseda deri tani:\n${biseda(opts.kthesat)}\n\nPyetjet e bëra tashmë (mos i përsërit, as me fjalë të tjera):\n${teBera}\n\n${opts.detyra}${opts.qasjet}${tekstiIShenjave(shenjatEPergjigjes(eFundit))}`;
+}
+
+// ---------- Pa pyetje të përsëritura (kodi vendos) ----------
+// Përemra, fjalë pyetëse dhe folje ndihmëse (sq · en · de) që s'e tregojnë temën e pyetjes.
+const FJALE_PA_TEME = new Set(
+  ("keni kishit jeni juaj tuaj tona jone cfare çfarë cili cila cilat cilin cilën mund mundet kishte ishte kete këtë atij asaj " +
+    "gjate gjatë pastaj thatë mendoni tregoni tregone beni bëni bëtë dicka diçka " +
+    "what which have your would could about that this there tell describe when did does " +
+    "haben ihre ihrem ihren welche wurde können könnten erzählen dabei dazu").split(" "),
+);
+
+// Rrënja me 5 shkronja i bashkon trajtat ("testuar · testuat", "projekti · projekt"), që shqipja e lakuar të mos e fshehë përsëritjen.
+const fjaletKyce = (s: string) =>
+  new Set(
+    s
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .split(" ")
+      .filter((w) => w.length > 3 && !FJALE_PA_TEME.has(w))
+      .map((w) => w.slice(0, 5).replace(/(?<=..)[aeëiou]$/, "")),
+  );
+
+/** Emrat brenda fjalisë (teknologji, projekte, kompani): ata e tregojnë se për çka pyetet. */
+const emratNePyetje = (s: string) =>
+  new Set((s.match(/(?<!^|[.!?]\s)(?<![\p{L}])\p{Lu}[\p{L}\p{N}#+]*/gu) ?? []).map((w) => w.toLowerCase().slice(0, 5)));
+
+/**
+ * E njëjta pyetje, edhe me fjalë pak të ndryshuara: pjesa më e madhe e fjalëve kyçe përputhet. Dy pyetje me të njëjtën
+ * formë për gjëra të ndryshme ("... kërkon SQL" · "... kërkon Playwright") s'janë përsëritje.
+ */
+export function eshtePyetjeEPerseritur(pyetja: string, teMeparshmet: string[]): boolean {
+  const a = fjaletKyce(pyetja);
+  const emratA = emratNePyetje(pyetja);
+  return teMeparshmet.some((q) => {
+    const emratB = emratNePyetje(q);
+    if (emratA.size && emratB.size && ![...emratA].some((e) => emratB.has(e))) return false;
+    const b = fjaletKyce(q);
+    const teNjejta = [...a].filter((w) => b.has(w)).length;
+    const gjithsej = new Set([...a, ...b]).size;
+    return gjithsej > 0 && teNjejta / gjithsej >= 0.6;
+  });
+}
+
+const PYETJA_PER_AFTESINE: Record<Gjuha, (a: string) => string> = {
+  sq: (a) => `Shpallja kërkon ${a}. Më tregoni një rast kur e keni përdorur: çfarë bëtë ju vetë?`,
+  en: (a) => `The job asks for ${a}. Tell me about one time you used it: what did you do yourself?`,
+  de: (a) => `In der Stelle wird ${a} verlangt. Erzählen Sie von einem Mal, als Sie es benutzt haben: Was haben Sie selbst gemacht?`,
+};
+
+/** Zëvendësuesi i një pyetjeje të përsëritur: një aftësi e shpalljes që s'është pyetur, pastaj pyetjet rezervë. */
+function pyetjaEPaperseritur(gjuha: Gjuha, roli: Roli, aftesite: string[], teMeparshmet: string[], n: number): string {
+  const tekstiIMeparshem = teMeparshmet.join(" ").toLowerCase();
+  const aftesia = aftesite.find((a) => a.trim() && !tekstiIMeparshem.includes(a.trim().toLowerCase()));
+  const kandidatet = [
+    ...(aftesia ? [PYETJA_PER_AFTESINE[gjuha](aftesia.trim())] : []),
+    ...REZERVE[gjuha][roli],
+  ];
+  return kandidatet.find((p) => !eshtePyetjeEPerseritur(p, teMeparshmet)) ?? pyetjaRezerve(gjuha, roli, n);
+}
+
 // ---------- Intervistuesja (një kthesë) ----------
 /** Gjinia e intervistuesit në prompt: vetëm emri dhe gramatika ndryshojnë, toni e vështirësia jo. */
 function rregulliIGjinise(i: Intervistuesi): string {
@@ -501,15 +604,18 @@ Si shkruan:
 - I drejtohesh kandidatit me "ju" (anglisht "you", gjermanisht "Sie"). Ton i ngrohtë, profesional dhe i qetë.
 - "reagimi": një fjali e shkurtër (3 deri në 12 fjalë), njerëzore, që përmend një detaj konkret nga ajo që sapo tha kandidati dhe e tregon qasjen natyrshëm: e ngrohtë te "ngrohje" e "qetesim", e matur dhe skeptike te "thellim", "sfide" e "provokim" (p.sh. "Hmm, kjo tingëllon pak e përgjithshme."). Jo gjithmonë lëvdatë.
 - "pyetja": një pyetje e vetme, e qartë, deri në rreth 35 fjalë. Pa lista, pa emoji, pa markdown.
-- Mos e fillo çdo herë njësoj: shmang shprehjet e gatshme si "Interesante" ose "Shumë mirë".
-- Mos bëj dy pyetje në një.
+- Mos e fillo çdo herë njësoj: shmang shprehjet e gatshme si "Interesante", "Shumë mirë" ose "Faleminderit për përgjigjen".
+- Mos bëj dy pyetje në një (as me "dhe si…" në fund).
+- Kur shkruan shqip, shkruaj si flet një intervistues shqiptar, jo si përkthim nga anglishtja: fjali të shkurtra, folje të drejtpërdrejta ("Çfarë bëtë ju vetë?", "Si e zgjidhët?", "Pse zgjodhët këtë?"), pa shprehje si "a mund të ndani me ne" ose "do të doja të thelloheshim". Emrat teknikë (React, Playwright, SQL) mbeten në anglisht dhe lakohen natyrshëm ("me React-in", "testet në Playwright").
 - "shprehja": shprehja e fytyrës që i shkon asaj që thua (për avatarin): "buzeqeshje", "interesim", "empati" ose "neutrale".
 
 Si e drejton intervistën:
-- Pyetjet janë për KËTË punë: përdor shpalljen (aftësitë, detyrat) dhe CV-në e kandidatit. Pyet për projektet ose përvojat që ka në CV dhe për aftësitë që kërkon shpallja por s'duken në CV.
-- "lloji": "vazhdim" kur i kërkon sqarim ose shembull konkret për përgjigjen e fundit (çfarë bëri vetë, si, dhe cili ishte rezultati), deri në dy herë radhazi për të njëjtën pyetje; "pyetje" kur kalon te një temë e re.
-- Kur përgjigjja është e mirë, kalo te një kompetencë që s'është mbuluar ende: ${r.kompetencat}.
-- Mos e përsërit një pyetje që është bërë tashmë.
+- Pas hapjes së ngrohtë, çdo pyetje kryesore lidhet me diçka konkrete të KËSAJ pune: emërto një kërkesë, aftësi ose detyrë nga shpallja, ose një projekt a përvojë nga CV-ja ("Te projekti juaj X…", "Shpallja kërkon Y…"). Një pyetje që do t'i shkonte çdo pune s'mjafton. Jep përparësi kërkesave të shpalljes që s'duken te CV-ja ose që s'janë mbuluar.
+- "lloji": "vazhdim" kur gërmon te përgjigjja e fundit: zgjidh NJË gjë konkrete që sapo tha kandidati (një mjet, një vendim, një numër, një pohim), përmende me fjalët e tij dhe pyet për të (pse atë, si e bëri vetë, çfarë shkoi keq, si e mati rezultatin). Deri në dy herë radhazi për të njëjtën temë; "pyetje" kur kalon te një temë e re.
+- Mos prano përgjigje të paqarta: nëse s'ka shembull, emra, numra ose rolin e vetë kandidatit, kërko një rast konkret ("Më tregoni një rast të vetëm: çfarë bëtë ju vetë?").
+- Mos prano pretendime të fryra pa provë: kur kandidati thotë se është ekspert, se di "gjithçka", se bëri gjithçka vetë, se s'ka gabuar kurrë, ose kur pretendimi s'përputhet me CV-në, përmende pretendimin me mirësjellje dhe kërko provë që vetëm dikush që e ka bërë vërtet e di (një detaj teknik, një gabim konkret, një numër).
+- Kur përgjigjja është e mirë dhe konkrete, kalo te një kompetencë që s'është mbuluar ende: ${r.kompetencat}.
+- Mos pyet dy herë për të njëjtën gjë, as me fjalë të tjera: lexo listën e pyetjeve të bëra.
 
 Qasja jote ndryshon sipas kandidatit, si te një intervistues i vërtetë: kandidati nuk e zgjedh sjelljen tënde. Çdo kthesë zgjedh një "qasja" dhe e shpjegon shkurt te "arsyeja_e_qasjes" (një fjali private; kandidati s'e sheh kurrë). Vendose qasjen para se ta shkruash reagimin e pyetjen.
 - "ngrohje": hapje e ngrohtë, pyetje të lehta që e çlodhin kandidatin (profili, motivimi).
@@ -571,6 +677,8 @@ export function vendosKthesen(opts: {
   roli: Roli;
   nrPyetjeve: number;
   nrAktual: number; // numri i kthesës që sapo u përgjigj
+  /** Të gjitha pyetjet e bëra deri tani; një pyetje e përsëritur nga modeli zëvendësohet. */
+  pyetjetEMeparshme?: string[];
 }): KthesaEVendosur {
   const { ai, menyra } = opts;
   let vazhdon: boolean;
@@ -588,6 +696,10 @@ export function vendosKthesen(opts: {
   let pyetja = ai.pyetja.trim().slice(0, 1000);
   if (vazhdon && !pyetja) {
     pyetja = pyetjaRezerve(opts.gjuha, opts.roli, opts.nrPyetjeve);
+    lloji = "pyetje";
+  }
+  if (vazhdon && opts.pyetjetEMeparshme && eshtePyetjeEPerseritur(pyetja, opts.pyetjetEMeparshme)) {
+    pyetja = pyetjaEPaperseritur(opts.gjuha, opts.roli, opts.konteksti.puna.aftesite, opts.pyetjetEMeparshme, opts.nrPyetjeve);
     lloji = "pyetje";
   }
   const nrIRi = vazhdon && lloji === "pyetje" ? opts.nrPyetjeve + 1 : opts.nrPyetjeve;
@@ -631,7 +743,7 @@ export async function gjeneroKthesen(opts: {
       'Kjo ishte përgjigjja e fundit e intervistës. "vazhdo" është false, "pyetja" bosh. Te "reagimi" shkruaj vetëm një reagim të shkurtër dhe konkret ndaj saj, pa pyetje dhe pa falënderim, sepse mbyllja shtohet vetë.',
   };
   const qasjet = opts.menyra === "mbyll" ? "" : `\n\n${tekstiIQasjeve(opts.konteksti, opts.kthesat, opts.nrPyetjeve)}`;
-  const prompt = `${tekstiIKontekstit(opts.konteksti)}\n\nBiseda deri tani:\n${biseda(opts.kthesat)}\n\n${detyrat[opts.menyra]}${qasjet}`;
+  const prompt = ndertoPromptinEKthesës({ konteksti: opts.konteksti, kthesat: opts.kthesat, detyra: detyrat[opts.menyra], qasjet });
   return await pyet(
     KthesaSchema,
     MODELI_KTHESA,

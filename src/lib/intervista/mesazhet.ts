@@ -17,6 +17,8 @@ export type MesazhPerFaqen =
       intervistuesi: Intervistuesi;
       emri: string;
       ngjyrat: { sfondi: string; teksti: string; unaza: string };
+      /** Tema e errët: zyra prapa Artës zbehet si në mbrëmje. */
+      erret: boolean;
     }
   /** shto: radhitet pas asaj që po thuhet (pjesa e dytë e kthesës); përndryshe ndalon gjithçka dhe fillon këtë. */
   | { lloji: "fol"; id: string; fjalite: FjaliaMeZe[]; shprehja: Shprehja; pershendetje: boolean; shto: boolean }
@@ -43,6 +45,10 @@ export type MesazhNgaFaqja =
   | { lloji: "kamera_gabim"; mesazhi: string }
   /** DELTA e numrave nga kornizat e vërteta gjatë përgjigjeve të kandidatit (jo gjatë të folurit të intervistuesit); app-i i shton te totalet. */
   | { lloji: "kamera_statistika"; kornizat: number; fytyra: number; sy: number }
+  /** Sinjal i çastit: shikimi mungon prej ~3 s gjatë përgjigjes (true), ose u kthye (false). S'ruhet. */
+  | { lloji: "kamera_vemendja"; larg: boolean }
+  /** Mbikëqyrja e kamerës në faqe: po rilidhet, u rikuperua, ose s'u rikuperua dot. */
+  | { lloji: "kamera_gjendje"; gjendja: "po_rilidhet" | "ne_rregull" | "u_shkeput" }
   | { lloji: "gabim"; kodi: "faqja" | "zeri"; mesazhi: string };
 
 const objekt = (v: unknown): Record<string, unknown> | null =>
@@ -68,6 +74,12 @@ export function lexoMesazhinNgaFaqja(teksti: string): MesazhNgaFaqja | null {
     case "foli_filloi":
     case "foli_mbaroi":
       return typeof o.id === "string" ? { lloji: o.lloji, id: o.id } : null;
+    case "kamera_vemendja":
+      return { lloji: "kamera_vemendja", larg: o.larg === true };
+    case "kamera_gjendje":
+      return o.gjendja === "po_rilidhet" || o.gjendja === "ne_rregull" || o.gjendja === "u_shkeput"
+        ? { lloji: "kamera_gjendje", gjendja: o.gjendja }
+        : null;
     case "kamera_gati":
       return { lloji: "kamera_gati", analiza: o.analiza === true };
     case "kamera_gabim":

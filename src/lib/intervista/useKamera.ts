@@ -7,15 +7,24 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Linking } from "react-native";
 
-import type { AvatariRef } from "./Avatari";
-import { kerkoLejenKameres, lexoLejenKameres, shtoStatistiken } from "./kamera";
+import type { AvatariRef, MesazhiIKameres } from "./Avatari";
+import {
+  bashkoStatistikat,
+  kerkoLejenKameres,
+  lexoLejenKameres,
+  lexoStatistikenNeRadhe,
+  perqindjaEVemendjes,
+  shtoStatistiken,
+  type StatistikaKameres,
+} from "./kamera";
 import type { FazaELejes } from "./LejaModal";
-import type { MesazhNgaFaqja } from "./mesazhet";
 
 /** Pas kësaj kohe pa asnjë përgjigje nga faqja (getUserMedia varet), kalojmë te kamera native. */
 const PRITJA_E_FAQES_MS = 15_000;
 
 export type MenyraEKameres = "faqja" | "native";
+/** Gjendja e rrjedhës së kamerës brenda faqes (mbikëqyrja). */
+export type GjendjaEKameres = "ne_rregull" | "po_rilidhet" | "u_shkeput";
 
 type NjoftoFn = (teksti: string, lloji?: "sukses" | "info" | "gabim") => void;
 
@@ -31,6 +40,21 @@ export function useKamera(opts: {
   /** true kur MediaPipe punon: vetëm atëherë ka matje. */
   const [analiza, setAnaliza] = useState(false);
   const [leja, setLeja] = useState<FazaELejes | null>(null);
+  const [gjendja, setGjendja] = useState<GjendjaEKameres>("ne_rregull");
+  // Shiriti i vëmendjes: totalet e kësaj interviste (të ruajturat + deltat e reja) dhe sinjali "larg" i çastit.
+  const [totalet, setTotalet] = useState<StatistikaKameres | null>(null);
+  const [larg, setLarg] = useState(false);
+  useEffect(() => {
+    let aktiv = true;
+    // Leximi kalon nga radha e shkrimeve: përfshin çka u ruajt para hapjes së panelit dhe asnjë deltë të mëvonshme. Deltat
+    // që arritën para se të mbaronte leximi janë te gjendja, ndaj mblidhen me të ruajturat (pa humbje, pa numërim dy herë).
+    lexoStatistikenNeRadhe(intervistaId).then((s) => {
+      if (aktiv && s) setTotalet((p) => bashkoStatistikat(s, p));
+    });
+    return () => {
+      aktiv = false;
+    };
+  }, [intervistaId]);
   const pergjigjaEFaqes = useRef(false);
   const mounted = useRef(true);
   useEffect(() => {
@@ -44,12 +68,15 @@ export function useKamera(opts: {
     setAktive(false);
     setMenyra(null);
     setAnaliza(false);
+    setGjendja("ne_rregull");
+    setLarg(false);
     avatari.current?.kamera(false);
   }, [avatari]);
 
   const ndiz = useCallback(() => {
     pergjigjaEFaqes.current = false;
     setAnaliza(false);
+    setGjendja("ne_rregull");
     setMenyra("faqja");
     setAktive(true);
   }, []);
@@ -104,7 +131,7 @@ export function useKamera(opts: {
 
   /** Mesazhet e kamerës nga faqja e avatarit. */
   const onKamera = useCallback(
-    (m: Extract<MesazhNgaFaqja, { lloji: "kamera_gati" | "kamera_gabim" | "kamera_statistika" }>) => {
+    (m: MesazhiIKameres) => {
       if (m.lloji === "kamera_gati") {
         pergjigjaEFaqes.current = true;
         setAnaliza(m.analiza);
@@ -115,13 +142,28 @@ export function useKamera(opts: {
         setMenyra("native");
         setAnaliza(false);
         njofto("Kamera po të tregon veten. Matja e kontaktit me sy s'është e disponueshme në këtë pajisje.", "info");
+      } else if (m.lloji === "kamera_gjendje") {
+        setGjendja(m.gjendja);
+        if (m.gjendja !== "ne_rregull") setLarg(false);
+      } else if (m.lloji === "kamera_vemendja") {
+        setLarg(m.larg);
       } else {
-        void shtoStatistiken(intervistaId, { kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy });
         // Faqja dërgon deltat: shtohen te totalet e ruajtura (një rinisje e faqes s'i fshin).
+        void shtoStatistiken(intervistaId, { kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy });
+        setTotalet((p) => bashkoStatistikat({ kornizat: m.kornizat, fytyra: m.fytyra, sy: m.sy }, p));
       }
     },
     [avatari, intervistaId, njofto],
   );
 
-  return { aktive, menyra, analiza, leja, ndrysho, lejaVazhdo, lejaJo, lejaHapCilesimet, lejaVazhdoPaKamere, onKamera };
+  /** "Prek për ta rilidhur": faqja e nis kamerën nga e para (numrat e deritanishëm dërgohen para se të fshihen). */
+  const rilidh = useCallback(() => {
+    setGjendja("po_rilidhet");
+    pergjigjaEFaqes.current = false;
+    avatari.current?.kamera(true);
+  }, [avatari]);
+
+  const vemendja = perqindjaEVemendjes(totalet);
+
+  return { aktive, menyra, analiza, leja, gjendja, rilidh, vemendja, larg, ndrysho, lejaVazhdo, lejaJo, lejaHapCilesimet, lejaVazhdoPaKamere, onKamera };
 }

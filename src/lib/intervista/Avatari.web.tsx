@@ -26,6 +26,7 @@ export function Avatari(_props: {
   onPrek: () => void;
   onGabim: () => void;
   onKamera?: (m: { lloji: string }) => void;
+  onRinisje?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   return null;

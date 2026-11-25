@@ -84,7 +84,7 @@ export function LejaModal({
             </T>
             <T zbehur madhesia={15} style={styles.majtas}>
               {kamera
-                ? "Kamera ndizet vetëm kur prek butonin \"Kamera\". Të tregon veten dhe matet sa e shikon kamerën gjatë përgjigjeve, për këshilla mbi kontaktin me sy. Videoja nuk ruhet dhe nuk del nga telefoni."
+                ? "Kamera ndizet vetëm kur prek butonin \"Kamera\" dhe të tregon veten. Gjatë përgjigjeve një shirit i vogël tregon përafërsisht sa e shikon kamerën dhe të kujton butësisht kur e largon shikimin; llogaritet vetëm në telefon, ruhen vetëm numra dhe kurrë imazhe."
                 : `${emri} të pyet me zë dhe ti përgjigjesh duke folur. Mikrofoni hapet vetëm kur prek butonin e tij. Zëri kthehet në tekst dhe nuk ruhet.`}
             </T>
             <T zbehur madhesia={13.5} style={styles.majtas}>

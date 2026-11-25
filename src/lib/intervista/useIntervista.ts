@@ -14,6 +14,7 @@ import {
   krijoRaportin,
   lexoIntervisten,
   perfundoIntervisten,
+  type KuotaEZerit,
   type PasPergjigjes,
 } from "./klienti";
 import type { Shprehja } from "./tipet";
@@ -36,11 +37,15 @@ export type ZeriRrjedhe = {
   /** Teksti i pyetjes së re (ose fundi) erdhi: zëri i saj do të vijë menjëherë pas kësaj. */
   fillon: (celesi: CelesiIZerit, shprehja: Shprehja) => void;
   pcm: (b: string, shkalla: number) => void;
+  /** Cili ofrues po e flet pyetjen e re. */
+  ofruesi: (emri: string) => void;
+  /** Zëri dështoi ose u ndërpre (thirret para "mbaroi"): paneli luan audion pa rrjedhë, përveç kur është kufiri. */
+  deshtoi: (kuota: KuotaEZerit | undefined) => void;
   /** Rrjedha mbaroi (me sukses ose pas një ndërprerjeje): s'vjen më zë. */
   mbaroi: () => void;
 };
 
-const KODET_E_ZERIT = new Set(["zeri", "zeri_pa_konfigurim", "kufiri_zerit"]);
+const KODET_E_ZERIT = new Set(["zeri", "zeri_pa_konfigurim", "kufiri_zerit", "kuota"]);
 
 function siGabim(e: unknown): GabimIIntervistes {
   return e instanceof GabimIIntervistes ? e : new GabimIIntervistes("Diçka shkoi keq. Provo përsëri.", "tjeter");
@@ -210,6 +215,7 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
       // Reagimi flitet para se të vijë teksti i kthesës: copat e para presin këtu derisa zëri të "fillojë" (onKthesa).
       const copatNePritje: [string, number][] = [];
       let gabimiZerit: string | null = null;
+      let kuotaEZerit: KuotaEZerit | undefined;
       try {
         const r = await dergoZerinMeRrjedhe(intervistaId, nr, uri, {
           onDegjuar: (teksti) => {
@@ -228,8 +234,12 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
             if (zeriFilloi) zeri.pcm(b, shkalla);
             else copatNePritje.push([b, shkalla]);
           },
-          onGabimZerit: (mesazhi) => {
+          onOfruesi: (emri) => {
+            if (aktiv.current) zeri.ofruesi(emri);
+          },
+          onGabimZerit: (mesazhi, kuota) => {
             gabimiZerit = mesazhi;
+            kuotaEZerit = kuota;
           },
         });
         if (!aktiv.current) return { lloji: "zene" };
@@ -237,11 +247,15 @@ export function useIntervista(intervistaId: string, paraqitja: Paraqitja = "teks
           dispatch({ lloji: "s_degjova" });
           return { lloji: "s_degjova" };
         }
+        if (gabimiZerit) zeri.deshtoi(kuotaEZerit);
         zeri.mbaroi();
         return { lloji: "u_degjua", gabimiZerit };
       } catch (e) {
         if (!aktiv.current) return { lloji: "zene" };
-        if (zeriFilloi) zeri.mbaroi();
+        if (zeriFilloi) {
+          zeri.deshtoi(undefined);
+          zeri.mbaroi();
+        }
         const g = siGabim(e);
         if (g.kodi === "jashte_radhe" || g.kodi === "mbaroi") {
           await ngarko();

@@ -14,13 +14,23 @@ import {
   type CopaAudio,
   type Folesi,
   GabimIZerit,
+  gabimIKuotes,
   headerAtEKufijve,
+  lexoKufirin,
   lexoWav,
   shkruajWav,
   thirrOfruesin,
 } from "./zeri.ts";
 
 export const MODELI_TTS = "gemini-3.8-flash-tts";
+/**
+ * Rezerva me kuotë të veten (id i kontrolluar te lista e modeleve dhe te docs, 25.11). Përdoret kur 3.8 Flash TTS e ka
+ * mbaruar kufirin, edhe për shqip (kërkesa e menaxherit). KUJDES: docs (aistudio.google.com/docs/speech-generation) e
+ * listojnë "Tosk Albanian" vetëm te 3.8 Flash TTS, jo te Lite, dhe zëri shqip i Lite s'është dëgjuar ende
+ * (_provat/zeri-lite-mostra.ts). Nëse tingëllon keq: sekreti GEMINI_LITE_SQ=0 e heq për shqip, pa ndryshim kodi.
+ */
+export const MODELI_TTS_LITE = "gemini-3.8-flash-lite-tts";
+const gjuhetELite = (): readonly Gjuha[] => (Deno.env.get("GEMINI_LITE_SQ") === "0" ? ["en", "de"] : ["sq", "en", "de"]);
 const URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 const SHKALLA_TTS = 24_000; // kur vjen PCM pa header (audio/l16)
 
@@ -60,9 +70,9 @@ function ngaBase64(b64: string): Uint8Array {
   return a;
 }
 
-function trupiIKerkeses(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi, rrjedhe: boolean) {
+function trupiIKerkeses(modeli: string, teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi, rrjedhe: boolean) {
   return {
-    model: MODELI_TTS,
+    model: modeli,
     ...(rrjedhe ? { stream: true } : {}),
     input: [
       {
@@ -81,22 +91,51 @@ function celesiIGemini(): string {
   return celesi;
 }
 
+/** Vonesë më e gjatë se kaq ose "per day" te kufiri = kufiri ditor i ofruesit. */
+const VONESA_E_KUFIRIT_DITOR_MS = 60 * 60 * 1000;
+
+/** Më shumë se kaq s'presim brenda një kërkese: kandidati sheh tekstin dhe app-i ka rrugën e vet rezervë. */
+const MAKS_PRITJA_429_MS = 8_000;
+
+/**
+ * Thirrja te Gemini me NJË riprovim pas një 429 (kufiri i kërkesave në minutë, i parë në prodhim 25.11), me vonesën që
+ * thotë vetë Google-i, vetëm nëse është e shkurtër. Në log shkruhet emri i kufirit dhe vonesa (asnjë tekst).
+ */
+async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response> {
+  try {
+    return await thirrOfruesin(URL, init, "Zëri", "zeri-gemini", afatiMs);
+  } catch (e) {
+    if (!(e instanceof GabimIZerit) || e.detaje?.status !== 429) throw e;
+    const { vonesaMs, kufiri } = lexoKufirin(e.detaje);
+    console.error(`[zeri-gemini] 429: kufiri ${kufiri ?? "i pathënë"} · vonesa ${vonesaMs ?? "?"} ms`);
+    if ((vonesaMs !== null && vonesaMs >= VONESA_E_KUFIRIT_DITOR_MS) || /per day/i.test(kufiri ?? "")) {
+      throw gabimIKuotes(e.detaje, true);
+    }
+    const pritja = vonesaMs ?? 3_000;
+    if (pritja > MAKS_PRITJA_429_MS) throw e;
+    await new Promise((r) => setTimeout(r, pritja + 250));
+    return await thirrOfruesin(URL, init, "Zëri", "zeri-gemini", afatiMs);
+  }
+}
+
 /**
  * Rrjedha SSE e Interactions API (`stream: true`, matur 24.11): ngjarje `step.delta` me `delta.type: "audio"`,
  * `mime_type: "audio/l16"` (PCM 16 bit mono, `sample_rate` 24000), copa 40–80 ms; byte-i i parë vjen pas ~2 s dhe
  * pjesa tjetër brenda <1 s (shumë më shpejt se koha reale). Përfundon me `interaction.completed` dhe `[DONE]`.
  */
-async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): AsyncGenerator<CopaAudio> {
+async function* rrjedhaGemini(
+  modeli: string,
+  teksti: string,
+  gjuha: Gjuha,
+  intervistuesi: Intervistuesi,
+): AsyncGenerator<CopaAudio> {
   const celesi = celesiIGemini();
-  const r = await thirrOfruesin(
-    URL,
+  const r = await thirrGemini(
     {
       method: "POST",
       headers: { "x-goog-api-key": celesi, "Content-Type": "application/json" },
-      body: JSON.stringify(trupiIKerkeses(teksti, gjuha, intervistuesi, true)),
+      body: JSON.stringify(trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, true)),
     },
-    "Zëri",
-    "zeri-gemini",
     60_000,
   );
   if (!r.body) throw new GabimIZerit("Zëri ktheu një përgjigje të paplotë. Provo përsëri.");
@@ -105,6 +144,7 @@ async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Inter
   let tampon = "";
   let pjesaPaGjysem: Uint8Array | null = null; // bajti tek që mbetet mes dy copave
   let pati = false;
+  let perfundoi = false; // pa "interaction.completed" rrjedha u pre në mes: është dështim, jo fund
   try {
     for (;;) {
       const { value, done } = await lexuesi.read();
@@ -117,6 +157,7 @@ async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Inter
         const m = /^event: ?(.*)\ndata: ?(.*)$/s.exec(ngjarja);
         if (!m) continue;
         if (m[1] === "error") throw new GabimIZerit("Zëri dështoi. Provo përsëri.");
+        if (m[1] === "interaction.completed") perfundoi = !/"status"\s*:\s*"(?!completed)/.test(m[2]);
         if (m[1] !== "step.delta") continue;
         let d: Record<string, unknown> | undefined;
         try {
@@ -150,24 +191,25 @@ async function* rrjedhaGemini(teksti: string, gjuha: Gjuha, intervistuesi: Inter
     lexuesi.cancel().catch(() => {});
   }
   if (!pati) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
+  if (!perfundoi) throw new GabimIZerit("Zëri u ndërpre para fundit. Provo përsëri.");
 }
 
-export function gemini(): Folesi {
+export function gemini(modeli: string = MODELI_TTS): Folesi {
+  const lite = modeli === MODELI_TTS_LITE;
   return {
-    emri: "gemini",
-    rrjedhe: rrjedhaGemini,
+    emri: lite ? "gemini-lite" : "gemini",
+    ...(lite ? { gjuhet: gjuhetELite() } : {}),
+    iGatshem: () => !!Deno.env.get("GEMINI_API_KEY"),
+    rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, teksti, gjuha, intervistuesi),
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
       const celesi = celesiIGemini();
-      const trupi = trupiIKerkeses(teksti, gjuha, intervistuesi, false);
-      const r = await thirrOfruesin(
-        URL,
+      const trupi = trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, false);
+      const r = await thirrGemini(
         {
           method: "POST",
           headers: { "x-goog-api-key": celesi, "Content-Type": "application/json" },
           body: JSON.stringify(trupi),
         },
-        "Zëri",
-        "zeri-gemini",
         45_000,
       );
       const kufijte = headerAtEKufijve(r.headers);
