@@ -25,10 +25,12 @@ export type AudioIFolur = {
   kufijte?: Record<string, string>;
   /** Cili ofrues e bëri (zinxhiri e vendos): app-i e ruan pranimin e shkurtër veç për çdo zë. */
   ofruesi?: string;
+  /** false = audio rezervë (p.sh. Flash-Lite): s'ruhet te kesh-i i teksteve fikse. */
+  ruaj?: boolean;
 };
 
 /** Një copë e rrjedhës së TTS: PCM 16 bit mono little-endian (numër çift bajtesh) me shkallën e mostrimit. */
-export type CopaAudio = { pcm: Uint8Array; shkalla: number; ofruesi?: string };
+export type CopaAudio = { pcm: Uint8Array; shkalla: number; ofruesi?: string; ruaj?: boolean };
 
 /** STT: tekst nga audio. */
 export interface Degjuesi {
@@ -64,6 +66,8 @@ export class GabimIZerit extends Error {
   kufiriDitor = false;
   /** Dështim nga kufiri i shërbimit (429 ose numëruesi mujor): app-i e thotë sinqerisht (kodi "kuota"). */
   kuota = false;
+  /** Modeli ktheu audio që s'përdoret (bosh, format ose shkallë tjetër, e dëmtuar, shumë e shkurtër për tekstin). */
+  pavlefshem = false;
   /** Vetëm për skriptet e provës: statusi, header-at e kufijve dhe fillimi i trupit të gabimit. Funksionet s'e shkruajnë në log. */
   readonly detaje: { status: number; kufijte: Record<string, string>; trupi: string } | null;
   constructor(

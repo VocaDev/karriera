@@ -32,7 +32,7 @@ export const MODELI_TTS = "gemini-3.8-flash-tts";
 export const MODELI_TTS_LITE = "gemini-3.8-flash-lite-tts";
 const gjuhetELite = (): readonly Gjuha[] => (Deno.env.get("GEMINI_LITE_SQ") === "0" ? ["en", "de"] : ["sq", "en", "de"]);
 const URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
-const SHKALLA_TTS = 24_000; // kur vjen PCM pa header (audio/l16)
+const SHKALLA_TTS = 24_000; // e vetmja shkallë e pranuar (matur: WAV pa rrjedhë dhe audio/l16 me rrjedhë)
 
 /** Zëri sipas intervistuesit; i njëjti zë për sq / en / de (gjuha zbulohet nga teksti). Prova e dëgjimit vendos. */
 export const ZERAT: Record<Intervistuesi, string> = { arta: "Kore", arber: "Charon" };
@@ -44,8 +44,61 @@ const STILI: Record<Gjuha, string> = {
   de: "Calm, warm and professional job interviewer speaking standard German at a natural, unhurried pace.",
 };
 
+// ---------- Kontrolli i audios: asnjë rezultat s'përdoret dhe s'ruhet pa kaluar këtu ----------
+// Katër mostrat e vërteta (docs/zeri-mostra, 3.8 Flash TTS, 15.11) kanë 12–16 shkronja në sekondë. Kufiri i poshtëm
+// pranon deri në 30 (dy herë më shpejt), që një zë i shpejtë të mos hidhet poshtë: ai kap audion bosh ose të cunguar.
+const MAKS_SHKRONJA_NE_SEKONDE = 30;
+const MIN_SEKONDA_AUDIO = 0.3;
+const PRAGU_I_TINGULLIT = 64; // nga 32767: nën të, gjithë audioja është heshtje (mostrat e vërteta arrijnë 24000+)
+
+/** Sa bajte PCM (24 kHz, 16 bit, mono) duhet të ketë së paku audioja e këtij teksti. */
+export function minimumiIBajteve(teksti: string): number {
+  const shkronja = teksti.replace(/\s+/g, " ").trim().length;
+  return 2 * Math.ceil(SHKALLA_TTS * Math.max(MIN_SEKONDA_AUDIO, shkronja / MAKS_SHKRONJA_NE_SEKONDE));
+}
+
+/** Gabim i modelit: rradha (zeri-rrotullimi.ts) e bllokon dhe kalon te tjetri. `arsyeja` është teknike, pa tekst. */
+function audioEPavlefshme(modeli: string, arsyeja: string): GabimIZerit {
+  console.error(`[zeri-gemini] ${modeli}: audio e pavlefshme (${arsyeja}).`);
+  const e = new GabimIZerit("Zëri doli i dëmtuar. Provo përsëri.");
+  e.pavlefshem = true;
+  return e;
+}
+
+/** Çka thotë përgjigjja për formatin; null kur s'bie ndesh me PCM 24 kHz mono (ose WAV, i cili lexohet veç). */
+function formatiIGabuar(a: Record<string, unknown>): string | null {
+  const mime = typeof a.mime_type === "string" ? a.mime_type.toLowerCase().slice(0, 60) : "";
+  if (mime && !/^audio\/(l16|pcm|wav|x-wav|wave)\b/.test(mime)) return `formati ${mime}`;
+  const ngaMime = /\brate=(\d+)/.exec(mime)?.[1];
+  for (const shkalla of [a.sample_rate, ngaMime === undefined ? undefined : Number(ngaMime)]) {
+    if (shkalla !== undefined && shkalla !== SHKALLA_TTS) return `shkalla ${String(shkalla).slice(0, 12)}`;
+  }
+  if (a.channels !== undefined && a.channels !== 1) return `kanalet ${String(a.channels).slice(0, 4)}`;
+  return null;
+}
+
+/** Fillimi i një skedari audio të paketuar (jo PCM i zhveshur): po të lexohej si PCM, do të dilte zhurmë. */
+const ePaketuar = (b: Uint8Array) => ["RIFF", "OggS", "ID3", "fLaC"].some((m) => [...m].every((c, i) => b[i] === c.charCodeAt(0)));
+
+function kaTingull(b: Uint8Array): boolean {
+  for (let i = 0; i + 1 < b.length; i += 2) {
+    if (Math.abs(((b[i] | (b[i + 1] << 8)) << 16) >> 16) >= PRAGU_I_TINGULLIT) return true;
+  }
+  return false;
+}
+
+function dekodo(modeli: string, b64: string): Uint8Array {
+  try {
+    return ngaBase64(b64);
+  } catch {
+    throw audioEPavlefshme(modeli, "base64 i palexueshëm");
+  }
+}
+
+const sekondat = (bajt: number) => (bajt / 2 / SHKALLA_TTS).toFixed(1);
+
 /** Kërkon një audio në çdo vend të përgjigjes (forma e saktë e "steps" mund të ndryshojë mes versioneve). */
-function gjejAudion(v: unknown): string | null {
+function gjejAudion(v: unknown): (Record<string, unknown> & { data: string }) | null {
   if (Array.isArray(v)) {
     for (let i = v.length - 1; i >= 0; i--) {
       const a = gjejAudion(v[i]);
@@ -55,7 +108,7 @@ function gjejAudion(v: unknown): string | null {
   }
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
-  if (o.type === "audio" && typeof o.data === "string" && o.data.length > 0) return o.data;
+  if (o.type === "audio" && typeof o.data === "string" && o.data.length > 0) return { ...o, data: o.data };
   for (const k of ["steps", "outputs", "content", "output_audio"]) {
     const a = gjejAudion(o[k]);
     if (a) return a;
@@ -101,7 +154,7 @@ const MAKS_PRITJA_429_MS = 8_000;
  * Thirrja te Gemini me NJË riprovim pas një 429 (kufiri i kërkesave në minutë, i parë në prodhim 25.11), me vonesën që
  * thotë vetë Google-i, vetëm nëse është e shkurtër. Në log shkruhet emri i kufirit dhe vonesa (asnjë tekst).
  */
-async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response> {
+async function thirrGemini(init: RequestInit, afatiMs: number, riprovo: boolean): Promise<Response> {
   try {
     return await thirrOfruesin(URL, init, "Zëri", "zeri-gemini", afatiMs);
   } catch (e) {
@@ -112,7 +165,7 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
       throw gabimIKuotes(e.detaje, true);
     }
     const pritja = vonesaMs ?? 3_000;
-    if (pritja > MAKS_PRITJA_429_MS) throw e;
+    if (!riprovo || pritja > MAKS_PRITJA_429_MS) throw e;
     await new Promise((r) => setTimeout(r, pritja + 250));
     return await thirrOfruesin(URL, init, "Zëri", "zeri-gemini", afatiMs);
   }
@@ -125,6 +178,7 @@ async function thirrGemini(init: RequestInit, afatiMs: number): Promise<Response
  */
 async function* rrjedhaGemini(
   modeli: string,
+  riprovo: boolean,
   teksti: string,
   gjuha: Gjuha,
   intervistuesi: Intervistuesi,
@@ -137,6 +191,7 @@ async function* rrjedhaGemini(
       body: JSON.stringify(trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, true)),
     },
     60_000,
+    riprovo,
   );
   if (!r.body) throw new GabimIZerit("Zëri ktheu një përgjigje të paplotë. Provo përsëri.");
   const lexuesi = r.body.getReader();
@@ -145,6 +200,12 @@ async function* rrjedhaGemini(
   let pjesaPaGjysem: Uint8Array | null = null; // bajti tek që mbetet mes dy copave
   let pati = false;
   let perfundoi = false; // pa "interaction.completed" rrjedha u pre në mes: është dështim, jo fund
+  // Copat mbahen derisa audioja të arrijë gjatësinë e pranueshme për tekstin dhe të ketë tingull: para kësaj asgjë s'i
+  // jepet thirrësit, ndaj rradha mund ta ndërrojë modelin. null = kontrolli u kalua, copat dalin sapo vijnë.
+  const minimumi = minimumiIBajteve(teksti);
+  let nePritje: CopaAudio[] | null = [];
+  let bajtNePritje = 0;
+  let meTingull = false;
   try {
     for (;;) {
       const { value, done } = await lexuesi.read();
@@ -163,10 +224,13 @@ async function* rrjedhaGemini(
         try {
           d = (JSON.parse(m[2]) as { delta?: Record<string, unknown> }).delta;
         } catch {
-          continue;
+          throw audioEPavlefshme(modeli, "ngjarje e palexueshme");
         }
         if (!d || d.type !== "audio" || typeof d.data !== "string" || !d.data) continue;
-        let b = ngaBase64(d.data);
+        const formati = formatiIGabuar(d);
+        if (formati) throw audioEPavlefshme(modeli, formati);
+        let b = dekodo(modeli, d.data);
+        if (!pati && ePaketuar(b)) throw audioEPavlefshme(modeli, "skedar audio në vend të PCM");
         if (pjesaPaGjysem) {
           const bashku = new Uint8Array(pjesaPaGjysem.length + b.length);
           bashku.set(pjesaPaGjysem);
@@ -180,8 +244,18 @@ async function* rrjedhaGemini(
         }
         if (b.length === 0) continue;
         pati = true;
-        const shkalla = typeof d.sample_rate === "number" && d.sample_rate >= 8000 ? d.sample_rate : SHKALLA_TTS;
-        yield { pcm: b, shkalla };
+        const copa = { pcm: b, shkalla: SHKALLA_TTS };
+        if (nePritje === null) {
+          yield copa;
+          continue;
+        }
+        nePritje.push(copa);
+        bajtNePritje += b.length;
+        meTingull ||= kaTingull(b);
+        if (bajtNePritje >= minimumi && meTingull) {
+          yield* nePritje;
+          nePritje = null;
+        }
       }
     }
   } catch (e) {
@@ -190,17 +264,21 @@ async function* rrjedhaGemini(
   } finally {
     lexuesi.cancel().catch(() => {});
   }
-  if (!pati) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
+  if (!pati) throw audioEPavlefshme(modeli, "bosh");
   if (!perfundoi) throw new GabimIZerit("Zëri u ndërpre para fundit. Provo përsëri.");
+  if (nePritje !== null) {
+    throw audioEPavlefshme(modeli, meTingull ? `${sekondat(bajtNePritje)} s nga së paku ${sekondat(minimumi)} s` : "vetëm heshtje");
+  }
 }
 
-export function gemini(modeli: string = MODELI_TTS): Folesi {
+/** `riprovo: false` kur kërkesat i vendos kufizuesi (zeri-rrotullimi.ts): asnjë kërkesë pa vend të rezervuar. */
+export function gemini(modeli: string = MODELI_TTS, { riprovo = true }: { riprovo?: boolean } = {}): Folesi {
   const lite = modeli === MODELI_TTS_LITE;
   return {
     emri: lite ? "gemini-lite" : "gemini",
     ...(lite ? { gjuhet: gjuhetELite() } : {}),
     iGatshem: () => !!Deno.env.get("GEMINI_API_KEY"),
-    rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, teksti, gjuha, intervistuesi),
+    rrjedhe: (teksti, gjuha, intervistuesi) => rrjedhaGemini(modeli, riprovo, teksti, gjuha, intervistuesi),
     async fol(teksti: string, gjuha: Gjuha, intervistuesi: Intervistuesi): Promise<AudioIFolur> {
       const celesi = celesiIGemini();
       const trupi = trupiIKerkeses(modeli, teksti, gjuha, intervistuesi, false);
@@ -211,23 +289,33 @@ export function gemini(modeli: string = MODELI_TTS): Folesi {
           body: JSON.stringify(trupi),
         },
         45_000,
+        riprovo,
       );
       const kufijte = headerAtEKufijve(r.headers);
       let json: unknown;
       try {
         json = await r.json();
       } catch {
-        throw new GabimIZerit("Zëri ktheu një përgjigje të paplotë. Provo përsëri.");
+        throw audioEPavlefshme(modeli, "përgjigje e palexueshme");
       }
-      const b64 = gjejAudion(json);
-      if (!b64) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
-      const bajtet = ngaBase64(b64);
+      const a = gjejAudion(json);
+      if (!a) throw audioEPavlefshme(modeli, "bosh");
+      const bajtet = dekodo(modeli, a.data);
       // Zakonisht WAV me header; nëse vjen PCM i zhveshur (audio/l16), e mbështjellim vetë.
       const wav = lexoWav(bajtet);
-      const pcm = wav ? wav.mostrat : new Int16Array(bajtet.buffer, bajtet.byteOffset, Math.floor(bajtet.length / 2));
-      const shkalla = wav ? wav.shkalla : SHKALLA_TTS;
-      if (pcm.length < shkalla * 0.2) throw new GabimIZerit("Zëri doli bosh. Provo përsëri.");
-      return { audio: shkruajWav(pcm, shkalla), mime: "audio/wav", sekonda: pcm.length / shkalla, kufijte };
+      if (wav && wav.shkalla !== SHKALLA_TTS) throw audioEPavlefshme(modeli, `shkalla ${wav.shkalla}`);
+      if (!wav) {
+        const formati = ePaketuar(bajtet) ? "skedar audio i palexueshëm" : formatiIGabuar(a);
+        if (formati) throw audioEPavlefshme(modeli, formati);
+        if (bajtet.length % 2 !== 0) throw audioEPavlefshme(modeli, "PCM me numër tek bajtesh");
+      }
+      const pcm = wav ? wav.mostrat : new Int16Array(bajtet.buffer, bajtet.byteOffset, bajtet.length / 2);
+      const minimumi = minimumiIBajteve(teksti);
+      if (pcm.length * 2 < minimumi) {
+        throw audioEPavlefshme(modeli, `${sekondat(pcm.length * 2)} s nga së paku ${sekondat(minimumi)} s`);
+      }
+      if (!kaTingull(new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength))) throw audioEPavlefshme(modeli, "vetëm heshtje");
+      return { audio: shkruajWav(pcm, SHKALLA_TTS), mime: "audio/wav", sekonda: pcm.length / SHKALLA_TTS, kufijte };
     },
   };
 }

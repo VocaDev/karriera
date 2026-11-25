@@ -10,15 +10,15 @@ Burimet: `CLAUDE.md` §5 "AI Interview Practice", §4 (ndjesia native, lëvizja)
 |---|---|---|---|
 | A1 | Leja e mikrofonit kërkohet vetëm kur duhet, me arsye | done · phone | fleta `LejaModal.tsx` (shpjegon para dritares së sistemit), `useZeri.ts` `sigurohuPerLejen`; vetëm në Fol; `app.json:44` (teksti iOS) |
 | A2 | Refuzimi i lejes trajtohet | done · phone | ekrani "Mikrofoni është i fikur" `LejaModal.tsx` me "Hap Cilësimet" dhe "Vazhdo me shkrim" |
-| A3 | Gjendje të qarta: regjistron · dëgjon · flet AI-ja | done | `useZeri.ts:583` (statusi me fjalë), `PaneliIZerit.tsx:196` (pika/pulsi), unaza e kuqe e nivelit `PaneliIZerit.tsx:268` dhe `:295` |
-| A4 | Start | done | mikrofoni i madh `PaneliIZerit.tsx:296-303`, `useZeri.ts:500` (`prekMikrofonin`) |
-| A5 | Stop (dërgo) | done | prekja e dytë `useZeri.ts:501`; automatik në 90 s `useRegjistruesi.ts:116` |
-| A6 | Anulo regjistrimin pa e dërguar | done · phone | buton "Anulo" `PaneliIZerit.tsx:291`, `useZeri.ts:527`, `useRegjistruesi.ts:143`; dalja nga ekrani e fshin WAV-in `useRegjistruesi.ts:163` |
+| A3 | Gjendje të qarta: regjistron · dëgjon · flet AI-ja | done | `useZeri.ts:585` (statusi me fjalë), `PaneliIZerit.tsx:196` (pika/pulsi), unaza e kuqe e nivelit `PaneliIZerit.tsx:268` dhe `:295` |
+| A4 | Start | done | mikrofoni i madh `PaneliIZerit.tsx:296-303`, `useZeri.ts:502` (`prekMikrofonin`) |
+| A5 | Stop (dërgo) | done | prekja e dytë `useZeri.ts:503`; automatik në 90 s `useRegjistruesi.ts:116` |
+| A6 | Anulo regjistrimin pa e dërguar | done · phone | buton "Anulo" `PaneliIZerit.tsx:291`, `useZeri.ts:529`, `useRegjistruesi.ts:143`; dalja nga ekrani e fshin WAV-in `useRegjistruesi.ts:163` |
 | A7 | Pauzë / dalje nga intervista | done | "Dil" me konfirmim `[id].tsx:116`; intervista vazhdon brenda 24 orësh |
-| A8 | "Ndalo" intervistuesin + "Përsërit pyetjen" | done · phone | `useZeri.ts:535` (`ndaloFolesin`, buton `PaneliIZerit.tsx:310`), `useZeri.ts:545` (`perseritPyetjen`, buton `PaneliIZerit.tsx:288`) |
-| A9 | Rrjeti bie (para dërgimit, gjatë dërgimit, gjatë zërit) | done · phone | para: `useZeri.ts:510` (mikrofoni s'hapet pa internet); gjatë: `klienti.ts:456` dhe `:510` (transkripti mbahet, "Provo përsëri"); zëri që këputet pas tekstit: `klienti.ts:511` (`onGabimZerit`) → pyetja mbetet në ekran |
-| A10 | AI/TTS/STT dështon | done | `useZeri.ts:309-350` (zëri dështon → teksti në ekran), `useIntervista.ts:264` (transkripti mbetet), `intervista-zeri/index.ts:506` (`gabim_zerit`), `:538` (rruga pa rrjedhë) |
-| A11 | Pa dërgime të dyfishta | done | `useIntervista.ts:56` (ref `zene`) dhe `:210` (rojë te `dergoZerin`), qiraja e kthesës `_shared/intervista-kthesa.ts:140-152` (+ `:150` kthen 409), `useZeri.ts:498` (`radhaJote` fik butonin ndërsa `dergon`) |
+| A8 | "Ndalo" intervistuesin + "Përsërit pyetjen" | done · phone | `useZeri.ts:537` (`ndaloFolesin`, buton `PaneliIZerit.tsx:310`), `useZeri.ts:547` (`perseritPyetjen`, buton `PaneliIZerit.tsx:288`) |
+| A9 | Rrjeti bie (para dërgimit, gjatë dërgimit, gjatë zërit) | done · phone | para: `useZeri.ts:512` (mikrofoni s'hapet pa internet); gjatë: `klienti.ts:457` dhe `:511` (transkripti mbahet, "Provo përsëri"); zëri që këputet pas tekstit: `klienti.ts:512` (`onGabimZerit`) → pyetja mbetet në ekran |
+| A10 | AI/TTS/STT dështon | done | `useZeri.ts:309-350` (zëri dështon → teksti në ekran), `useIntervista.ts:264` (transkripti mbetet), `intervista-zeri/index.ts:521` (`gabim_zerit`), `:553` (rruga pa rrjedhë) |
+| A11 | Pa dërgime të dyfishta | done | `useIntervista.ts:56` (ref `zene`) dhe `:210` (rojë te `dergoZerin`), qiraja e kthesës `_shared/intervista-kthesa.ts:140-152` (+ `:150` kthen 409), `useZeri.ts:500` (`radhaJote` fik butonin ndërsa `dergon`) |
 | A12 | UI i shpejtë gjatë audios | done · phone | audio vjen në copa ~200 ms (`intervista-zeri/index.ts` `transmetoZerin`), jo një mesazh 0,65 MB; luhet në WebView `avatari-faqja.ts:244` (`rrPcm`) |
 | A13 | Gjuhët SQ / EN / DE | done · phone | gjuha te nisja `index.tsx:275-284`, STT me `language` `zeri-groq.ts:23`, TTS zbulon gjuhën nga teksti; kualiteti i zërit dëgjohet vetëm në telefon |
 | A14 | Shkruaj ⇄ Fol në çdo çast | done | `[id].tsx:252` (segmenti), `useIntervista.ts:286` |
@@ -41,7 +41,7 @@ Burimet: `CLAUDE.md` §5 "AI Interview Practice", §4 (ndjesia native, lëvizja)
 | 15 | Rezultatet | done | `rezultatet.tsx` |
 | 17 | Gatishmëria u rrit (mbyllja e ciklit) | done | karta "Gatishmëria për këtë punë" `rezultatet.tsx:242-263` |
 | 26 | Po i përgatis rezultatet | done | `[id].tsx:176` |
-| 27 | Pa internet | done | `ShiritiPaInternet`, `useZeri.ts:510`, `[id].tsx:145` |
+| 27 | Pa internet | done | `ShiritiPaInternet`, `useZeri.ts:512`, `[id].tsx:145` |
 | 31 | Historiku (lista + ndryshimi) | done · phone | shih A17 |
 | 32 | Transkripti (çka the vërtet) | done | përgjigjet e tua te `rezultatet.tsx:302` |
 | 34 | Zgjidh intervistën (puna, gjuha, gjatësia, Shkruaj · Fol, Arta/Arbër) | done | `src/app/intervista/index.tsx` |
@@ -70,7 +70,7 @@ Skripti `supabase/functions/_provat/zeri-vonesa.ts` përdor kodin e vërtetë t�
 
 (v2 është çka bën tani serveri. Zëri i pyetjes nis kur kthesa mbaron; byte-i i tij i parë arrin ~8 s, ndërsa reagimi luhet nga 5,8 s deri ~10 s, pra pa pushim mes tyre. Dy ekzekutime të ndryshme, vlera STT/Claude luhaten ±0,5 s.)
 
-Çka ndryshoi: (0, v2) Claude kthen JSON me rrjedhë dhe `onReagimi` jep tekstin e `reagimi` sapo mbyllet; TTS i tij nis aty (`_shared/intervista-ai.ts:272` (`pyetMeRrjedhe`), `intervista-zeri/index.ts:477`; teksti i folur është saktësisht ai që ruhet, e verifikuar nga skripti); (1) vlerësimi i përgjigjes s'është më në rrugën kritike (`nePlan`, `_shared/intervista-kthesa.ts:48`); (2) TTS me rrjedhë SSE: byte-i i parë ~1,7 s pas tekstit, jo ~4,5 s; (3) një kërkesë e vetme NDJSON: pa dy kërkesa të reja nga telefoni; (4) transkripti del në ekran pas ~0,8 s, jo pas kthesës; (5) pranimi "Mirë, e kuptoj." luhet nga kesh-i në ~0 s (pa ndryshim).
+Çka ndryshoi: (0, v2) Claude kthen JSON me rrjedhë dhe `onReagimi` jep tekstin e `reagimi` sapo mbyllet; TTS i tij nis aty (`_shared/intervista-ai.ts:272` (`pyetMeRrjedhe`), `intervista-zeri/index.ts:492`; teksti i folur është saktësisht ai që ruhet, e verifikuar nga skripti); (1) vlerësimi i përgjigjes s'është më në rrugën kritike (`nePlan`, `_shared/intervista-kthesa.ts:48`); (2) TTS me rrjedhë SSE: byte-i i parë ~1,7 s pas tekstit, jo ~4,5 s; (3) një kërkesë e vetme NDJSON: pa dy kërkesa të reja nga telefoni; (4) transkripti del në ekran pas ~0,8 s, jo pas kthesës; (5) pranimi "Mirë, e kuptoj." luhet nga kesh-i në ~0 s (pa ndryshim).
 
 **Pse jo < 3 s:** para `reagimi` Claude duhet të shkruajë `shprehja`, `vazhdo`, `lloji`, `qasja` dhe `arsyeja_e_qasjes` (një fjali), kështu që reagimi mbyllet pas ~3,7 s; pastaj TTS ka ~1,7 s deri te byte-i i parë dhe STT 0,8–1,2 s. Kufiri me këtë skemë dhe këtë model është ~5,5 s. Opsionet që mbeten janë vendim i Gentit: (b) Haiku 5.5 për kthesën (shumë më shpejt, por shqipja dhe `qasja` duhen provuar); (c) heqja e `arsyeja_e_qasjes` nga skema (~0,5–1 s). Asnjëra s'është bërë: logjika `qasja` mbetet e paprekur.
 

@@ -66,9 +66,10 @@ import {
   SHKALLA_STT,
 } from "../_shared/zeri.ts";
 import { azure, KUFIRI_MUJOR_SHKRONJA } from "../_shared/zeri-azure.ts";
-import { gemini, MODELI_TTS_LITE } from "../_shared/zeri-gemini.ts";
 import { groq } from "../_shared/zeri-groq.ts";
 import { depoNeDB, meKesh } from "../_shared/zeri-keshi.ts";
+import { kufizuesiNeDB, kufizuesiNeKujtese } from "../_shared/zeri-kufizuesi.ts";
+import { geminiMeRradhe, lexoKufijte } from "../_shared/zeri-rrotullimi.ts";
 import { type ZinxhiriIZerit, zinxhiriIZerit } from "../_shared/zeri-zinxhiri.ts";
 
 /**
@@ -80,11 +81,16 @@ const REAGIMI_I_HERSHEM = false;
 
 // Ofruesit, secili pas përshtatësit të vet (zeri.ts): ndërrohen këtu.
 const degjuesi: Degjuesi = groq();
+// Kufizuesi në kujtesë rron sa instanca: përdoret vetëm kur numëruesi te DB mungon ose dështon.
+const kufizuesiRezerve = kufizuesiNeKujtese();
+
 /**
- * Zëri i intervistuesit: Azure → Gemini 3.8 Flash TTS → Gemini Flash-Lite (vetëm en / de) → teksti me fjalinë e kufirit.
+ * Zëri i intervistuesit: Azure → Gemini TTS me rradhë mes modeleve falas → teksti me fjalinë e kufirit.
  * Pa sekretet e Azure-s, zinxhiri fillon te Gemini. Numëruesi mujor i Azure-s rezervon shkronjat para çdo kërkese.
+ * Kufijtë e Gemini-t (RPM / RPD për çdo model) vijnë nga sekreti TTS_RPM_LIMITS; pa të, ata të nivelit falas.
+ * `ulet` (parapërgatitja e pranimit): s'pret për vend të lirë dhe i lë të paktën një vend pyetjes së radhës.
  */
-function folesiPer(t: Thirresi): ZinxhiriIZerit {
+function folesiPer(t: Thirresi, ulet = false): ZinxhiriIZerit {
   const rezervo = async (shkronja: number) => {
     const { data, error } = await t.admin.rpc("zeri_azure_rezervo", { p_shkronja: shkronja, p_kufiri: KUFIRI_MUJOR_SHKRONJA });
     if (error) {
@@ -93,7 +99,12 @@ function folesiPer(t: Thirresi): ZinxhiriIZerit {
     }
     return data === true;
   };
-  return zinxhiriIZerit([azure(rezervo), gemini(), gemini(MODELI_TTS_LITE)]);
+  const gemini = geminiMeRradhe({
+    kufizuesi: kufizuesiNeDB(t.admin, kufizuesiRezerve),
+    kufijte: lexoKufijte(Deno.env.get("TTS_RPM_LIMITS")),
+    ...(ulet ? { maksPritjaMs: 0, lerTeLira: 1 } : {}),
+  });
+  return zinxhiriIZerit([azure(rezervo), gemini]);
 }
 
 type Objekt = Record<string, unknown>;
@@ -344,6 +355,8 @@ async function fol(t: Thirresi, b: Objekt): Promise<Response> {
   if (pjesa !== undefined && pjesa !== "reagimi" && pjesa !== "pyetja" && pjesa !== "mbushesi") {
     return gabim("Kërkesa nuk është e vlefshme.", 400);
   }
+  // Pranimi parapërgatitet ndërsa kandidati përgjigjet: vetëm nga kesh-i ose kur ka vend të lirë.
+  if (pjesa === "mbushesi") Object.assign(iv, meZinxhir(folesiPer(t, true)));
   // Tekstet fikse të kodit (pyetja e parë me përshëndetjen, pranimi) ruhen: herën tjetër s'kushtojnë kërkesë TTS.
   const ofruesiIPare = iv.zinxhiri.ofruesiIPare(iv.gjuha);
   if (ofruesiIPare && (pjesa === "mbushesi" || (b.nr === 1 && pjesa === undefined))) {
@@ -390,6 +403,8 @@ async function fol(t: Thirresi, b: Objekt): Promise<Response> {
     await regjistro(t, intervistaId, "fol", 0, sekonda);
     return json({ zeri: { fjalite, ofruesi } });
   } catch (e) {
+    // S'kishte vend të lirë për parapërgatitjen: s'është gabim; app-i e kërkon sërish te pyetja tjetër.
+    if (pjesa === "mbushesi" && e instanceof GabimIZerit && e.kuota) return json({ zeri: { fjalite: [] } });
     return gabimIZerit(e);
   }
 }

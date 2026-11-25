@@ -12,7 +12,7 @@ import type { Konteksti } from "../_shared/intervista-ai.ts";
 
 Deno.env.set("GEMINI_API_KEY", "prove");
 
-const b64 = btoa(String.fromCharCode(...new Uint8Array(4800))); // 100 ms heshtje PCM16 24 kHz
+const b64 = btoa(String.fromCharCode(...new Uint8Array(28_800).fill(1))); // 600 ms PCM16 24 kHz (jo heshtje)
 const ngjarja = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 const copa = ngjarja("step.delta", { delta: { type: "audio", mime_type: "audio/l16", sample_rate: 24000, data: b64 } });
 const fundi = ngjarja("interaction.completed", { interaction: { status: "completed" } });

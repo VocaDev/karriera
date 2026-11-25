@@ -379,7 +379,9 @@ export function useZeri(opts: {
     mbushesi.current = null;
     merrMbushesin(ofruesi, intervistuesi, gjuha, () => zeriMeOfruesin(intervistaId, nrAktual, "mbushesi"))
       .then((f) => {
-        if (f.length && mbushesiPer.current === ofruesi) mbushesi.current = f;
+        if (mbushesiPer.current !== ofruesi) return;
+        if (f === null) mbushesiPer.current = null; // s'kishte vend të lirë: provohet sërish te pyetja tjetër
+        else if (f.length) mbushesi.current = f;
       })
       .catch(() => {
         // Pa pranim: kandidati sheh vetëm "po mendon"; asgjë s'prishet.
@@ -586,8 +588,10 @@ export function useZeri(opts: {
   if (gjendja.faza === "gati") statusi = "Po hapet intervista…";
   else if (gjendja.faza === "gabim") statusi = "U ndal: shiko mesazhin poshtë";
   else if (gjendja.faza === "perfundon" || gjendja.faza === "raporti") {
-    statusi = flet ? `Po flet ${pamja.emri}` : "Intervista mbaroi";
-    radha = flet ? "ai" : "askush";
+    // Fjalia mbyllëse mund të presë një vend te kufiri i zërit: deri atëherë intervistuesi ende "po mendon".
+    mendon = !flet && dergon;
+    statusi = flet ? `Po flet ${pamja.emri}` : mendon ? `${pamja.emri} po mendon…` : "Intervista mbaroi";
+    radha = flet || mendon ? "ai" : "askush";
   } else if (!faqjaGati) {
     statusi = `${pamja.emri} po vjen…`;
     radha = "ai";
