@@ -10,26 +10,26 @@ Burimet: `CLAUDE.md` §5 "AI Interview Practice", §4 (ndjesia native, lëvizja)
 |---|---|---|---|
 | A1 | Leja e mikrofonit kërkohet vetëm kur duhet, me arsye | done · phone | fleta `LejaModal.tsx` (shpjegon para dritares së sistemit), `useZeri.ts` `sigurohuPerLejen`; vetëm në Fol; `app.json:44` (teksti iOS) |
 | A2 | Refuzimi i lejes trajtohet | done · phone | ekrani "Mikrofoni është i fikur" `LejaModal.tsx` me "Hap Cilësimet" dhe "Vazhdo me shkrim" |
-| A3 | Gjendje të qarta: regjistron · dëgjon · flet AI-ja | done | `useZeri.ts:445` (statusi me fjalë), `PaneliIZerit.tsx:152` (pika/pulsi), unaza e kuqe e nivelit `PaneliIZerit.tsx:224` dhe `:210` |
-| A4 | Start | done | mikrofoni i madh `PaneliIZerit.tsx:252-259`, `useZeri.ts:376` (`prekMikrofonin`) |
-| A5 | Stop (dërgo) | done | prekja e dytë `useZeri.ts:377`; automatik në 90 s `useRegjistruesi.ts:116` |
-| A6 | Anulo regjistrimin pa e dërguar | done · phone | buton "Anulo" `PaneliIZerit.tsx:247`, `useZeri.ts:403`, `useRegjistruesi.ts:143`; dalja nga ekrani e fshin WAV-in `useRegjistruesi.ts:163` |
+| A3 | Gjendje të qarta: regjistron · dëgjon · flet AI-ja | done | `useZeri.ts:526` (statusi me fjalë), `PaneliIZerit.tsx:196` (pika/pulsi), unaza e kuqe e nivelit `PaneliIZerit.tsx:268` dhe `:295` |
+| A4 | Start | done | mikrofoni i madh `PaneliIZerit.tsx:296-303`, `useZeri.ts:457` (`prekMikrofonin`) |
+| A5 | Stop (dërgo) | done | prekja e dytë `useZeri.ts:458`; automatik në 90 s `useRegjistruesi.ts:116` |
+| A6 | Anulo regjistrimin pa e dërguar | done · phone | buton "Anulo" `PaneliIZerit.tsx:291`, `useZeri.ts:484`, `useRegjistruesi.ts:143`; dalja nga ekrani e fshin WAV-in `useRegjistruesi.ts:163` |
 | A7 | Pauzë / dalje nga intervista | done | "Dil" me konfirmim `[id].tsx:116`; intervista vazhdon brenda 24 orësh |
-| A8 | "Ndalo" intervistuesin + "Përsërit pyetjen" | done · phone | `useZeri.ts:411` (`ndaloFolesin`, buton `PaneliIZerit.tsx:266`), `useZeri.ts:421` (`perseritPyetjen`, buton `PaneliIZerit.tsx:244`) |
-| A9 | Rrjeti bie (para dërgimit, gjatë dërgimit, gjatë zërit) | done · phone | para: `useZeri.ts:386` (mikrofoni s'hapet pa internet); gjatë: `klienti.ts:427` dhe `:478` (transkripti mbahet, "Provo përsëri"); zëri që këputet pas tekstit: `klienti.ts:479` (`onGabimZerit`) → pyetja mbetet në ekran |
-| A10 | AI/TTS/STT dështon | done | `useZeri.ts:213-232` (zëri dështon → teksti në ekran), `useIntervista.ts:250` (transkripti mbetet), `intervista-zeri/index.ts:438` (`gabim_zerit`), `:470` (rruga pa rrjedhë) |
-| A11 | Pa dërgime të dyfishta | done | `useIntervista.ts:51` (ref `zene`) dhe `:205` (rojë te `dergoZerin`), qiraja e kthesës `_shared/intervista-kthesa.ts:140-152` (+ `:150` kthen 409), `useZeri.ts:374` (`radhaJote` fik butonin ndërsa `dergon`) |
-| A12 | UI i shpejtë gjatë audios | done · phone | audio vjen në copa ~200 ms (`intervista-zeri/index.ts` `transmetoZerin`), jo një mesazh 0,65 MB; luhet në WebView `avatari-faqja.ts:228` (`rrPcm`) |
+| A8 | "Ndalo" intervistuesin + "Përsërit pyetjen" | done · phone | `useZeri.ts:492` (`ndaloFolesin`, buton `PaneliIZerit.tsx:310`), `useZeri.ts:502` (`perseritPyetjen`, buton `PaneliIZerit.tsx:288`) |
+| A9 | Rrjeti bie (para dërgimit, gjatë dërgimit, gjatë zërit) | done · phone | para: `useZeri.ts:467` (mikrofoni s'hapet pa internet); gjatë: `klienti.ts:429` dhe `:480` (transkripti mbahet, "Provo përsëri"); zëri që këputet pas tekstit: `klienti.ts:481` (`onGabimZerit`) → pyetja mbetet në ekran |
+| A10 | AI/TTS/STT dështon | done | `useZeri.ts:278-311` (zëri dështon → teksti në ekran), `useIntervista.ts:258` (transkripti mbetet), `intervista-zeri/index.ts:463` (`gabim_zerit`), `:495` (rruga pa rrjedhë) |
+| A11 | Pa dërgime të dyfishta | done | `useIntervista.ts:53` (ref `zene`) dhe `:207` (rojë te `dergoZerin`), qiraja e kthesës `_shared/intervista-kthesa.ts:140-152` (+ `:150` kthen 409), `useZeri.ts:455` (`radhaJote` fik butonin ndërsa `dergon`) |
+| A12 | UI i shpejtë gjatë audios | done · phone | audio vjen në copa ~200 ms (`intervista-zeri/index.ts` `transmetoZerin`), jo një mesazh 0,65 MB; luhet në WebView `avatari-faqja.ts:244` (`rrPcm`) |
 | A13 | Gjuhët SQ / EN / DE | done · phone | gjuha te nisja `index.tsx:275-284`, STT me `language` `zeri-groq.ts:23`, TTS zbulon gjuhën nga teksti; kualiteti i zërit dëgjohet vetëm në telefon |
-| A14 | Shkruaj ⇄ Fol në çdo çast | done | `[id].tsx:252` (segmenti), `useIntervista.ts:272` |
-| A15 | Zgjedhja Arta / Arbër | done (zëri); **Arbër 3D: Genti** | `ui.tsx` `ZgjidhIntervistuesin`; zëri `Charon` `zeri-gemini.ts:28`, `ui.tsx:77`; ende unazë, pa model |
+| A14 | Shkruaj ⇄ Fol në çdo çast | done | `[id].tsx:252` (segmenti), `useIntervista.ts:280` |
+| A15 | Zgjedhja Arta / Arbër | done (zëri); **Arbër 3D: Genti** | `ui.tsx` `ZgjidhIntervistuesin`; zëri `Charon` `zeri-gemini.ts:29`, `ui.tsx:77`; ende unazë, pa model |
 | A16 | Raporti dhe ndryshimi i gatishmërisë | done | `rezultatet.tsx:223-263` (para → pas, ±15 nga kodi) |
 | A17 | Historiku i intervistave | done · phone | ekrani `src/app/intervista/historiku.tsx` (nota, data, ndryshimi i gatishmërisë, "nga e para te e fundit"), hapet nga Profili; lexon `lexoHistorikun` `klienti.ts` (RLS) |
-| A18 | Kamera: pamja e kandidatit (opsionale, e fikur si parazgjedhje) | done · phone | buton "Kamera" `PaneliIZerit.tsx:96-108`; faqja hap `getUserMedia` `avatari-faqja.ts:384` (`kameraNis`); `Avatari.tsx:114` (`mediaCapturePermissionGrantType="grant"`) |
-| A20 | Leja e kamerës: shpjegim para dritares së sistemit, refuzim → ekran | done · phone | `useKamera.ts:75` (`ndrysho`) dhe `:103`, `LejaModal.tsx:40` (lloji "kamera": tekste, "Hap Cilësimet", "Vazhdo vetëm me zë"), `app.json:48` (teksti iOS) |
+| A18 | Kamera: pamja e kandidatit (opsionale, e fikur si parazgjedhje) | done · phone | buton "Kamera" `PaneliIZerit.tsx:111-120`; faqja hap `getUserMedia` `avatari-faqja.ts:532` (`kameraNis`); `Avatari.tsx:133` (`mediaCapturePermissionGrantType="grant"`) |
+| A20 | Leja e kamerës: shpjegim para dritares së sistemit, refuzim → ekran | done · phone | `useKamera.ts:99` (`ndrysho`) dhe `:127`, `LejaModal.tsx:40` (lloji "kamera": tekste, "Hap Cilësimet", "Vazhdo vetëm me zë"), `app.json:48` (teksti iOS) |
 | A21 | Pa kamerë (refuzuar, e fikur, s'punon) intervista punon njësoj | done | kamera është e veçantë nga zëri: `useKamera.ts` s'prek `useZeri`; "Vazhdo vetëm me zë" `LejaModal.tsx` |
-| A22 | Rezervë kur `getUserMedia` s'punon në WebView: kamera native, vetëm pasqyrë | done · phone | `useKamera.ts:106` (`kamera_gabim`) dhe `:16` (15 s pa përgjigje), `PaneliIZerit.tsx:93` (`CameraView`, `mirror`). Provuar në shfletuesin e pane-it: leja e bllokuar → `kamera_gabim`; MediaPipe 1.2.0 ngarkohet (2,9 s) |
-| A23 | Gjuha e trupit te rezultatet, vetëm me matje të vërteta | done · phone | matja nga FaceLandmarker `avatari-faqja.ts:342-361` (fytyra e dukshme dhe shikimi drejt kamerës, vetëm gjatë përgjigjes), totalet se deltat shtohen, jo mbishkruhen `kamera.ts:49` (`shtoStatistiken`), dërgimi i fundit te `kamRaporto` `avatari-faqja.ts:328` (çdo 3 s, në fund të përgjigjes dhe kur kamera ndalet), pragu 80 kornizave `kamera.ts:38`, karta `rezultatet.tsx:487` (e fshehur pa matje). Pa sinjale të shpikura; integriteti jashtë fushës |
+| A22 | Rezervë kur `getUserMedia` s'punon në WebView: kamera native, vetëm pasqyrë | done · phone | `useKamera.ts:135` (`kamera_gabim`) dhe `:22` (15 s pa përgjigje), `PaneliIZerit.tsx:94` (`CameraView`, `mirror`). Provuar në shfletuesin e pane-it: leja e bllokuar → `kamera_gabim`; MediaPipe 1.2.0 ngarkohet (2,9 s) |
+| A23 | Gjuha e trupit te rezultatet, vetëm me matje të vërteta | done · phone | matja nga FaceLandmarker `avatari-faqja.ts:476-497` (fytyra e dukshme dhe shikimi drejt kamerës, vetëm gjatë përgjigjes), totalet se deltat shtohen, jo mbishkruhen `kamera.ts:49` (`shtoStatistiken`), dërgimi i fundit te `kamRaporto` `avatari-faqja.ts:361` (çdo 3 s, në fund të përgjigjes dhe kur kamera ndalet), pragu 80 kornizave `kamera.ts:38`, karta `rezultatet.tsx:487` (e fshehur pa matje). Pa sinjale të shpikura; integriteti jashtë fushës |
 | A19 | Vonesa nga "mbarova" te zëri i pyetjes | partial: 10,1 s → 5,8 s, **jo < 3 s** | shih seksionin D: Claude (~4,8 s) dominon; hapat e mbetur janë vendim i Gentit |
 
 ## B. Ekranet e bordit
@@ -41,7 +41,7 @@ Burimet: `CLAUDE.md` §5 "AI Interview Practice", §4 (ndjesia native, lëvizja)
 | 15 | Rezultatet | done | `rezultatet.tsx` |
 | 17 | Gatishmëria u rrit (mbyllja e ciklit) | done | karta "Gatishmëria për këtë punë" `rezultatet.tsx:242-263` |
 | 26 | Po i përgatis rezultatet | done | `[id].tsx:176` |
-| 27 | Pa internet | done | `ShiritiPaInternet`, `useZeri.ts:386`, `[id].tsx:145` |
+| 27 | Pa internet | done | `ShiritiPaInternet`, `useZeri.ts:467`, `[id].tsx:145` |
 | 31 | Historiku (lista + ndryshimi) | done · phone | shih A17 |
 | 32 | Transkripti (çka the vërtet) | done | përgjigjet e tua te `rezultatet.tsx:302` |
 | 34 | Zgjidh intervistën (puna, gjuha, gjatësia, Shkruaj · Fol, Arta/Arbër) | done | `src/app/intervista/index.tsx` |
@@ -70,10 +70,21 @@ Skripti `supabase/functions/_provat/zeri-vonesa.ts` përdor kodin e vërtetë t�
 
 (v2 është çka bën tani serveri. Zëri i pyetjes nis kur kthesa mbaron; byte-i i tij i parë arrin ~8 s, ndërsa reagimi luhet nga 5,8 s deri ~10 s, pra pa pushim mes tyre. Dy ekzekutime të ndryshme, vlera STT/Claude luhaten ±0,5 s.)
 
-Çka ndryshoi: (0, v2) Claude kthen JSON me rrjedhë dhe `onReagimi` jep tekstin e `reagimi` sapo mbyllet; TTS i tij nis aty (`_shared/intervista-ai.ts:270` (`pyetMeRrjedhe`), `intervista-zeri/index.ts:409`; teksti i folur është saktësisht ai që ruhet, e verifikuar nga skripti); (1) vlerësimi i përgjigjes s'është më në rrugën kritike (`nePlan`, `_shared/intervista-kthesa.ts:48`); (2) TTS me rrjedhë SSE: byte-i i parë ~1,7 s pas tekstit, jo ~4,5 s; (3) një kërkesë e vetme NDJSON: pa dy kërkesa të reja nga telefoni; (4) transkripti del në ekran pas ~0,8 s, jo pas kthesës; (5) pranimi "Mirë, e kuptoj." luhet nga kesh-i në ~0 s (pa ndryshim).
+Çka ndryshoi: (0, v2) Claude kthen JSON me rrjedhë dhe `onReagimi` jep tekstin e `reagimi` sapo mbyllet; TTS i tij nis aty (`_shared/intervista-ai.ts:272` (`pyetMeRrjedhe`), `intervista-zeri/index.ts:434`; teksti i folur është saktësisht ai që ruhet, e verifikuar nga skripti); (1) vlerësimi i përgjigjes s'është më në rrugën kritike (`nePlan`, `_shared/intervista-kthesa.ts:48`); (2) TTS me rrjedhë SSE: byte-i i parë ~1,7 s pas tekstit, jo ~4,5 s; (3) një kërkesë e vetme NDJSON: pa dy kërkesa të reja nga telefoni; (4) transkripti del në ekran pas ~0,8 s, jo pas kthesës; (5) pranimi "Mirë, e kuptoj." luhet nga kesh-i në ~0 s (pa ndryshim).
 
 **Pse jo < 3 s:** para `reagimi` Claude duhet të shkruajë `shprehja`, `vazhdo`, `lloji`, `qasja` dhe `arsyeja_e_qasjes` (një fjali), kështu që reagimi mbyllet pas ~3,7 s; pastaj TTS ka ~1,7 s deri te byte-i i parë dhe STT 0,8–1,2 s. Kufiri me këtë skemë dhe këtë model është ~5,5 s. Opsionet që mbeten janë vendim i Gentit: (b) Haiku 5.5 për kthesën (shumë më shpejt, por shqipja dhe `qasja` duhen provuar); (c) heqja e `arsyeja_e_qasjes` nga skema (~0,5–1 s). Asnjëra s'është bërë: logjika `qasja` mbetet e paprekur.
 
 ## E. Prova në telefon
 
 Çka s'provohet pa telefon: AudioStream WAV në iPhone, sesioni i audios regjistrim → luajtje, ngarkimi multipart, lip-sync-u, `getUserMedia` + MediaPipe në WKWebView të Expo Go, `CameraView` native, saktësia e matjes së kontaktit me sy. Lista e numëruar për Genti-n është te raporti dhe te `docs/zeri-ne-app.md` §11.
+
+## F. Testi i parë në telefon (25.11): gjashtë rregullimet
+
+| # | Problemi / kërkesa | Gjendja | Ku |
+|---|---|---|---|
+| F1 | Kamera ngrinte në mes të intervistës | done · phone | mbikëqyrja e kornizave dhe rilidhja `avatari-faqja.ts` (`kamKontrollo`, `kamRilidh`), WebView i vdekur `Avatari.tsx` (`rinis`); provuar në shfletues me rrjedhë të rreme (pauzë, ngrirje, gjurmë e mbyllur, dështim i përhershëm) |
+| F2 | Zëri i Artës ndalej në mes | done (kod) · **Genti: kuota** | shkaku i matur: Gemini TTS falas lejon **10 kërkesa në ditë** për `gemini-3.8-flash-tts`; një kërkesë për kthesë, riprovim 429, rrjedha e prerë = dështim, zë rezervë, kufiri ditor → përgjigje me zë me pyetjen në ekran. **Pa pagesë te AI Studio zëri mbaron pas ~10 pyetjeve në ditë.** |
+| F3 | Whisper gabonte emrat teknikë | done · phone | `_shared/zeri-fjalori.ts`; mbi audio të sintetizuar dobia s'u provua (shih `_provat/zeri-fjalori.ts`) |
+| F4 | Shiriti i vëmendjes | done · phone | `PaneliIZerit.tsx` (`ShiritiIVemendjes`), paralajmërimi pas 3 s `avatari-faqja.ts` (`kamVemendja`), karta te rezultatet si vlerësim i përafërt |
+| F5 | Pamja e Artës | done · phone | `sfondi-zyra.ts` (vizatim yni, 3 KB, `docs/asetet.md`), kuadri koka-supet |
+| F6 | Pyetje më të mira | done | `docs/intervista-pyetjet.md` (para / pas dhe teste) |
