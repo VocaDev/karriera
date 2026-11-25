@@ -1,7 +1,15 @@
 import { SegmentedControl } from "@expo/ui/community/segmented-control";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInputInstance } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  type TextInputInstance,
+} from "react-native";
 import Animated, { useSharedValue } from "react-native-reanimated";
 
 import { ButoniKryesor, Etiketa, Fusha, Udhezimi } from "@/components/Forma";
@@ -9,7 +17,8 @@ import Fillimi from "@/components/Fillimi";
 import Prekshme from "@/components/Prekshme";
 import Unaza from "@/components/Unaza";
 import { IKONAT, Ikona, Karta, T } from "@/components/ui";
-import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type TeDhenatERegjistrimit } from "@/lib/hyrja";
+import { dil, EMRAT_E_LLOJEVE, hyr, regjistrohu, type Lloji, type TeDhenatERegjistrimit } from "@/lib/hyrja";
+import { LLOGARITE_DEMO, type LlogariaDemo } from "@/lib/hyrja-demo";
 import { useDridhja } from "@/lib/levizja";
 import { prekja } from "@/lib/prekja";
 import { HYR_PERSERI } from "@/lib/mesazhet";
@@ -129,6 +138,8 @@ export default function Hyrja() {
   const [provoi, setProvoi] = useState(false);
   const [duke_punuar, setDukePunuar] = useState(false);
   const [gabimi, setGabimi] = useState<string | null>(null);
+  // Cili buton demo po hyn (spinner vetëm te ai). Mbetet null kur hyrja demo është e fikur.
+  const [demoNeHyrje, setDemoNeHyrje] = useState<Lloji | null>(null);
 
   const regjistrim = menyra === "regjistrohu";
   const mungon = {
@@ -173,6 +184,24 @@ export default function Hyrja() {
       dridhu();
       setGabimi(e instanceof Error ? e.message : "Diçka shkoi keq. Provo përsëri.");
       setDukePunuar(false);
+    }
+  }
+
+  // Hyrja demo me një prekje: i njëjti `hyr()` si forma, gabimet në të njëjtin vend.
+  async function hyrSiDemo(l: LlogariaDemo) {
+    if (duke_punuar) return;
+    prekja.zgjedhje();
+    setDukePunuar(true);
+    setDemoNeHyrje(l.lloji);
+    setGabimi(null);
+    try {
+      await hyr(l.email, l.fjalekalimi);
+      prekja.sukses();
+    } catch (e) {
+      prekja.gabim();
+      setGabimi(e instanceof Error ? e.message : "Diçka shkoi keq. Provo përsëri.");
+      setDukePunuar(false);
+      setDemoNeHyrje(null);
     }
   }
 
@@ -256,6 +285,45 @@ export default function Hyrja() {
           enabled={!duke_punuar}
           style={styles.segmenti}
         />
+
+        {!regjistrim && LLOGARITE_DEMO.length > 0 && (
+          <View style={styles.demo}>
+            <Etiketa>Demo · hyr me një prekje</Etiketa>
+            {LLOGARITE_DEMO.map((l) => {
+              const kjo = demoNeHyrje === l.lloji;
+              return (
+                <Prekshme
+                  key={l.lloji}
+                  onPress={() => hyrSiDemo(l)}
+                  disabled={duke_punuar}
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: kjo, disabled: duke_punuar }}
+                  style={[
+                    styles.opsioni,
+                    styles.opsioniDemo,
+                    { backgroundColor: t.karta, shadowColor: t.hija, opacity: duke_punuar && !kjo ? 0.45 : 1 },
+                  ]}
+                >
+                  <View style={[styles.ikonaEOpsionit, { backgroundColor: t.karta2 }]}>
+                    <Ikona
+                      emri={l.lloji === "kerkues" ? IKONAT.personi : l.lloji === "punedhenes" ? IKONAT.canta : IKONAT.shkolla}
+                      madhesia={18}
+                      ngjyra={t.teksti}
+                    />
+                  </View>
+                  <T pesha="trashe" madhesia={15.5} style={styles.flex}>
+                    {l.teksti}
+                  </T>
+                  {kjo ? (
+                    <ActivityIndicator color={t.teksti} />
+                  ) : (
+                    <Ikona emri={IKONAT.shigjeta} madhesia={14} ngjyra={t.zbehur} />
+                  )}
+                </Prekshme>
+              );
+            })}
+          </View>
+        )}
 
         {regjistrim && <HapatERegjistrimit hapi={hapi} />}
 
@@ -427,7 +495,7 @@ export default function Hyrja() {
               <ButoniKryesor
                 teksti={regjistrim ? "Krijo llogarinë" : "Hyr"}
                 onPress={dergo}
-                duke_punuar={duke_punuar}
+                duke_punuar={duke_punuar && demoNeHyrje === null}
                 joValid={!valide}
                 accessibilityHint={valide ? undefined : "Plotëso fushat që mungojnë"}
               />
@@ -489,6 +557,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   ikonaEOpsionit: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  demo: { gap: 8, marginTop: 4 },
+  opsioniDemo: { minHeight: 56, borderColor: "transparent" },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   radioPika: { width: 10, height: 10, borderRadius: 5 },
   shenimi: { marginTop: 2 },
